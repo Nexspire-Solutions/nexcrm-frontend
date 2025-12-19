@@ -28,7 +28,9 @@ The frontend automatically detects the tenant from:
 
 1. **URL Parameter**: `?tenant=acme`
 2. **localStorage**: `nexcrm_tenant`
-3. **Subdomain**: `acme.nexcrm.in`
+3. **Subdomain**: `acme.crm.nexspiresolutions.co.in`
+
+Then API calls route to: `https://acme.crm-api.nexspiresolutions.co.in/api`.
 
 ## Environment Variables
 
