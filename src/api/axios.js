@@ -6,7 +6,7 @@ import axios from 'axios';
  * Determines the API URL based on:
  * 1. URL parameter (?tenant=acme)
  * 2. localStorage (tenant)
- * 3. Subdomain detection (acme.nexcrm.in)
+ * 3. Subdomain detection (acme.crm.nexspiresolutions.co.in)
  */
 
 // Get tenant from various sources
@@ -25,11 +25,12 @@ const getTenant = () => {
         return storedTenant;
     }
 
-    // 3. Extract from subdomain (acme.nexcrm.in -> acme)
+    // 3. Extract from subdomain (acme.crm.nexspiresolutions.co.in -> acme)
     const hostname = window.location.hostname;
-    if (hostname.includes('.nexcrm.in') || hostname.includes('.nexcrm.local')) {
+    // Match pattern: tenant.crm.nexspiresolutions.co.in or tenant.crm-api.nexspiresolutions.co.in
+    if (hostname.includes('.crm.nexspiresolutions.co.in') || hostname.includes('.nexcrm.')) {
         const subdomain = hostname.split('.')[0];
-        if (subdomain && subdomain !== 'app' && subdomain !== 'www') {
+        if (subdomain && subdomain !== 'crm' && subdomain !== 'app' && subdomain !== 'www') {
             localStorage.setItem('nexcrm_tenant', subdomain);
             return subdomain;
         }
@@ -54,7 +55,7 @@ const getApiUrl = () => {
 
     // Production - use tenant-specific API
     if (tenant) {
-        return `https://${tenant}-api.nexcrm.in/api`;
+        return `https://${tenant}.crm-api.nexspiresolutions.co.in/api`;
     }
 
     // Fallback
