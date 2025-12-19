@@ -62,8 +62,8 @@ npm run build
 In **development**, connects to `localhost:3001` by default.
 
 In **production**, uses dynamic tenant-based API:
-- User visits: `acme.nexcrm.in`
-- API calls go to: `https://acme-api.nexcrm.in/api`
+- User visits: `crm.nexspiresolutions.co.in?tenant=acme`
+- API calls go to: `https://acme.crm-api.nexspiresolutions.co.in/api`
 
 ## License
 
