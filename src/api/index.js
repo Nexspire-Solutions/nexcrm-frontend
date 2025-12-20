@@ -2,7 +2,7 @@ import apiClient from './axios';
 
 export const authAPI = {
     login: async (email, password) => {
-        const response = await apiClient.post('/auth/signin', { email, password });
+        const response = await apiClient.post('/auth/login', { email, password });
         return response.data;
     },
 
