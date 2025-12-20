@@ -25,9 +25,18 @@ const getTenant = () => {
         return storedTenant;
     }
 
-    // 3. Extract from subdomain (acme.crm.nexspiresolutions.co.in -> acme)
+    // 3. Extract from subdomain pattern: {tenant}-crm.nexspiresolutions.co.in
     const hostname = window.location.hostname;
-    // Match pattern: tenant.crm.nexspiresolutions.co.in or tenant.crm-api.nexspiresolutions.co.in
+
+    // Match pattern: tenant-crm.nexspiresolutions.co.in
+    const crmMatch = hostname.match(/^(.+)-crm\.nexspiresolutions\.co\.in$/);
+    if (crmMatch && crmMatch[1]) {
+        const tenant = crmMatch[1];
+        localStorage.setItem('nexcrm_tenant', tenant);
+        return tenant;
+    }
+
+    // Legacy patterns
     if (hostname.includes('.crm.nexspiresolutions.co.in') || hostname.includes('.nexcrm.')) {
         const subdomain = hostname.split('.')[0];
         if (subdomain && subdomain !== 'crm' && subdomain !== 'app' && subdomain !== 'www') {
@@ -55,7 +64,7 @@ const getApiUrl = () => {
 
     // Production - use tenant-specific API
     if (tenant) {
-        return `https://${tenant}.crm-api.nexspiresolutions.co.in/api`;
+        return `https://${tenant}-crm-api.nexspiresolutions.co.in/api`;
     }
 
     // Fallback
