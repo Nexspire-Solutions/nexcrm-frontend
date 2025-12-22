@@ -37,22 +37,28 @@ import Chatbot from './pages/communications/Chatbot';
 import PushNotifications from './pages/communications/PushNotifications';
 
 // E-Commerce (loaded based on tenant config)
+// E-Commerce
 import ProductsList from './pages/ecommerce/ProductsList';
-import OrdersList from './pages/ecommerce/OrdersList';
+import OrdersList from './pages/industry/ecommerce/Orders';
+import Analytics from './pages/industry/ecommerce/Analytics';
+import InventoryList from './pages/ecommerce/InventoryList';
+import ReturnsList from './pages/ecommerce/ReturnsList';
 
-// Industry Pages
-import PropertyList from './pages/realestate/PropertyList';
-import PatientsList from './pages/healthcare/PatientsList';
-import RoomsList from './pages/hospitality/RoomsList';
-import CoursesList from './pages/education/CoursesList';
-import StudentsList from './pages/education/StudentsList';
-import MembersList from './pages/fitness/MembersList';
-import CasesList from './pages/legal/CasesList';
-import ProductionList from './pages/manufacturing/ProductionList';
-import ShipmentsList from './pages/logistics/ShipmentsList';
-import MenuList from './pages/restaurant/MenuList';
-import BookingsList from './pages/salon/BookingsList';
-import AppointmentsList from './pages/services/AppointmentsList';
+// Real Estate
+import Properties from './pages/industry/realestate/Properties';
+import ViewingsList from './pages/realestate/ViewingsList';
+
+// Healthcare
+import Patients from './pages/industry/healthcare/Patients';
+import PrescriptionsList from './pages/healthcare/PrescriptionsList';
+
+// Education
+import Courses from './pages/industry/education/Courses';
+import Students from './pages/industry/education/Students';
+
+// Services
+import Appointments from './pages/industry/services/Appointments';
+import ServicesList from './pages/services/ServicesList';
 
 function AppRoutes() {
   return (
@@ -100,20 +106,17 @@ function AppRoutes() {
           {/* E-Commerce - Dynamic based on industry */}
           <Route path="products" element={<ProductsList />} />
           <Route path="orders" element={<OrdersList />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="inventory" element={<InventoryList />} />
+          <Route path="returns" element={<ReturnsList />} />
 
           {/* Industry Modules */}
-          <Route path="properties" element={<PropertyList />} />
-          <Route path="patients" element={<PatientsList />} />
-          <Route path="rooms" element={<RoomsList />} />
-          <Route path="courses" element={<CoursesList />} />
-          <Route path="students" element={<StudentsList />} />
-          <Route path="members" element={<MembersList />} />
-          <Route path="cases" element={<CasesList />} />
-          <Route path="production" element={<ProductionList />} />
-          <Route path="shipments" element={<ShipmentsList />} />
-          <Route path="menu" element={<MenuList />} />
-          <Route path="bookings" element={<BookingsList />} />
-          <Route path="appointments" element={<AppointmentsList />} />
+          <Route path="properties" element={<Properties />} />
+          <Route path="patients" element={<Patients />} />
+          <Route path="courses" element={<Courses />} />
+          <Route path="students" element={<Students />} />
+          <Route path="appointments" element={<Appointments />} />
+          <Route path="services" element={<ServicesList />} />
         </Route>
       </Route>
 

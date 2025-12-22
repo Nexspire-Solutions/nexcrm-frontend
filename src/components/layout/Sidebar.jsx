@@ -121,19 +121,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     const { hasModule, loading: configLoading } = useTenantConfig();
     const navigate = useNavigate();
     const location = useLocation();
-    const [expandedGroups, setExpandedGroups] = useState(['leads', 'communications', 'ecommerce']);
-
     const handleLogout = () => {
         logout();
         navigate('/login');
-    };
-
-    const toggleGroup = (group) => {
-        setExpandedGroups(prev =>
-            prev.includes(group)
-                ? prev.filter(g => g !== group)
-                : [...prev, group]
-        );
     };
 
     const isGroupActive = (paths) => {
@@ -174,7 +164,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         icon: Icons.leads,
         roles: ['admin', 'manager', 'sales_operator'],
         items: [
-            { name: 'All Leads', path: '/leads', icon: Icons.leads },
+            { name: 'All Leads', path: '/leads', icon: Icons.leads, end: true },
             { name: 'Activity & History', path: '/leads/activity', icon: Icons.activity },
             { name: 'Customers', path: '/leads/customers', icon: Icons.customers },
             { name: 'Settings', path: '/leads/settings', icon: Icons.settings }
@@ -203,7 +193,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         roles: ['admin', 'manager', 'sales_operator'],
         items: [
             { name: 'Products', path: '/products', icon: Icons.products },
-            { name: 'Orders', path: '/orders', icon: Icons.orders }
+            { name: 'Orders', path: '/orders', icon: Icons.orders },
+            { name: 'Inventory', path: '/inventory', icon: Icons.products },
+            { name: 'Returns', path: '/returns', icon: Icons.orders }
         ]
     };
 
@@ -212,7 +204,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         name: 'Real Estate',
         icon: Icons.products,
         roles: ['admin', 'manager', 'sales_operator'],
-        items: [{ name: 'Properties', path: '/properties', icon: Icons.products }]
+        items: [
+            { name: 'Properties', path: '/properties', icon: Icons.products },
+            { name: 'Viewings', path: '/viewings', icon: Icons.activity }
+        ]
     };
 
     // Healthcare group
@@ -220,7 +215,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         name: 'Healthcare',
         icon: Icons.users,
         roles: ['admin', 'manager', 'sales_operator'],
-        items: [{ name: 'Patients', path: '/patients', icon: Icons.users }]
+        items: [
+            { name: 'Patients', path: '/patients', icon: Icons.users },
+            { name: 'Prescriptions', path: '/prescriptions', icon: Icons.orders }
+        ]
     };
 
     // Hospitality group
@@ -228,7 +226,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         name: 'Hospitality',
         icon: Icons.products,
         roles: ['admin', 'manager', 'sales_operator'],
-        items: [{ name: 'Rooms', path: '/rooms', icon: Icons.products }]
+        items: [
+            { name: 'Rooms', path: '/rooms', icon: Icons.products },
+            { name: 'Reservations', path: '/reservations', icon: Icons.activity }
+        ]
     };
 
     // Education group
@@ -247,7 +248,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         name: 'Fitness',
         icon: Icons.users,
         roles: ['admin', 'manager', 'sales_operator'],
-        items: [{ name: 'Members', path: '/members', icon: Icons.users }]
+        items: [
+            { name: 'Members', path: '/members', icon: Icons.users },
+            { name: 'Classes', path: '/classes', icon: Icons.activity }
+        ]
     };
 
     // Legal group
@@ -279,7 +283,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         name: 'Restaurant',
         icon: Icons.products,
         roles: ['admin', 'manager', 'sales_operator'],
-        items: [{ name: 'Menu', path: '/menu', icon: Icons.products }]
+        items: [
+            { name: 'Menu', path: '/menu', icon: Icons.products },
+            { name: 'Tables', path: '/tables', icon: Icons.orders }
+        ]
     };
 
     // Salon group
@@ -295,7 +302,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         name: 'Services',
         icon: Icons.activity,
         roles: ['admin', 'manager', 'sales_operator'],
-        items: [{ name: 'Appointments', path: '/appointments', icon: Icons.activity }]
+        items: [
+            { name: 'Appointments', path: '/appointments', icon: Icons.activity },
+            { name: 'Services', path: '/services', icon: Icons.settings }
+        ]
     };
 
     const userRole = user?.role || 'user';
@@ -322,6 +332,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     const NavItem = ({ item, isSubItem = false }) => (
         <NavLink
             to={item.path}
+            end={item.end}
             onClick={() => setIsOpen(false)}
             className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isSubItem ? 'ml-4 text-sm' : ''
@@ -336,35 +347,36 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         </NavLink>
     );
 
-    const NavGroup = ({ group, groupKey }) => {
-        const isExpanded = expandedGroups.includes(groupKey);
+    const NavGroup = ({ group }) => {
         const isActive = isGroupActive(group.items.map(i => i.path));
 
         return (
-            <div className="space-y-1">
-                <button
-                    onClick={() => toggleGroup(groupKey)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive && !isExpanded
-                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                        }`}
-                >
-                    <div className="flex items-center gap-3">
-                        <span className="flex-shrink-0">{group.icon}</span>
-                        <span className="font-medium">{group.name}</span>
-                    </div>
-                    <span className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
-                        {Icons.chevronDown}
-                    </span>
-                </button>
+            <div className="space-y-1 mb-6">
+                <div className={`flex items-center gap-2 px-3 mb-2 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                    <span className="opacity-70">{group.icon}</span>
+                    <h3 className="text-xs font-bold uppercase tracking-wider">
+                        {group.name}
+                    </h3>
+                </div>
 
-                {isExpanded && (
-                    <div className="space-y-1 mt-1">
-                        {group.items.map((item) => (
-                            <NavItem key={item.path} item={item} isSubItem />
-                        ))}
-                    </div>
-                )}
+                <div className="space-y-0.5 border-l-2 border-slate-100 dark:border-slate-800 ml-4 pl-0">
+                    {group.items.map((item) => (
+                        <NavLink
+                            key={item.path}
+                            to={item.path}
+                            end={item.end}
+                            onClick={() => setIsOpen(false)}
+                            className={({ isActive }) =>
+                                `flex items-center gap-3 px-3 py-2 rounded-r-lg text-sm transition-all duration-200 border-l-2 -ml-[2px] ${isActive
+                                    ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 font-medium'
+                                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'
+                                }`
+                            }
+                        >
+                            <span className="truncate">{item.name}</span>
+                        </NavLink>
+                    ))}
+                </div>
             </div>
         );
     };
@@ -406,66 +418,54 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 {/* Navigation */}
                 <nav className="flex-1 px-3 py-4 overflow-y-auto scrollbar-thin">
                     {/* Main Menu */}
-                    <div className="space-y-1">
-                        <p className="px-3 mb-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                            Main Menu
-                        </p>
-                        {filteredMainNav.map((item) => (
-                            <NavItem key={item.path} item={item} />
-                        ))}
+                    <div className="space-y-1 mb-6">
+                        <div className="flex items-center gap-2 px-3 mb-2 text-slate-500 dark:text-slate-400">
+                            <span className="opacity-70">{Icons.dashboard}</span>
+                            <h3 className="text-xs font-bold uppercase tracking-wider">
+                                Main Menu
+                            </h3>
+                        </div>
+                        <div className="space-y-0.5 border-l-2 border-slate-100 dark:border-slate-800 ml-4 pl-0">
+                            {filteredMainNav.map((item) => (
+                                <NavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    end={item.end}
+                                    onClick={() => setIsOpen(false)}
+                                    className={({ isActive }) =>
+                                        `flex items-center gap-3 px-3 py-2 rounded-r-lg text-sm transition-all duration-200 border-l-2 -ml-[2px] ${isActive
+                                            ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 font-medium'
+                                            : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'
+                                        }`
+                                    }
+                                >
+                                    <span className="truncate">{item.name}</span>
+                                </NavLink>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Leads Group */}
-                    {canViewLeads && (
-                        <div className="mt-6 space-y-1">
-                            <p className="px-3 mb-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                Sales
-                            </p>
-                            <NavGroup group={leadsGroup} groupKey="leads" />
-                        </div>
-                    )}
+                    {canViewLeads && <NavGroup group={leadsGroup} />}
 
                     {/* Communications Group */}
-                    {canViewCommunications && (
-                        <div className="mt-6 space-y-1">
-                            <p className="px-3 mb-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                Communications
-                            </p>
-                            <NavGroup group={communicationsGroup} groupKey="communications" />
-                        </div>
-                    )}
+                    {canViewCommunications && <NavGroup group={communicationsGroup} />}
 
-                    {/* E-Commerce Group (module-gated) */}
-                    {canViewEcommerce && (
-                        <div className="mt-6 space-y-1">
-                            <p className="px-3 mb-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                E-Commerce
-                            </p>
-                            <NavGroup group={ecommerceGroup} groupKey="ecommerce" />
-                        </div>
-                    )}
+                    {/* E-Commerce Group */}
+                    {canViewEcommerce && <NavGroup group={ecommerceGroup} />}
 
                     {/* Industry Modules */}
-                    {(canViewRealestate || canViewHealthcare || canViewHospitality || canViewEducation ||
-                        canViewFitness || canViewLegal || canViewManufacturing || canViewLogistics ||
-                        canViewRestaurant || canViewSalon || canViewServices) && (
-                            <div className="mt-6 space-y-1">
-                                <p className="px-3 mb-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                    Industry Modules
-                                </p>
-                                {canViewRealestate && <NavGroup group={realestateGroup} groupKey="realestate" />}
-                                {canViewHealthcare && <NavGroup group={healthcareGroup} groupKey="healthcare" />}
-                                {canViewHospitality && <NavGroup group={hospitalityGroup} groupKey="hospitality" />}
-                                {canViewEducation && <NavGroup group={educationGroup} groupKey="education" />}
-                                {canViewFitness && <NavGroup group={fitnessGroup} groupKey="fitness" />}
-                                {canViewLegal && <NavGroup group={legalGroup} groupKey="legal" />}
-                                {canViewManufacturing && <NavGroup group={manufacturingGroup} groupKey="manufacturing" />}
-                                {canViewLogistics && <NavGroup group={logisticsGroup} groupKey="logistics" />}
-                                {canViewRestaurant && <NavGroup group={restaurantGroup} groupKey="restaurant" />}
-                                {canViewSalon && <NavGroup group={salonGroup} groupKey="salon" />}
-                                {canViewServices && <NavGroup group={servicesGroup} groupKey="services" />}
-                            </div>
-                        )}
+                    {canViewRealestate && <NavGroup group={realestateGroup} />}
+                    {canViewHealthcare && <NavGroup group={healthcareGroup} />}
+                    {canViewHospitality && <NavGroup group={hospitalityGroup} />}
+                    {canViewEducation && <NavGroup group={educationGroup} />}
+                    {canViewFitness && <NavGroup group={fitnessGroup} />}
+                    {canViewLegal && <NavGroup group={legalGroup} />}
+                    {canViewManufacturing && <NavGroup group={manufacturingGroup} />}
+                    {canViewLogistics && <NavGroup group={logisticsGroup} />}
+                    {canViewRestaurant && <NavGroup group={restaurantGroup} />}
+                    {canViewSalon && <NavGroup group={salonGroup} />}
+                    {canViewServices && <NavGroup group={servicesGroup} />}
                 </nav>
 
                 {/* Footer */}
