@@ -25,18 +25,19 @@ const getTenant = () => {
         return storedTenant;
     }
 
-    // 3. Extract from subdomain pattern: {tenant}-crm.nexspiresolutions.co.in
+    // 3. Extract from subdomain
+    // Pattern: tenant-crm.nexspiresolutions.co.in -> extract "tenant"
     const hostname = window.location.hostname;
 
-    // Match pattern: tenant-crm.nexspiresolutions.co.in
-    const crmMatch = hostname.match(/^(.+)-crm\.nexspiresolutions\.co\.in$/);
-    if (crmMatch && crmMatch[1]) {
-        const tenant = crmMatch[1];
+    // Match pattern: xxx-crm.nexspiresolutions.co.in
+    const dashCrmMatch = hostname.match(/^([a-z0-9-]+)-crm\.nexspiresolutions\.co\.in$/);
+    if (dashCrmMatch) {
+        const tenant = dashCrmMatch[1];
         localStorage.setItem('nexcrm_tenant', tenant);
         return tenant;
     }
 
-    // Legacy patterns
+    // Legacy pattern: tenant.crm.nexspiresolutions.co.in
     if (hostname.includes('.crm.nexspiresolutions.co.in') || hostname.includes('.nexcrm.')) {
         const subdomain = hostname.split('.')[0];
         if (subdomain && subdomain !== 'crm' && subdomain !== 'app' && subdomain !== 'www') {
@@ -63,6 +64,7 @@ const getApiUrl = () => {
     }
 
     // Production - use tenant-specific API
+    // Pattern: tenant-crm-api.nexspiresolutions.co.in (matching Cloudflare tunnel)
     if (tenant) {
         return `https://${tenant}-crm-api.nexspiresolutions.co.in/api`;
     }
