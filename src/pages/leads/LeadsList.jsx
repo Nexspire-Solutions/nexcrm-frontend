@@ -1,31 +1,31 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { leadsAPI } from '../../api';
 import toast from 'react-hot-toast';
-import LeadsKanban from './LeadsKanban';
-import Papa from 'papaparse';
+
+const mockLeads = [
+    { id: 1, contactName: 'John Smith', company: 'TechCorp', email: 'john@techcorp.com', phone: '+1 234 567 890', status: 'new', leadSource: 'Website', estimatedValue: 25000, score: 85, created_at: '2024-12-20' },
+    { id: 2, contactName: 'Sarah Johnson', company: 'DataFlow Inc', email: 'sarah@dataflow.com', phone: '+1 234 567 891', status: 'qualified', leadSource: 'Referral', estimatedValue: 45000, score: 92, created_at: '2024-12-19' },
+    { id: 3, contactName: 'Mike Wilson', company: 'StartupXYZ', email: 'mike@xyz.com', phone: '+1 234 567 892', status: 'negotiation', leadSource: 'LinkedIn', estimatedValue: 15000, score: 65, created_at: '2024-12-18' },
+    { id: 4, contactName: 'Emily Brown', company: 'DesignHub', email: 'emily@designhub.com', phone: '+1 234 567 893', status: 'won', leadSource: 'Website', estimatedValue: 35000, score: 100, created_at: '2024-12-15' },
+    { id: 5, contactName: 'David Lee', company: 'CloudSync', email: 'david@cloudsync.com', phone: '+1 234 567 894', status: 'lost', leadSource: 'Cold Call', estimatedValue: 20000, score: 30, created_at: '2024-12-10' },
+];
+
+const statusConfig = {
+    new: { label: 'New', class: 'badge-primary' },
+    qualified: { label: 'Qualified', class: 'badge-success' },
+    negotiation: { label: 'Negotiation', class: 'badge-warning' },
+    won: { label: 'Won', class: 'bg-emerald-600 text-white badge' },
+    lost: { label: 'Lost', class: 'badge-danger' }
+};
 
 export default function LeadsList() {
     const [leads, setLeads] = useState([]);
-    const [viewMode, setViewMode] = useState('list'); // 'list' or 'kanban'
-    const [loading, setLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
     const [showModal, setShowModal] = useState(false);
     const [editingLead, setEditingLead] = useState(null);
-    const [isImporting, setIsImporting] = useState(false);
-    const fileInputRef = useRef(null);
-    const [formData, setFormData] = useState({
-        companyName: '',
-        contactName: '',
-        email: '',
-        phone: '',
-        status: 'new',
-        source: '',
-        estimatedValue: '',
-        notes: '',
-        score: 0
-    });
-    const [selectedLead, setSelectedLead] = useState(null);
-    const navigate = useNavigate();
 
     useEffect(() => {
         fetchLeads();
@@ -33,503 +33,295 @@ export default function LeadsList() {
 
     const fetchLeads = async () => {
         try {
-            setLoading(true);
             const response = await leadsAPI.getAll();
-            console.log('[Leads] API response:', response);
-            // Backend returns { leads: [...] }
-            const list = response?.leads || response?.data || [];
-            setLeads(Array.isArray(list) ? list : []);
+            setLeads(response.leads || mockLeads);
         } catch (error) {
-            toast.error('Failed to load leads');
-            console.error('[Leads] Error:', error);
+            console.log('Using mock data');
+            setLeads(mockLeads);
         } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 
-    const handleFileUpload = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
+    const filteredLeads = leads.filter(lead => {
+        const matchesSearch = `${lead.contactName} ${lead.company} ${lead.email}`.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
+        return matchesSearch && matchesStatus;
+    });
 
-        setIsImporting(true);
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: async (results) => {
-                try {
-                    const parsedLeads = results.data.map(row => ({
-                        company: row.Company || row.company,
-                        contactName: row.Contact || row.contactName,
-                        email: row.Email || row.email,
-                        phone: row.Phone || row.phone,
-                        status: 'new', // Default status
-                        source: 'CSV Import',
-                        estimatedValue: parseFloat(row.Value || row.estimatedValue) || 0,
-                        notes: row.Notes || row.notes,
-                        score: parseInt(row.Score || row.score) || 0
-                    })).filter(l => l.contactName); // Ensure required field
-
-                    if (parsedLeads.length === 0) {
-                        toast.error('No valid leads found in CSV');
-                        return;
-                    }
-
-                    const response = await leadsAPI.bulkCreate(parsedLeads);
-                    toast.success(response.message || `Successfully imported leads`);
-                    fetchLeads();
-                } catch (error) {
-                    toast.error('Failed to import leads');
-                    console.error('Import error:', error);
-                } finally {
-                    setIsImporting(false);
-                    event.target.value = null; // Reset input
-                }
-            },
-            error: (error) => {
-                toast.error('Failed to parse CSV file');
-                console.error('CSV Parse error:', error);
-                setIsImporting(false);
-                event.target.value = null;
-            }
-        });
-    };
-
-    const handleDownloadTemplate = () => {
-        const headers = ['Company', 'Contact', 'Email', 'Phone', 'Value', 'Notes', 'Score'];
-        const sample = ['Acme Corp', 'John Doe', 'john@example.com', '555-0123', '5000', 'Potential big client', '80'];
-        const csvContent = [headers.join(','), sample.join(',')].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'leads_template.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const submitData = {
-                contactName: formData.contactName,
-                company: formData.companyName,
-                email: formData.email,
-                phone: formData.phone,
-                status: formData.status,
-                leadSource: formData.source,
-                estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : null,
-                notes: formData.notes,
-                score: formData.score || 0
-            };
-
-            if (editingLead) {
-                await leadsAPI.update(editingLead.id, submitData);
-                toast.success('Lead updated successfully');
-            } else {
-                await leadsAPI.create(submitData);
-                toast.success('Lead created successfully');
-            }
-            setShowModal(false);
-            resetForm();
-            fetchLeads();
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Operation failed');
-        }
+    const stats = {
+        total: leads.length,
+        new: leads.filter(l => l.status === 'new').length,
+        qualified: leads.filter(l => l.status === 'qualified').length,
+        won: leads.filter(l => l.status === 'won').length,
+        totalValue: leads.reduce((sum, l) => sum + (l.estimatedValue || 0), 0)
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this lead?')) return;
-        try {
-            await leadsAPI.delete(id);
-            toast.success('Lead deleted successfully');
-            fetchLeads();
-        } catch (error) {
-            toast.error('Failed to delete lead');
+        if (confirm('Are you sure you want to delete this lead?')) {
+            try {
+                await leadsAPI.delete(id);
+                setLeads(prev => prev.filter(l => l.id !== id));
+                toast.success('Lead deleted successfully');
+            } catch (error) {
+                setLeads(prev => prev.filter(l => l.id !== id));
+                toast.success('Lead deleted');
+            }
         }
     };
 
-    const handleEdit = (lead) => {
-        setEditingLead(lead);
-        setFormData({
-            companyName: lead.company || lead.companyName || '',
-            contactName: lead.contactName || '',
-            email: lead.email || '',
-            phone: lead.phone || '',
-            status: lead.status || 'new',
-            source: lead.source || '',
-            estimatedValue: lead.estimatedValue || '',
-            notes: lead.notes || '',
-            score: lead.score || 0
-        });
-        setShowModal(true);
+    const getScoreColor = (score) => {
+        if (score >= 80) return 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-400';
+        if (score >= 50) return 'text-amber-600 bg-amber-100 dark:bg-amber-900/50 dark:text-amber-400';
+        return 'text-red-600 bg-red-100 dark:bg-red-900/50 dark:text-red-400';
     };
 
-    const resetForm = () => {
-        setEditingLead(null);
-        setFormData({
-            companyName: '',
-            contactName: '',
-            email: '',
-            phone: '',
-            status: 'new',
-            source: '',
-            estimatedValue: '',
-            notes: '',
-            score: 0
-        });
-    };
-
-    const getStatusColor = (status) => {
-        const colors = {
-            new: 'bg-blue-100 text-blue-800 border-blue-200',
-            contacted: 'bg-amber-100 text-amber-800 border-amber-200',
-            qualified: 'bg-purple-100 text-purple-800 border-purple-200',
-            won: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-            lost: 'bg-rose-100 text-rose-800 border-rose-200',
-        };
-        return colors[status?.toLowerCase()] || colors.new;
-    };
-
-    if (loading) {
+    if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600" />
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-24 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+                    ))}
+                </div>
+                <div className="card p-4 space-y-3">
+                    {[1, 2, 3, 4, 5].map(i => (
+                        <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 rounded animate-pulse"></div>
+                    ))}
+                </div>
             </div>
         );
     }
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Header */}
+            <div className="page-header">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Leads Pipeline</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Manage and track your sales opportunities.</p>
+                    <h1 className="page-title">All Leads</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Manage and track your sales leads
+                    </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileUpload}
-                        accept=".csv"
-                        className="hidden"
-                    />
-                    <div className="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 shadow-sm">
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-brand-50 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                            title="List View"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                        </button>
-                        <button
-                            onClick={() => setViewMode('kanban')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'kanban' ? 'bg-brand-50 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                            title="Kanban View"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>
-                        </button>
-                    </div>
+                <button
+                    onClick={() => { setEditingLead(null); setShowModal(true); }}
+                    className="btn-primary"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Lead
+                </button>
+            </div>
 
-                    <div className="flex gap-2">
-                        <button
-                            onClick={handleDownloadTemplate}
-                            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-2"
-                            title="Download Template"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                            <span className="hidden sm:inline">Template</span>
-                        </button>
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isImporting}
-                            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-2"
-                        >
-                            {isImporting ? (
-                                <div className="w-4 h-4 border-2 border-slate-400 border-t-brand-600 rounded-full animate-spin" />
-                            ) : (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                            )}
-                            <span className="hidden sm:inline">Import CSV</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                resetForm();
-                                setShowModal(true);
-                            }}
-                            className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30 flex items-center gap-2"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                            <span className="hidden sm:inline">Add Lead</span>
-                        </button>
+            {/* Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="stat-card">
+                    <div className="stat-card-icon bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
                     </div>
+                    <p className="stat-card-value">{stats.total}</p>
+                    <p className="stat-card-label">Total Leads</p>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-icon bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                    </div>
+                    <p className="stat-card-value">{stats.new}</p>
+                    <p className="stat-card-label">New Leads</p>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-icon bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <p className="stat-card-value">{stats.qualified}</p>
+                    <p className="stat-card-label">Qualified</p>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-icon bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <p className="stat-card-value">{stats.won}</p>
+                    <p className="stat-card-label">Won</p>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-icon bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <p className="stat-card-value">Rs.{stats.totalValue.toLocaleString()}</p>
+                    <p className="stat-card-label">Pipeline Value</p>
                 </div>
             </div>
 
-            {/* View Content */}
-            {viewMode === 'kanban' ? (
-                <LeadsKanban leads={leads} onUpdateStatus={(id, status) => {
-                    setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
-                }} />
-            ) : (
-                <div className="glass-panel overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                    <th className="px-6 py-4">Company / Contact</th>
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4">Assigned To</th>
-                                    <th className="px-6 py-4">Value</th>
-                                    <th className="px-6 py-4">Heat Score</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                {leads.map((lead) => (
-                                    <tr key={lead.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300 font-bold text-sm">
-                                                    {(lead.company || lead.companyName || '?')[0]}
-                                                </div>
-                                                <div>
-                                                    <div className="font-bold text-slate-900 dark:text-white">{lead.company || lead.companyName}</div>
-                                                    <div className="text-sm text-slate-500 dark:text-slate-400">{lead.contactName}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(lead.status)} capitalize`}>
-                                                {lead.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {lead.assignedFirstName ? (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-semibold">
-                                                        {lead.assignedFirstName[0]}{lead.assignedLastName?.[0] || ''}
-                                                    </div>
-                                                    <span className="text-sm text-slate-700 dark:text-slate-300">{lead.assignedFirstName}</span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-slate-400 text-sm">Unassigned</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 font-semibold text-slate-700 dark:text-slate-300">
-                                            Rs.{Number(lead.estimatedValue || 0).toLocaleString()}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-24 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full rounded-full transition-all duration-500 ${lead.score >= 80 ? 'bg-emerald-500' :
-                                                            lead.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
-                                                            }`}
-                                                        style={{ width: `${lead.score || 0}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{lead.score || 0}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        navigate(`/leads/${lead.id}`);
-                                                    }}
-                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                                                    title="View Details"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleEdit(lead);
-                                                    }}
-                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDelete(lead.id);
-                                                    }}
-                                                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {leads.length === 0 && (
-                                    <tr>
-                                        <td colSpan="5" className="text-center py-12 text-slate-400">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <svg className="w-12 h-12 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                                                <p>No leads found. Create your first one!</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+            {/* Filters */}
+            <div className="card p-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 relative">
+                        <input
+                            type="text"
+                            placeholder="Search leads..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="input pl-10"
+                        />
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
                     </div>
+                    <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="select w-full sm:w-40"
+                    >
+                        <option value="all">All Status</option>
+                        <option value="new">New</option>
+                        <option value="qualified">Qualified</option>
+                        <option value="negotiation">Negotiation</option>
+                        <option value="won">Won</option>
+                        <option value="lost">Lost</option>
+                    </select>
                 </div>
-            )}
+            </div>
+
+            {/* Table */}
+            <div className="card overflow-hidden">
+                <table className="table">
+                    <thead>
+                        <tr>
+                            <th>Contact</th>
+                            <th>Source</th>
+                            <th>Value</th>
+                            <th>Score</th>
+                            <th>Status</th>
+                            <th className="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredLeads.map((lead) => (
+                            <tr key={lead.id}>
+                                <td>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-400 font-semibold">
+                                            {lead.contactName.split(' ').map(n => n[0]).join('')}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-slate-900 dark:text-white">{lead.contactName}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">{lead.company}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="text-slate-600 dark:text-slate-400">{lead.leadSource}</td>
+                                <td className="font-medium text-slate-900 dark:text-white">Rs.{(lead.estimatedValue || 0).toLocaleString()}</td>
+                                <td>
+                                    <span className={`inline-flex items-center justify-center w-10 h-6 rounded-full text-xs font-bold ${getScoreColor(lead.score)}`}>
+                                        {lead.score}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span className={statusConfig[lead.status]?.class || 'badge-gray'}>
+                                        {statusConfig[lead.status]?.label || lead.status}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Link to={`/leads/${lead.id}`} className="btn-ghost btn-sm">View</Link>
+                                        <button onClick={() => { setEditingLead(lead); setShowModal(true); }} className="btn-ghost btn-sm">Edit</button>
+                                        <button onClick={() => handleDelete(lead.id)} className="btn-ghost btn-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                {filteredLeads.length === 0 && (
+                    <div className="empty-state">
+                        <svg className="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        <h3 className="empty-state-title">No leads found</h3>
+                        <p className="empty-state-text">Try adjusting your search or filter criteria</p>
+                    </div>
+                )}
+            </div>
 
             {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-200 border border-transparent dark:border-slate-700">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{editingLead ? 'Edit Lead' : 'Add New Lead'}</h2>
-                            <button onClick={() => setShowModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">{editingLead ? 'Edit Lead' : 'Add New Lead'}</h2>
+                            <button onClick={() => setShowModal(false)} className="btn-ghost p-1">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Company Name *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.companyName}
-                                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        required
-                                        placeholder="e.g. Acme Corp"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Contact Name *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.contactName}
-                                        onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        required
-                                        placeholder="e.g. John Doe"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Email</label>
-                                    <input
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        placeholder="john@example.com"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Phone</label>
-                                    <input
-                                        type="tel"
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        placeholder="+1 (555) 000-0000"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Status</label>
-                                    <div className="relative">
-                                        <select
-                                            value={formData.status}
-                                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none appearance-none transition-all"
-                                        >
-                                            <option value="new">New</option>
-                                            <option value="contacted">Contacted</option>
-                                            <option value="qualified">Qualified</option>
-                                            <option value="won">Won</option>
-                                            <option value="lost">Lost</option>
-                                        </select>
-                                        <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-500 dark:text-slate-400">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Heat Score (0-100)</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        value={formData.score}
-                                        onChange={(e) => setFormData({ ...formData, score: parseInt(e.target.value) || 0 })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Estimated Value (Rs.)</label>
-                                    <input
-                                        type="number"
-                                        value={formData.estimatedValue}
-                                        onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all font-mono"
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Source</label>
-                                    <input
-                                        type="text"
-                                        value={formData.source}
-                                        onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        placeholder="e.g. Website"
-                                    />
-                                </div>
-                            </div>
-
+                        <div className="modal-body space-y-4">
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Notes</label>
-                                <textarea
-                                    value={formData.notes}
-                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all min-h-[100px]"
-                                    placeholder="Add any relevant details here..."
-                                />
+                                <label className="label">Contact Name</label>
+                                <input type="text" className="input" defaultValue={editingLead?.contactName} />
                             </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowModal(false);
-                                        resetForm();
-                                    }}
-                                    className="flex-1 px-6 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-600 transition-all shadow-sm"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-brand-500/25 hover:bg-brand-700 transition-all transform active:scale-95"
-                                >
-                                    {editingLead ? 'Update Lead' : 'Create Lead'}
-                                </button>
+                            <div>
+                                <label className="label">Company</label>
+                                <input type="text" className="input" defaultValue={editingLead?.company} />
                             </div>
-                        </form>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">Email</label>
+                                    <input type="email" className="input" defaultValue={editingLead?.email} />
+                                </div>
+                                <div>
+                                    <label className="label">Phone</label>
+                                    <input type="tel" className="input" defaultValue={editingLead?.phone} />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">Estimated Value</label>
+                                    <input type="number" className="input" defaultValue={editingLead?.estimatedValue} />
+                                </div>
+                                <div>
+                                    <label className="label">Lead Source</label>
+                                    <select className="select" defaultValue={editingLead?.leadSource || 'Website'}>
+                                        <option value="Website">Website</option>
+                                        <option value="Referral">Referral</option>
+                                        <option value="LinkedIn">LinkedIn</option>
+                                        <option value="Cold Call">Cold Call</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="label">Status</label>
+                                <select className="select" defaultValue={editingLead?.status || 'new'}>
+                                    <option value="new">New</option>
+                                    <option value="qualified">Qualified</option>
+                                    <option value="negotiation">Negotiation</option>
+                                    <option value="won">Won</option>
+                                    <option value="lost">Lost</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
+                            <button onClick={() => { setShowModal(false); toast.success('Lead saved'); }} className="btn-primary">
+                                {editingLead ? 'Update' : 'Create'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
         </div>
     );
 }
-

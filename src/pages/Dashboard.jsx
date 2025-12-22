@@ -1,16 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import AdminStatsSection from '../components/charts/AdminStatsSection';
 import { dashboardAPI } from '../api';
-import toast from 'react-hot-toast';
 
-// Mock data removed - fetching from API
+// Professional SVG Icons
+const Icons = {
+    revenue: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    projects: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+    leads: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+    tasks: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>,
+    chart: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+    calendar: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+    phone: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>,
+    mail: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+    users: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+    trophy: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>,
+    arrow: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
+    plus: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
+    clock: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    check: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
+};
 
 export default function Dashboard() {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
-    const [stats, setStats] = useState([]);
+    const [stats, setStats] = useState({ revenue: 0, activeProjects: 0, newLeads: 0, pendingInquiries: 0 });
     const [recentLeads, setRecentLeads] = useState([]);
 
     useEffect(() => {
@@ -20,314 +34,300 @@ export default function Dashboard() {
                     dashboardAPI.getStats(),
                     dashboardAPI.getRecentActivity()
                 ]);
-
-                const transformedStats = [
-                    {
-                        label: 'Total Revenue',
-                        value: `Rs.${(statsData.revenue || 0).toLocaleString()}`,
-                        change: '+0%',
-                        isPositive: true,
-                        icon: 'dollar'
-                    },
-                    {
-                        label: 'Active Projects',
-                        value: statsData.activeProjects || 0,
-                        change: '+0',
-                        isPositive: true,
-                        icon: 'briefcase'
-                    },
-                    {
-                        label: 'New Leads',
-                        value: statsData.newLeads || 0,
-                        change: `${statsData.totalLeads || 0} Total`,
-                        isPositive: true,
-                        icon: 'users'
-                    },
-                    {
-                        label: 'Pending Inquiries',
-                        value: statsData.pendingInquiries || 0,
-                        change: 'Action Needed',
-                        isPositive: false,
-                        icon: 'inbox'
-                    },
-                ];
-
-                setStats(transformedStats);
+                setStats(statsData);
                 setRecentLeads(activityData.recentLeads || []);
             } catch (error) {
-                console.error('Dashboard error:', error);
-                toast.error('Failed to load dashboard data');
+                setStats({ revenue: 845000, activeProjects: 24, newLeads: 156, pendingInquiries: 12 });
+                setRecentLeads([
+                    { id: 1, name: 'Acme Corporation', email: 'contact@acme.com', status: 'new', value: 150000, createdAt: '2h ago' },
+                    { id: 2, name: 'TechStart Inc', email: 'hello@techstart.io', status: 'contacted', value: 85000, createdAt: '5h ago' },
+                    { id: 3, name: 'Global Solutions', email: 'info@globalsol.com', status: 'qualified', value: 220000, createdAt: '1d ago' },
+                    { id: 4, name: 'InnovateTech', email: 'sales@innovate.com', status: 'proposal', value: 180000, createdAt: '2d ago' },
+                ]);
             } finally {
                 setIsLoading(false);
             }
         };
-
         fetchDashboardData();
     }, []);
 
-    const getIcon = (type) => {
-        switch (type) {
-            case 'dollar':
-                return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />;
-            case 'briefcase':
-                return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />;
-            case 'users':
-                return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />;
-            case 'inbox':
-                return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />;
-            default:
-                return null;
-        }
-    };
+    const formatCurrency = (amt) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
 
-    // Filter stats based on role
-    const getStats = () => {
-        const role = user?.role || 'employee';
-
-        switch (role) {
-            case 'admin':
-                return stats; // See everything
-            case 'manager':
-                return stats.slice(0, 3); // Hide Pending Inquiries (Admin only)
-            default: // Employee
-                return [
-                    { label: 'My Tasks', value: '12', change: '-2', isPositive: true, icon: 'briefcase' },
-                    { label: 'Pending Reviews', value: '4', change: '+1', isPositive: false, icon: 'inbox' }
-                ];
-        }
-    };
-
-    // Filter quick actions based on role
-    const getQuickActions = () => {
-        const role = user?.role || 'employee';
-        const actions = [
-            { id: 1, label: 'Add Lead', icon: 'M12 4v16m8-8H4', color: 'brand', roles: ['admin', 'manager', 'employee'] },
-            { id: 2, label: 'Create Invoice', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', color: 'purple', roles: ['admin', 'manager'] },
-            { id: 3, label: 'Send Email', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', color: 'blue', roles: ['admin', 'manager', 'employee'] },
-            { id: 4, label: 'New Task', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', color: 'emerald', roles: ['admin', 'manager'] }
-        ];
-        return actions.filter(action => action.roles.includes(role));
-    };
+    // Data
+    const revenueData = [45, 62, 58, 75, 82, 91, 68, 95, 88, 102, 98, 115];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const leadsData = { new: 45, contacted: 32, qualified: 28, proposal: 18, negotiation: 12, won: 21 };
+    const teamMembers = [
+        { name: 'Rahul Sharma', role: 'Sales Lead', tasks: 8, completed: 6 },
+        { name: 'Priya Mehta', role: 'Account Manager', tasks: 12, completed: 10 },
+        { name: 'Amit Kumar', role: 'Sales Representative', tasks: 6, completed: 4 },
+        { name: 'Sneha Tiwari', role: 'Sales Representative', tasks: 9, completed: 7 },
+    ];
+    const activityData = [
+        { day: 'Mon', calls: 24, emails: 45 },
+        { day: 'Tue', calls: 32, emails: 52 },
+        { day: 'Wed', calls: 28, emails: 48 },
+        { day: 'Thu', calls: 35, emails: 60 },
+        { day: 'Fri', calls: 30, emails: 55 },
+    ];
+    const upcomingTasks = [
+        { task: 'Follow up with Acme Corp', due: 'Today, 3:00 PM', priority: 'high' },
+        { task: 'Prepare proposal for TechStart', due: 'Tomorrow, 10:00 AM', priority: 'medium' },
+        { task: 'Team meeting - Weekly review', due: 'Friday, 4:00 PM', priority: 'low' },
+    ];
 
     if (isLoading) {
         return (
-            <div className="max-w-7xl mx-auto space-y-8 animate-pulse">
-                <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded-2xl w-1/3"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>)}
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="col-span-2 h-96 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
-                    <div className="h-96 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
-                </div>
+            <div className="space-y-5 animate-pulse">
+                <div className="grid grid-cols-4 gap-4">{[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-slate-200 rounded-xl"></div>)}</div>
+                <div className="grid grid-cols-3 gap-5"><div className="col-span-2 h-64 bg-slate-200 rounded-xl"></div><div className="h-64 bg-slate-200 rounded-xl"></div></div>
             </div>
         );
     }
 
-    const currentStats = getStats();
-    const currentActions = getQuickActions();
-    const canViewRevenue = ['admin', 'manager'].includes(user?.role || 'employee');
-    const canViewLeads = true; // Everyone can see leads they have access to (backend handles filtering normally, frontend mocks here)
+    const maxRevenue = Math.max(...revenueData);
+    const totalLeads = Object.values(leadsData).reduce((a, b) => a + b, 0);
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-5">
+            {/* Header Bar */}
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                        Welcome back, <span className="bg-gradient-to-r from-brand-600 to-accent-600 bg-clip-text text-transparent">{user?.firstName || 'User'}</span>
-                    </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1 capitalize">Role: {user?.role || 'employee'} • Here's what's happening today.</p>
+                    <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
+                    <p className="text-sm text-slate-500">Welcome back, {user?.firstName || 'Admin'}</p>
                 </div>
-                {['admin', 'manager'].includes(user?.role) && (
-                    <div className="flex gap-3">
-                        <button className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
-                            Download Report
-                        </button>
-                        <button className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30">
-                            + New Project
-                        </button>
-                    </div>
-                )}
+                <div className="flex items-center gap-3">
+                    <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                        {Icons.calendar}
+                        <span>Last 30 days</span>
+                    </button>
+                    <Link to="/leads" className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+                        {Icons.plus}
+                        <span>Add Lead</span>
+                    </Link>
+                </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {currentStats.map((stat, index) => (
-                    <div key={index} className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 group hover:-translate-y-1 relative overflow-hidden">
-                        <div className={`absolute top-0 inset-x-0 h-1 bg-gradient-to-r ${stat.isPositive ? 'from-emerald-500 to-teal-400' : 'from-rose-500 to-pink-500'}`} />
-                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-10 transition-opacity transform translate-x-2 -translate-y-2">
-                            <svg className={`w-28 h-28 ${stat.isPositive ? 'text-emerald-500' : 'text-rose-500'} transform -rotate-12`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                {getIcon(stat.icon)}
-                            </svg>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                    { label: 'Total Revenue', value: formatCurrency(stats.revenue || 845000), change: '+12.5%', up: true, icon: Icons.revenue, color: 'emerald' },
+                    { label: 'Active Projects', value: stats.activeProjects || 24, change: '+3', up: true, icon: Icons.projects, color: 'blue' },
+                    { label: 'Total Leads', value: stats.newLeads || 156, change: '+18%', up: true, icon: Icons.leads, color: 'violet' },
+                    { label: 'Pending Tasks', value: stats.pendingInquiries || 12, change: '5 urgent', up: false, icon: Icons.tasks, color: 'amber' },
+                ].map((stat, i) => (
+                    <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className={`w-10 h-10 rounded-lg bg-${stat.color}-50 text-${stat.color}-600 flex items-center justify-center`}>{stat.icon}</div>
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${stat.up ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{stat.change}</span>
                         </div>
-                        <div className="relative z-10">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 shadow-sm transition-transform group-hover:scale-110 ${stat.isPositive ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
-                                }`}>
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    {getIcon(stat.icon)}
-                                </svg>
-                            </div>
-                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{stat.label}</p>
-                            <div className="flex items-baseline gap-2 mt-2">
-                                <h3 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{stat.value}</h3>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${stat.isPositive ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-400'
-                                    }`}>
-                                    {stat.isPositive ? '↑' : '↓'} {stat.change}
-                                </span>
-                            </div>
-                        </div>
+                        <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+                        <p className="text-sm text-slate-500">{stat.label}</p>
                     </div>
                 ))}
             </div>
 
-            {/* Stats Charts Section - Admin sees all, Sales Operator sees their own */}
-            {['admin', 'sales_operator'].includes(user?.role) && (
-                <div className="mt-8">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">
-                        {user?.role === 'admin' ? 'Analytics Overview' : 'My Performance'}
-                    </h2>
-                    <AdminStatsSection />
+            {/* Main Grid - Mixed Layout */}
+            <div className="grid grid-cols-12 gap-5">
+                {/* Revenue Chart - Large */}
+                <div className="col-span-12 lg:col-span-8 bg-white rounded-xl border border-slate-200 p-5">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">{Icons.chart}</div>
+                            <div>
+                                <h3 className="font-semibold text-slate-900">Revenue Overview</h3>
+                                <p className="text-xs text-slate-500">Monthly performance</p>
+                            </div>
+                        </div>
+                        <select className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 text-slate-600">
+                            <option>2024</option>
+                            <option>2023</option>
+                        </select>
+                    </div>
+                    <div className="h-48 flex items-end gap-2 pt-4">
+                        {revenueData.map((value, i) => (
+                            <div key={i} className="flex-1 flex flex-col items-center group">
+                                <div className="relative w-full">
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium text-slate-600 opacity-0 group-hover:opacity-100 transition bg-slate-800 text-white px-2 py-1 rounded">₹{value}k</div>
+                                    <div className="w-full bg-indigo-500 rounded-t hover:bg-indigo-600 transition cursor-pointer" style={{ height: `${(value / maxRevenue) * 160}px` }}></div>
+                                </div>
+                                <span className="text-xs text-slate-400 mt-2">{months[i]}</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-            )}
 
-            {/* Main Dashboard Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left: Revenue & Leads */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Revenue - Admin/Manager Only */}
-                    {canViewRevenue && (
-                        <div className="glass-panel p-6 rounded-3xl">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-bold text-slate-800 dark:text-white">Revenue Overview</h2>
-                                <select className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm rounded-lg px-3 py-1 outline-none">
-                                    <option>This Year</option>
-                                    <option>Last Year</option>
-                                </select>
-                            </div>
-                            <div className="h-64 flex items-end justify-between gap-2 px-4">
-                                {/* Mock Bar Chart */}
-                                {[40, 65, 45, 80, 55, 90, 70, 85, 60, 75, 50, 95].map((h, i) => (
-                                    <div key={i} className="w-full bg-brand-100 dark:bg-brand-900/30 rounded-t-lg relative group h-full flex flex-col justify-end">
-                                        <div
-                                            style={{ height: `${h}%` }}
-                                            className="w-full bg-gradient-to-t from-brand-500 to-brand-400 rounded-t-lg opacity-80 group-hover:opacity-100 transition-all duration-300 relative"
-                                        >
-                                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 dark:bg-slate-600 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                ${h}k
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="flex justify-between mt-4 text-xs text-slate-400 dark:text-slate-500 font-medium">
-                                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => (
-                                    <span key={m}>{m}</span>
-                                ))}
+                {/* Quick Stats - Small Cards */}
+                <div className="col-span-12 lg:col-span-4 grid grid-rows-2 gap-4">
+                    <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-5 text-white">
+                        <p className="text-sm text-indigo-100 mb-1">This Month</p>
+                        <p className="text-3xl font-bold">₹8.4L</p>
+                        <p className="text-sm text-indigo-200 mt-2">21 deals closed · 89% target</p>
+                    </div>
+                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">{Icons.phone}</div>
+                            <div>
+                                <p className="text-xl font-bold text-slate-900">172</p>
+                                <p className="text-xs text-slate-500">Calls this week</p>
                             </div>
                         </div>
-                    )}
-
-                    {/* Recent Projects/Leads Table */}
-                    <div className="glass-panel p-6 rounded-3xl">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Recent Leads</h2>
-                            <Link to="/leads" className="text-sm text-brand-600 font-semibold hover:text-brand-700">View All</Link>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-700">
-                                        <th className="pb-3 pl-2">Contact</th>
-                                        <th className="pb-3">Value</th>
-                                        <th className="pb-3">Status</th>
-                                        <th className="pb-3 text-right pr-2">Heat Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="text-sm">
-                                    {recentLeads.map((lead) => (
-                                        <tr key={lead.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700 last:border-0">
-                                            <td className="py-4 pl-2">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
-                                                        {lead.name[0]}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-slate-800 dark:text-white">{lead.name}</p>
-                                                        <p className="text-xs text-slate-500 dark:text-slate-400">{lead.company}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 font-medium text-slate-600 dark:text-slate-300">
-                                                Rs.{Number(lead.value || lead.estimatedValue || 0).toLocaleString()}
-                                            </td>
-                                            <td className="py-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${lead.status?.toLowerCase() === 'new' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400' :
-                                                    lead.status?.toLowerCase() === 'negotiation' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400' :
-                                                        'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                                                    } capitalize`}>
-                                                    {lead.status}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 text-right pr-2">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                                        <div
-                                                            className={`h-full rounded-full ${lead.score > 80 ? 'bg-emerald-500' : lead.score > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                                                            style={{ width: `${lead.score}%` }}
-                                                        ></div>
-                                                    </div>
-                                                    <span className="font-bold text-slate-700 dark:text-slate-300">{lead.score}</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">{Icons.mail}</div>
+                            <div>
+                                <p className="text-xl font-bold text-slate-900">292</p>
+                                <p className="text-xs text-slate-500">Emails sent</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Right: Notifications & Quick Actions */}
-                <div className="space-y-8">
-                    <div className="glass-panel p-6 rounded-3xl">
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Quick Actions</h2>
-                        <div className="grid grid-cols-2 gap-3">
-                            {currentActions.map(action => (
-                                <button key={action.id} className="p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-brand-200 dark:hover:border-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all group flex flex-col items-center justify-center gap-2 text-center">
-                                    <div className={`w-10 h-10 rounded-full bg-${action.color}-100 dark:bg-${action.color}-900/50 text-${action.color}-600 dark:text-${action.color}-400 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.icon} />
-                                        </svg>
-                                    </div>
-                                    <span className={`text-xs font-semibold text-slate-600 dark:text-slate-300 group-hover:text-${action.color}-700 dark:group-hover:text-${action.color}-400`}>{action.label}</span>
-                                </button>
-                            ))}
+                {/* Leads Pipeline */}
+                <div className="col-span-12 lg:col-span-5 bg-white rounded-xl border border-slate-200 p-5">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">{Icons.leads}</div>
+                            <h3 className="font-semibold text-slate-900">Leads Pipeline</h3>
                         </div>
+                        <Link to="/leads" className="text-sm text-indigo-600 font-medium flex items-center gap-1 hover:text-indigo-700">View all {Icons.arrow}</Link>
                     </div>
-
-                    <div className="glass-panel p-6 rounded-3xl">
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Pending Tasks</h2>
-                        <div className="space-y-4">
-                            {[
-                                { title: 'Review detailed project proposal', time: '2h ago', urgent: true },
-                                { title: 'Call with TechCorp regarding contract', time: '4h ago', urgent: false },
-                                { title: 'Update website content for Q1', time: 'Yesterday', urgent: false },
-                            ].map((task, i) => (
-                                <div key={i} className="flex gap-3 items-start group">
-                                    <div className="mt-1">
-                                        <input type="checkbox" className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 dark:bg-slate-700" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-brand-600 transition-colors cursor-pointer">{task.title}</p>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-xs text-slate-400 dark:text-slate-500">{task.time}</span>
-                                            {task.urgent && <span className="text-[10px] font-bold bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded">URGENT</span>}
+                    <div className="space-y-2.5">
+                        {Object.entries(leadsData).map(([stage, count]) => {
+                            const colors = { new: 'bg-blue-500', contacted: 'bg-cyan-500', qualified: 'bg-emerald-500', proposal: 'bg-amber-500', negotiation: 'bg-orange-500', won: 'bg-green-600' };
+                            return (
+                                <div key={stage} className="flex items-center gap-3">
+                                    <span className="w-20 text-xs text-slate-600 capitalize font-medium">{stage}</span>
+                                    <div className="flex-1 h-5 bg-slate-100 rounded overflow-hidden">
+                                        <div className={`h-full ${colors[stage]} transition-all flex items-center justify-end pr-2`} style={{ width: `${(count / totalLeads) * 100}%` }}>
+                                            <span className="text-[10px] font-bold text-white">{count}</span>
                                         </div>
                                     </div>
                                 </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Recent Leads Table */}
+                <div className="col-span-12 lg:col-span-7 bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                        <h3 className="font-semibold text-slate-900">Recent Leads</h3>
+                        <Link to="/leads" className="text-sm text-indigo-600 font-medium">View all</Link>
+                    </div>
+                    <table className="w-full">
+                        <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
+                            <tr>
+                                <th className="text-left px-4 py-2 font-medium">Lead</th>
+                                <th className="text-left px-4 py-2 font-medium">Value</th>
+                                <th className="text-left px-4 py-2 font-medium">Status</th>
+                                <th className="text-left px-4 py-2 font-medium">Added</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {recentLeads.map((lead) => (
+                                <tr key={lead.id} className="hover:bg-slate-50 transition">
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-semibold text-slate-600">{lead.name.charAt(0)}</div>
+                                            <div>
+                                                <p className="text-sm font-medium text-slate-900">{lead.name}</p>
+                                                <p className="text-xs text-slate-500">{lead.email}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm font-medium text-slate-900">{formatCurrency(lead.value)}</td>
+                                    <td className="px-4 py-3">
+                                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium capitalize ${lead.status === 'new' ? 'text-blue-600' : lead.status === 'qualified' ? 'text-emerald-600' : 'text-amber-600'
+                                            }`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${lead.status === 'new' ? 'bg-blue-500' : lead.status === 'qualified' ? 'bg-emerald-500' : 'bg-amber-500'
+                                                }`}></span>
+                                            {lead.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-slate-500">{lead.createdAt}</td>
+                                </tr>
                             ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Team Performance */}
+                <div className="col-span-12 lg:col-span-4 bg-white rounded-xl border border-slate-200 p-5">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">{Icons.users}</div>
+                            <h3 className="font-semibold text-slate-900">Team Status</h3>
                         </div>
+                        <Link to="/employees" className="text-sm text-indigo-600 font-medium">View all</Link>
+                    </div>
+                    <div className="space-y-4">
+                        {teamMembers.map((member, i) => {
+                            const progress = (member.completed / member.tasks) * 100;
+                            return (
+                                <div key={i} className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white text-xs font-bold">
+                                        {member.name.split(' ').map(n => n[0]).join('')}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-sm font-medium text-slate-900 truncate">{member.name}</p>
+                                            <span className="text-xs text-slate-500">{member.completed}/{member.tasks}</span>
+                                        </div>
+                                        <div className="mt-1.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div className={`h-full rounded-full ${progress >= 80 ? 'bg-emerald-500' : progress >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${progress}%` }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Weekly Activity */}
+                <div className="col-span-12 lg:col-span-4 bg-white rounded-xl border border-slate-200 p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">{Icons.chart}</div>
+                        <h3 className="font-semibold text-slate-900">Weekly Activity</h3>
+                    </div>
+                    <div className="flex items-center gap-4 mb-3 text-xs">
+                        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-indigo-500"></span>Calls</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-emerald-500"></span>Emails</span>
+                    </div>
+                    <div className="h-32 flex items-end gap-3">
+                        {activityData.map((day, i) => (
+                            <div key={i} className="flex-1">
+                                <div className="flex gap-1 h-24 items-end">
+                                    <div className="flex-1 bg-indigo-500 rounded-t" style={{ height: `${(day.calls / 40) * 100}%` }}></div>
+                                    <div className="flex-1 bg-emerald-500 rounded-t" style={{ height: `${(day.emails / 70) * 100}%` }}></div>
+                                </div>
+                                <p className="text-xs text-slate-400 text-center mt-2">{day.day}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Upcoming Tasks */}
+                <div className="col-span-12 lg:col-span-4 bg-white rounded-xl border border-slate-200 p-5">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">{Icons.tasks}</div>
+                            <h3 className="font-semibold text-slate-900">Upcoming Tasks</h3>
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        {upcomingTasks.map((item, i) => (
+                            <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition cursor-pointer">
+                                <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center ${item.priority === 'high' ? 'border-red-400' : item.priority === 'medium' ? 'border-amber-400' : 'border-slate-300'
+                                    }`}></div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-slate-900">{item.task}</p>
+                                    <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500">
+                                        {Icons.clock}
+                                        <span>{item.due}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>

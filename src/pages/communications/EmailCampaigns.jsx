@@ -1,0 +1,194 @@
+import { useState } from 'react';
+import toast from 'react-hot-toast';
+
+const mockCampaigns = [
+    { id: 1, name: 'Q4 Product Launch', status: 'active', sent: 1250, opened: 856, clicked: 234, startDate: '2024-12-15', endDate: '2024-12-31' },
+    { id: 2, name: 'Holiday Promotion', status: 'completed', sent: 2500, opened: 1875, clicked: 520, startDate: '2024-12-01', endDate: '2024-12-20' },
+    { id: 3, name: 'New Year Campaign', status: 'scheduled', sent: 0, opened: 0, clicked: 0, startDate: '2024-12-28', endDate: '2025-01-15' },
+    { id: 4, name: 'Customer Feedback', status: 'draft', sent: 0, opened: 0, clicked: 0, startDate: null, endDate: null },
+];
+
+const statusStyles = {
+    active: 'badge-success',
+    completed: 'badge-gray',
+    scheduled: 'badge-primary',
+    draft: 'badge-warning'
+};
+
+export default function EmailCampaigns() {
+    const [campaigns] = useState(mockCampaigns);
+    const [showModal, setShowModal] = useState(false);
+
+    const stats = {
+        total: campaigns.length,
+        active: campaigns.filter(c => c.status === 'active').length,
+        totalSent: campaigns.reduce((sum, c) => sum + c.sent, 0),
+        avgOpenRate: Math.round(campaigns.reduce((sum, c) => sum + (c.sent > 0 ? (c.opened / c.sent * 100) : 0), 0) / campaigns.filter(c => c.sent > 0).length) || 0
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="page-header">
+                <div>
+                    <h1 className="page-title">Email Campaigns</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Create and track email marketing campaigns
+                    </p>
+                </div>
+                <button onClick={() => setShowModal(true)} className="btn-primary">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    New Campaign
+                </button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="stat-card">
+                    <div className="stat-card-icon bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                        </svg>
+                    </div>
+                    <p className="stat-card-value">{stats.total}</p>
+                    <p className="stat-card-label">Total Campaigns</p>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-icon bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <p className="stat-card-value">{stats.active}</p>
+                    <p className="stat-card-label">Active</p>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-icon bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <p className="stat-card-value">{stats.totalSent.toLocaleString()}</p>
+                    <p className="stat-card-label">Emails Sent</p>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-icon bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </div>
+                    <p className="stat-card-value">{stats.avgOpenRate}%</p>
+                    <p className="stat-card-label">Avg Open Rate</p>
+                </div>
+            </div>
+
+            {/* Campaigns Table */}
+            <div className="card overflow-hidden">
+                <table className="table">
+                    <thead>
+                        <tr>
+                            <th>Campaign</th>
+                            <th>Status</th>
+                            <th>Sent</th>
+                            <th>Open Rate</th>
+                            <th>Click Rate</th>
+                            <th>Duration</th>
+                            <th className="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {campaigns.map((campaign) => {
+                            const openRate = campaign.sent > 0 ? Math.round(campaign.opened / campaign.sent * 100) : 0;
+                            const clickRate = campaign.sent > 0 ? Math.round(campaign.clicked / campaign.sent * 100) : 0;
+
+                            return (
+                                <tr key={campaign.id}>
+                                    <td>
+                                        <p className="font-medium text-slate-900 dark:text-white">{campaign.name}</p>
+                                    </td>
+                                    <td>
+                                        <span className={statusStyles[campaign.status]}>{campaign.status}</span>
+                                    </td>
+                                    <td className="text-slate-600 dark:text-slate-400">{campaign.sent.toLocaleString()}</td>
+                                    <td>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full">
+                                                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${openRate}%` }}></div>
+                                            </div>
+                                            <span className="text-sm text-slate-600 dark:text-slate-400">{openRate}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full">
+                                                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${clickRate}%` }}></div>
+                                            </div>
+                                            <span className="text-sm text-slate-600 dark:text-slate-400">{clickRate}%</span>
+                                        </div>
+                                    </td>
+                                    <td className="text-sm text-slate-500 dark:text-slate-400">
+                                        {campaign.startDate ? `${campaign.startDate} - ${campaign.endDate || 'Ongoing'}` : '-'}
+                                    </td>
+                                    <td>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button className="btn-ghost btn-sm">View</button>
+                                            <button className="btn-ghost btn-sm">Edit</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Modal */}
+            {showModal && (
+                <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">New Campaign</h2>
+                            <button onClick={() => setShowModal(false)} className="btn-ghost p-1">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="modal-body space-y-4">
+                            <div>
+                                <label className="label">Campaign Name</label>
+                                <input type="text" className="input" placeholder="e.g., Summer Sale 2024" />
+                            </div>
+                            <div>
+                                <label className="label">Email Template</label>
+                                <select className="select">
+                                    <option value="">Select template</option>
+                                    <option value="1">Welcome Email</option>
+                                    <option value="2">Follow-up Reminder</option>
+                                    <option value="3">Meeting Confirmation</option>
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">Start Date</label>
+                                    <input type="date" className="input" />
+                                </div>
+                                <div>
+                                    <label className="label">End Date</label>
+                                    <input type="date" className="input" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
+                            <button onClick={() => { setShowModal(false); toast.success('Campaign created'); }} className="btn-primary">Create Campaign</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
