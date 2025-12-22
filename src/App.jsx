@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { TenantConfigProvider } from './contexts/TenantConfigContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/Login';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -33,6 +34,10 @@ import EmailCampaigns from './pages/communications/EmailCampaigns';
 import TeamChat from './pages/communications/TeamChat';
 import Chatbot from './pages/communications/Chatbot';
 import PushNotifications from './pages/communications/PushNotifications';
+
+// E-Commerce (loaded based on tenant config)
+import ProductsList from './pages/ecommerce/ProductsList';
+import OrdersList from './pages/ecommerce/OrdersList';
 
 function AppRoutes() {
   return (
@@ -75,6 +80,10 @@ function AppRoutes() {
             <Route path="communications/chatbot" element={<Chatbot />} />
             <Route path="communications/notifications" element={<PushNotifications />} />
           </Route>
+
+          {/* E-Commerce - Dynamic based on industry */}
+          <Route path="products" element={<ProductsList />} />
+          <Route path="orders" element={<OrdersList />} />
         </Route>
       </Route>
 
@@ -89,39 +98,41 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <AppRoutes />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#1e293b',
-                color: '#f8fafc',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                fontSize: '14px',
-              },
-              success: {
+          <TenantConfigProvider>
+            <AppRoutes />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
                 style: {
-                  background: '#059669',
+                  background: '#1e293b',
+                  color: '#f8fafc',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  fontSize: '14px',
                 },
-                iconTheme: {
-                  primary: '#ffffff',
-                  secondary: '#059669',
+                success: {
+                  style: {
+                    background: '#059669',
+                  },
+                  iconTheme: {
+                    primary: '#ffffff',
+                    secondary: '#059669',
+                  },
                 },
-              },
-              error: {
-                style: {
-                  background: '#dc2626',
+                error: {
+                  style: {
+                    background: '#dc2626',
+                  },
+                  iconTheme: {
+                    primary: '#ffffff',
+                    secondary: '#dc2626',
+                  },
+                  duration: 5000,
                 },
-                iconTheme: {
-                  primary: '#ffffff',
-                  secondary: '#dc2626',
-                },
-                duration: 5000,
-              },
-            }}
-          />
+              }}
+            />
+          </TenantConfigProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

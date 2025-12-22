@@ -1,6 +1,7 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useTenantConfig } from '../../contexts/TenantConfigContext';
 import { useState } from 'react';
 
 // Professional SVG Icons
@@ -102,14 +103,25 @@ const Icons = {
             <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
         </svg>
     ),
+    products: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+    ),
+    orders: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+        </svg>
+    ),
 };
 
 export default function Sidebar({ isOpen, setIsOpen }) {
     const { user, logout } = useAuth();
     const { toggleTheme, isDark } = useTheme();
+    const { hasModule, loading: configLoading } = useTenantConfig();
     const navigate = useNavigate();
     const location = useLocation();
-    const [expandedGroups, setExpandedGroups] = useState(['leads', 'communications']);
+    const [expandedGroups, setExpandedGroups] = useState(['leads', 'communications', 'ecommerce']);
 
     const handleLogout = () => {
         logout();
@@ -184,6 +196,17 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         ]
     };
 
+    // E-Commerce group (only for ecommerce industry)
+    const ecommerceGroup = {
+        name: 'E-Commerce',
+        icon: Icons.products,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [
+            { name: 'Products', path: '/products', icon: Icons.products },
+            { name: 'Orders', path: '/orders', icon: Icons.orders }
+        ]
+    };
+
     const userRole = user?.role || 'user';
 
     const filteredMainNav = mainNavItems.filter(item =>
@@ -192,6 +215,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
     const canViewLeads = leadsGroup.roles.includes(userRole);
     const canViewCommunications = communicationsGroup.roles.includes(userRole);
+    const canViewEcommerce = !configLoading && hasModule('products') && ecommerceGroup.roles.includes(userRole);
 
     const NavItem = ({ item, isSubItem = false }) => (
         <NavLink
@@ -219,8 +243,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 <button
                     onClick={() => toggleGroup(groupKey)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive && !isExpanded
-                            ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                         }`}
                 >
                     <div className="flex items-center gap-3">
@@ -306,6 +330,16 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                                 Communications
                             </p>
                             <NavGroup group={communicationsGroup} groupKey="communications" />
+                        </div>
+                    )}
+
+                    {/* E-Commerce Group (module-gated) */}
+                    {canViewEcommerce && (
+                        <div className="mt-6 space-y-1">
+                            <p className="px-3 mb-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                E-Commerce
+                            </p>
+                            <NavGroup group={ecommerceGroup} groupKey="ecommerce" />
                         </div>
                     )}
                 </nav>
