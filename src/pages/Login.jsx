@@ -11,33 +11,46 @@ export default function Login() {
     const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
-    // Redirect if already authenticated
+    // Check if already authenticated on mount only
     useEffect(() => {
-        console.log('[Login] Auth state changed:', { isAuthenticated });
+        console.log('[Login] Checking initial auth state:', { isAuthenticated });
         if (isAuthenticated) {
-            console.log('[Login] User is authenticated, redirecting to dashboard');
+            console.log('[Login] User is already authenticated, redirecting to dashboard');
             navigate('/dashboard', { replace: true });
         }
-    }, [isAuthenticated, navigate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run on mount, not on isAuthenticated change
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (loading) return; // Prevent double submission
+
         setLoading(true);
 
         console.log('[Login] Attempting login with:', { email });
-        const result = await login(email, password);
-        console.log('[Login] Login result:', result);
 
-        if (result.success) {
-            toast.success('Welcome back!');
-            console.log('[Login] Login successful, navigating to dashboard');
-            navigate('/dashboard', { replace: true });
-        } else {
-            toast.error(result.message || 'Invalid credentials');
-            console.log('[Login] Login failed:', result.message);
+        try {
+            const result = await login(email, password);
+            console.log('[Login] Login result:', result);
+
+            if (result.success) {
+                toast.success('Welcome back!');
+                console.log('[Login] Login successful, navigating to dashboard');
+                // Small delay to ensure toast is visible
+                setTimeout(() => {
+                    navigate('/dashboard', { replace: true });
+                }, 100);
+            } else {
+                toast.error(result.message || 'Invalid credentials');
+                console.log('[Login] Login failed:', result.message);
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error('[Login] Unexpected error:', error);
+            toast.error('An unexpected error occurred');
+            setLoading(false);
         }
-
-        setLoading(false);
     };
 
     return (

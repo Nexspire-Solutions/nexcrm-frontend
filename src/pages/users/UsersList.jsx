@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import Modal from '../../components/common/Modal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const mockUsers = [
     { id: 1, firstName: 'Admin', lastName: 'User', email: 'admin@company.com', role: 'admin', status: 'active', lastLogin: '2024-12-21 10:30' },
@@ -30,6 +32,8 @@ export default function UsersList() {
     const [filterRole, setFilterRole] = useState('all');
     const [showModal, setShowModal] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState(null);
 
     useEffect(() => {
         setTimeout(() => {
@@ -45,9 +49,15 @@ export default function UsersList() {
     });
 
     const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this user?')) {
-            setUsers(prev => prev.filter(u => u.id !== id));
+        setDeleteTargetId(id);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = () => {
+        if (deleteTargetId) {
+            setUsers(prev => prev.filter(u => u.id !== deleteTargetId));
             toast.success('User deleted successfully');
+            setDeleteTargetId(null);
         }
     };
 
@@ -146,7 +156,7 @@ export default function UsersList() {
                             <th>Role</th>
                             <th>Status</th>
                             <th>Last Login</th>
-                            <th className="text-right">Actions</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -179,7 +189,7 @@ export default function UsersList() {
                                     {user.lastLogin}
                                 </td>
                                 <td>
-                                    <div className="flex items-center justify-end gap-2">
+                                    <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => { setEditingUser(user); setShowModal(true); }}
                                             className="btn-ghost btn-sm"
@@ -210,67 +220,73 @@ export default function UsersList() {
                 )}
             </div>
 
-            {/* Modal */}
-            {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">{editingUser ? 'Edit User' : 'Add New User'}</h2>
-                            <button onClick={() => setShowModal(false)} className="btn-ghost p-1">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+            {/* User Modal */}
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title={editingUser ? 'Edit User' : 'Add New User'}
+                footer={
+                    <>
+                        <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
+                        <button onClick={() => { setShowModal(false); toast.success('User saved'); }} className="btn-primary">
+                            {editingUser ? 'Update' : 'Create'}
+                        </button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">First Name</label>
+                            <input type="text" className="input" defaultValue={editingUser?.firstName} />
                         </div>
-                        <div className="modal-body space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="label">First Name</label>
-                                    <input type="text" className="input" defaultValue={editingUser?.firstName} />
-                                </div>
-                                <div>
-                                    <label className="label">Last Name</label>
-                                    <input type="text" className="input" defaultValue={editingUser?.lastName} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="label">Email</label>
-                                <input type="email" className="input" defaultValue={editingUser?.email} />
-                            </div>
-                            {!editingUser && (
-                                <div>
-                                    <label className="label">Password</label>
-                                    <input type="password" className="input" placeholder="Enter password" />
-                                </div>
-                            )}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="label">Role</label>
-                                    <select className="select" defaultValue={editingUser?.role || 'user'}>
-                                        <option value="admin">Admin</option>
-                                        <option value="manager">Manager</option>
-                                        <option value="sales_operator">Sales Operator</option>
-                                        <option value="user">User</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="label">Status</label>
-                                    <select className="select" defaultValue={editingUser?.status || 'active'}>
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
-                                </div>
-                            </div>
+                        <div>
+                            <label className="label">Last Name</label>
+                            <input type="text" className="input" defaultValue={editingUser?.lastName} />
                         </div>
-                        <div className="modal-footer">
-                            <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                            <button onClick={() => { setShowModal(false); toast.success('User saved'); }} className="btn-primary">
-                                {editingUser ? 'Update' : 'Create'}
-                            </button>
+                    </div>
+                    <div>
+                        <label className="label">Email</label>
+                        <input type="email" className="input" defaultValue={editingUser?.email} />
+                    </div>
+                    {!editingUser && (
+                        <div>
+                            <label className="label">Password</label>
+                            <input type="password" className="input" placeholder="Enter password" />
+                        </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">Role</label>
+                            <select className="select" defaultValue={editingUser?.role || 'user'}>
+                                <option value="admin">Admin</option>
+                                <option value="manager">Manager</option>
+                                <option value="sales_operator">Sales Operator</option>
+                                <option value="user">User</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="label">Status</label>
+                            <select className="select" defaultValue={editingUser?.status || 'active'}>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-            )}
+            </Modal>
+
+            {/* Delete Confirmation */}
+            <ConfirmModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={confirmDelete}
+                title="Delete User"
+                message="Are you sure you want to delete this user? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+            />
         </div>
     );
 }

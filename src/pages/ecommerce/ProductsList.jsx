@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTenantConfig } from '../../contexts/TenantConfigContext';
 import apiClient from '../../api/axios';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 /**
  * Products List Page - E-Commerce Module
@@ -16,6 +18,8 @@ const ProductsList = () => {
     const [showModal, setShowModal] = useState(false);
     const [editProduct, setEditProduct] = useState(null);
     const [stats, setStats] = useState({});
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState(null);
 
     useEffect(() => {
         fetchProducts();
@@ -57,11 +61,17 @@ const ProductsList = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm('Archive this product?')) return;
+    const handleDelete = (id) => {
+        setDeleteTargetId(id);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTargetId) return;
         try {
-            await apiClient.delete(`/products/${id}`);
+            await apiClient.delete(`/products/${deleteTargetId}`);
             fetchProducts();
+            setDeleteTargetId(null);
         } catch (error) {
             console.error('Failed to delete:', error);
         }
@@ -213,6 +223,18 @@ const ProductsList = () => {
                 />
             )}
 
+            {/* Delete Confirmation */}
+            <ConfirmModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={confirmDelete}
+                title="Archive Product"
+                message="Are you sure you want to archive this product?"
+                confirmText="Archive"
+                cancelText="Cancel"
+                variant="danger"
+            />
+
             <style>{`
                 .products-page { padding: 24px; }
                 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
@@ -299,7 +321,7 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
         }
     };
 
-    return (
+    return createPortal(
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
@@ -385,7 +407,7 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
             </div>
 
             <style>{`
-                .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+                .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
                 .modal { background: var(--bg-primary); border-radius: 16px; width: 100%; max-width: 600px; max-height: 90vh; overflow: auto; }
                 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border-color); }
                 .modal-header h2 { margin: 0; font-size: 20px; }
@@ -400,7 +422,8 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
                 .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--border-color); }
                 .btn-secondary { background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 8px; cursor: pointer; }
             `}</style>
-        </div>
+        </div>,
+        document.body
     );
 };
 

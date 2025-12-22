@@ -11,6 +11,7 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import Inquiries from './pages/Inquiries';
 import InquiryDetail from './pages/inquiries/InquiryDetail';
+import Profile from './pages/Profile';
 
 // Employees
 import EmployeesList from './pages/employees/EmployeesList';
@@ -49,6 +50,7 @@ function AppRoutes() {
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="profile" element={<Profile />} />
 
           {/* Employees - Admin & Manager */}
           <Route path="employees" element={<EmployeesList />} />

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import Modal from '../../components/common/Modal';
 
 const mockCampaigns = [
     { id: 1, name: 'Q4 Product Launch', status: 'active', sent: 1250, opened: 856, clicked: 234, startDate: '2024-12-15', endDate: '2024-12-31' },
@@ -96,7 +97,7 @@ export default function EmailCampaigns() {
                             <th>Open Rate</th>
                             <th>Click Rate</th>
                             <th>Duration</th>
-                            <th className="text-right">Actions</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -133,7 +134,7 @@ export default function EmailCampaigns() {
                                         {campaign.startDate ? `${campaign.startDate} - ${campaign.endDate || 'Ongoing'}` : '-'}
                                     </td>
                                     <td>
-                                        <div className="flex items-center justify-end gap-2">
+                                        <div className="flex items-center gap-2">
                                             <button className="btn-ghost btn-sm">View</button>
                                             <button className="btn-ghost btn-sm">Edit</button>
                                         </div>
@@ -145,50 +146,82 @@ export default function EmailCampaigns() {
                 </table>
             </div>
 
-            {/* Modal */}
-            {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">New Campaign</h2>
-                            <button onClick={() => setShowModal(false)} className="btn-ghost p-1">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+            {/* Campaign Modal */}
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title="New Campaign"
+                footer={
+                    <>
+                        <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
+                        <button onClick={() => { setShowModal(false); toast.success('Campaign created'); }} className="btn-primary">Create Campaign</button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="label">Campaign Name</label>
+                        <input type="text" className="input" placeholder="e.g., Summer Sale 2024" />
+                    </div>
+                    <div>
+                        <label className="label">Email Template</label>
+                        <select className="select">
+                            <option value="">Select template</option>
+                            <option value="1">Welcome Email</option>
+                            <option value="2">Follow-up Reminder</option>
+                            <option value="3">Meeting Confirmation</option>
+                        </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">Start Date</label>
+                            <input type="date" className="input" />
                         </div>
-                        <div className="modal-body space-y-4">
-                            <div>
-                                <label className="label">Campaign Name</label>
-                                <input type="text" className="input" placeholder="e.g., Summer Sale 2024" />
-                            </div>
-                            <div>
-                                <label className="label">Email Template</label>
-                                <select className="select">
-                                    <option value="">Select template</option>
-                                    <option value="1">Welcome Email</option>
-                                    <option value="2">Follow-up Reminder</option>
-                                    <option value="3">Meeting Confirmation</option>
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="label">Start Date</label>
-                                    <input type="date" className="input" />
-                                </div>
-                                <div>
-                                    <label className="label">End Date</label>
-                                    <input type="date" className="input" />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                            <button onClick={() => { setShowModal(false); toast.success('Campaign created'); }} className="btn-primary">Create Campaign</button>
+                        <div>
+                            <label className="label">End Date</label>
+                            <input type="date" className="input" />
                         </div>
                     </div>
+
+                    {/* Schedule Options */}
+                    <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4">
+                        <label className="label">Launch Options</label>
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="launch" value="now" defaultChecked className="w-4 h-4 text-indigo-600" />
+                                <span className="text-sm text-slate-700 dark:text-slate-300">Send Now</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="launch" value="schedule" className="w-4 h-4 text-indigo-600" />
+                                <span className="text-sm text-slate-700 dark:text-slate-300">Schedule for Later</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Schedule Time Picker (shown when scheduling) */}
+                    <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">
+                        <div className="flex items-center gap-2 mb-3">
+                            <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-400">Schedule Send Time</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-xs text-indigo-600 dark:text-indigo-400 mb-1 block">Date</label>
+                                <input type="date" className="input text-sm" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-indigo-600 dark:text-indigo-400 mb-1 block">Time</label>
+                                <input type="time" className="input text-sm" defaultValue="09:00" />
+                            </div>
+                        </div>
+                        <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-2">
+                            Emails will be sent automatically at the scheduled time
+                        </p>
+                    </div>
                 </div>
-            )}
+            </Modal>
         </div>
     );
 }

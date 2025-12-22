@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import Modal from '../../components/common/Modal';
 
 const mockNotifications = [
     { id: 1, title: 'New Feature Announcement', message: 'Check out our new dashboard features!', sentAt: '2024-12-21 10:00', recipients: 1250, clicked: 234 },
@@ -142,48 +143,42 @@ export default function PushNotifications() {
                 </div>
             </div>
 
-            {/* Modal */}
-            {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">New Push Notification</h2>
-                            <button onClick={() => setShowModal(false)} className="btn-ghost p-1">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="modal-body space-y-4">
-                            <div>
-                                <label className="label">Title</label>
-                                <input type="text" className="input" placeholder="Notification title" />
-                            </div>
-                            <div>
-                                <label className="label">Message</label>
-                                <textarea className="input min-h-24" placeholder="Notification message..."></textarea>
-                            </div>
-                            <div>
-                                <label className="label">Target Audience</label>
-                                <select className="select">
-                                    <option value="all">All Subscribers</option>
-                                    <option value="leads">Leads Only</option>
-                                    <option value="customers">Customers Only</option>
-                                    <option value="team">Team Members</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="label">Link (optional)</label>
-                                <input type="url" className="input" placeholder="https://" />
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                            <button onClick={handleSend} className="btn-primary">Send Notification</button>
-                        </div>
+            {/* Notification Modal */}
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title="New Push Notification"
+                footer={
+                    <>
+                        <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
+                        <button onClick={handleSend} className="btn-primary">Send Notification</button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="label">Title</label>
+                        <input type="text" className="input" placeholder="Notification title" />
+                    </div>
+                    <div>
+                        <label className="label">Message</label>
+                        <textarea className="input min-h-24" placeholder="Notification message..."></textarea>
+                    </div>
+                    <div>
+                        <label className="label">Target Audience</label>
+                        <select className="select">
+                            <option value="all">All Subscribers</option>
+                            <option value="leads">Leads Only</option>
+                            <option value="customers">Customers Only</option>
+                            <option value="team">Team Members</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="label">Link (optional)</label>
+                        <input type="url" className="input" placeholder="https://" />
                     </div>
                 </div>
-            )}
+            </Modal>
         </div>
     );
 }
