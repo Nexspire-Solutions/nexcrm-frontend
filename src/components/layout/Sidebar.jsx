@@ -207,6 +207,97 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         ]
     };
 
+    // Real Estate group
+    const realestateGroup = {
+        name: 'Real Estate',
+        icon: Icons.products,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [{ name: 'Properties', path: '/properties', icon: Icons.products }]
+    };
+
+    // Healthcare group
+    const healthcareGroup = {
+        name: 'Healthcare',
+        icon: Icons.users,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [{ name: 'Patients', path: '/patients', icon: Icons.users }]
+    };
+
+    // Hospitality group
+    const hospitalityGroup = {
+        name: 'Hospitality',
+        icon: Icons.products,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [{ name: 'Rooms', path: '/rooms', icon: Icons.products }]
+    };
+
+    // Education group
+    const educationGroup = {
+        name: 'Education',
+        icon: Icons.users,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [
+            { name: 'Courses', path: '/courses', icon: Icons.products },
+            { name: 'Students', path: '/students', icon: Icons.users }
+        ]
+    };
+
+    // Fitness group
+    const fitnessGroup = {
+        name: 'Fitness',
+        icon: Icons.users,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [{ name: 'Members', path: '/members', icon: Icons.users }]
+    };
+
+    // Legal group
+    const legalGroup = {
+        name: 'Legal',
+        icon: Icons.orders,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [{ name: 'Cases', path: '/cases', icon: Icons.orders }]
+    };
+
+    // Manufacturing group
+    const manufacturingGroup = {
+        name: 'Manufacturing',
+        icon: Icons.products,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [{ name: 'Production', path: '/production', icon: Icons.products }]
+    };
+
+    // Logistics group
+    const logisticsGroup = {
+        name: 'Logistics',
+        icon: Icons.orders,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [{ name: 'Shipments', path: '/shipments', icon: Icons.orders }]
+    };
+
+    // Restaurant group
+    const restaurantGroup = {
+        name: 'Restaurant',
+        icon: Icons.products,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [{ name: 'Menu', path: '/menu', icon: Icons.products }]
+    };
+
+    // Salon group
+    const salonGroup = {
+        name: 'Salon',
+        icon: Icons.activity,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [{ name: 'Bookings', path: '/bookings', icon: Icons.activity }]
+    };
+
+    // Services group
+    const servicesGroup = {
+        name: 'Services',
+        icon: Icons.activity,
+        roles: ['admin', 'manager', 'sales_operator'],
+        items: [{ name: 'Appointments', path: '/appointments', icon: Icons.activity }]
+    };
+
     const userRole = user?.role || 'user';
 
     const filteredMainNav = mainNavItems.filter(item =>
@@ -216,6 +307,17 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     const canViewLeads = leadsGroup.roles.includes(userRole);
     const canViewCommunications = communicationsGroup.roles.includes(userRole);
     const canViewEcommerce = !configLoading && hasModule('products') && ecommerceGroup.roles.includes(userRole);
+    const canViewRealestate = !configLoading && hasModule('properties');
+    const canViewHealthcare = !configLoading && hasModule('patients');
+    const canViewHospitality = !configLoading && hasModule('rooms');
+    const canViewEducation = !configLoading && hasModule('courses');
+    const canViewFitness = !configLoading && hasModule('gym_members');
+    const canViewLegal = !configLoading && hasModule('legal_cases');
+    const canViewManufacturing = !configLoading && hasModule('production');
+    const canViewLogistics = !configLoading && hasModule('shipments');
+    const canViewRestaurant = !configLoading && hasModule('menu');
+    const canViewSalon = !configLoading && hasModule('salon_bookings');
+    const canViewServices = !configLoading && hasModule('appointments');
 
     const NavItem = ({ item, isSubItem = false }) => (
         <NavLink
@@ -342,6 +444,28 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                             <NavGroup group={ecommerceGroup} groupKey="ecommerce" />
                         </div>
                     )}
+
+                    {/* Industry Modules */}
+                    {(canViewRealestate || canViewHealthcare || canViewHospitality || canViewEducation ||
+                        canViewFitness || canViewLegal || canViewManufacturing || canViewLogistics ||
+                        canViewRestaurant || canViewSalon || canViewServices) && (
+                            <div className="mt-6 space-y-1">
+                                <p className="px-3 mb-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                    Industry Modules
+                                </p>
+                                {canViewRealestate && <NavGroup group={realestateGroup} groupKey="realestate" />}
+                                {canViewHealthcare && <NavGroup group={healthcareGroup} groupKey="healthcare" />}
+                                {canViewHospitality && <NavGroup group={hospitalityGroup} groupKey="hospitality" />}
+                                {canViewEducation && <NavGroup group={educationGroup} groupKey="education" />}
+                                {canViewFitness && <NavGroup group={fitnessGroup} groupKey="fitness" />}
+                                {canViewLegal && <NavGroup group={legalGroup} groupKey="legal" />}
+                                {canViewManufacturing && <NavGroup group={manufacturingGroup} groupKey="manufacturing" />}
+                                {canViewLogistics && <NavGroup group={logisticsGroup} groupKey="logistics" />}
+                                {canViewRestaurant && <NavGroup group={restaurantGroup} groupKey="restaurant" />}
+                                {canViewSalon && <NavGroup group={salonGroup} groupKey="salon" />}
+                                {canViewServices && <NavGroup group={servicesGroup} groupKey="services" />}
+                            </div>
+                        )}
                 </nav>
 
                 {/* Footer */}

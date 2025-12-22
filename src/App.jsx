@@ -40,6 +40,20 @@ import PushNotifications from './pages/communications/PushNotifications';
 import ProductsList from './pages/ecommerce/ProductsList';
 import OrdersList from './pages/ecommerce/OrdersList';
 
+// Industry Pages
+import PropertyList from './pages/realestate/PropertyList';
+import PatientsList from './pages/healthcare/PatientsList';
+import RoomsList from './pages/hospitality/RoomsList';
+import CoursesList from './pages/education/CoursesList';
+import StudentsList from './pages/education/StudentsList';
+import MembersList from './pages/fitness/MembersList';
+import CasesList from './pages/legal/CasesList';
+import ProductionList from './pages/manufacturing/ProductionList';
+import ShipmentsList from './pages/logistics/ShipmentsList';
+import MenuList from './pages/restaurant/MenuList';
+import BookingsList from './pages/salon/BookingsList';
+import AppointmentsList from './pages/services/AppointmentsList';
+
 function AppRoutes() {
   return (
     <Routes>
@@ -86,6 +100,20 @@ function AppRoutes() {
           {/* E-Commerce - Dynamic based on industry */}
           <Route path="products" element={<ProductsList />} />
           <Route path="orders" element={<OrdersList />} />
+
+          {/* Industry Modules */}
+          <Route path="properties" element={<PropertyList />} />
+          <Route path="patients" element={<PatientsList />} />
+          <Route path="rooms" element={<RoomsList />} />
+          <Route path="courses" element={<CoursesList />} />
+          <Route path="students" element={<StudentsList />} />
+          <Route path="members" element={<MembersList />} />
+          <Route path="cases" element={<CasesList />} />
+          <Route path="production" element={<ProductionList />} />
+          <Route path="shipments" element={<ShipmentsList />} />
+          <Route path="menu" element={<MenuList />} />
+          <Route path="bookings" element={<BookingsList />} />
+          <Route path="appointments" element={<AppointmentsList />} />
         </Route>
       </Route>
 
