@@ -95,8 +95,12 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            // Token expired or invalid
+        // Don't redirect on 401 for auth endpoints (login, etc.)
+        // These should fail gracefully and let the UI handle the error
+        const isAuthEndpoint = error.config?.url?.includes('/auth/');
+
+        if (error.response?.status === 401 && !isAuthEndpoint) {
+            // Token expired or invalid - but NOT for auth endpoints
             localStorage.removeItem('token');
             localStorage.removeItem('user');
 

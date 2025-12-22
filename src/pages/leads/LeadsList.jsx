@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { leadsAPI } from '../../api';
 import toast from 'react-hot-toast';
+import Modal from '../../components/common/Modal';
+import ConfirmModal from '../../components/common/ConfirmModal';
+import LeadsKanban from './LeadsKanban';
 
 const mockLeads = [
     { id: 1, contactName: 'John Smith', company: 'TechCorp', email: 'john@techcorp.com', phone: '+1 234 567 890', status: 'new', leadSource: 'Website', estimatedValue: 25000, score: 85, created_at: '2024-12-20' },
@@ -26,6 +29,21 @@ export default function LeadsList() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [showModal, setShowModal] = useState(false);
     const [editingLead, setEditingLead] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState(null);
+    const [viewMode, setViewMode] = useState('list'); // 'list' or 'kanban'
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // Check if navigated with openModal=true
+    useEffect(() => {
+        if (location.state?.openModal) {
+            setEditingLead(null);
+            setShowModal(true);
+            // Clear the state so refreshing doesn't reopen
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
 
     useEffect(() => {
         fetchLeads();
@@ -57,17 +75,43 @@ export default function LeadsList() {
         totalValue: leads.reduce((sum, l) => sum + (l.estimatedValue || 0), 0)
     };
 
-    const handleDelete = async (id) => {
-        if (confirm('Are you sure you want to delete this lead?')) {
+    const handleDelete = (id) => {
+        setDeleteTargetId(id);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        if (deleteTargetId) {
             try {
-                await leadsAPI.delete(id);
-                setLeads(prev => prev.filter(l => l.id !== id));
+                await leadsAPI.delete(deleteTargetId);
+                setLeads(prev => prev.filter(l => l.id !== deleteTargetId));
                 toast.success('Lead deleted successfully');
             } catch (error) {
-                setLeads(prev => prev.filter(l => l.id !== id));
+                setLeads(prev => prev.filter(l => l.id !== deleteTargetId));
                 toast.success('Lead deleted');
             }
+            setDeleteTargetId(null);
         }
+    };
+
+    // Handle status update from Kanban drag-and-drop
+    const handleUpdateStatus = async (leadId, newStatus) => {
+        try {
+            await leadsAPI.update(leadId, { status: newStatus });
+            setLeads(prev => prev.map(l =>
+                l.id === leadId ? { ...l, status: newStatus } : l
+            ));
+        } catch (error) {
+            // Optimistic update for demo
+            setLeads(prev => prev.map(l =>
+                l.id === leadId ? { ...l, status: newStatus } : l
+            ));
+        }
+    };
+
+    // View lead details
+    const handleViewLead = (lead) => {
+        navigate(`/leads/${lead.id}`);
     };
 
     const getScoreColor = (score) => {
@@ -103,15 +147,44 @@ export default function LeadsList() {
                         Manage and track your sales leads
                     </p>
                 </div>
-                <button
-                    onClick={() => { setEditingLead(null); setShowModal(true); }}
-                    className="btn-primary"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add Lead
-                </button>
+                <div className="flex items-center gap-3">
+                    {/* View Toggle */}
+                    <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'list'
+                                ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                            title="List View"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                        </button>
+                        <button
+                            onClick={() => setViewMode('kanban')}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'kanban'
+                                ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                            title="Kanban View"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                            </svg>
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => { setEditingLead(null); setShowModal(true); }}
+                        className="btn-primary"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Lead
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}
@@ -193,135 +266,150 @@ export default function LeadsList() {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="card overflow-hidden">
-                <table className="table">
-                    <thead>
-                        <tr>
-                            <th>Contact</th>
-                            <th>Source</th>
-                            <th>Value</th>
-                            <th>Score</th>
-                            <th>Status</th>
-                            <th className="text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredLeads.map((lead) => (
-                            <tr key={lead.id}>
-                                <td>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-400 font-semibold">
-                                            {lead.contactName.split(' ').map(n => n[0]).join('')}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-slate-900 dark:text-white">{lead.contactName}</p>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400">{lead.company}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="text-slate-600 dark:text-slate-400">{lead.leadSource}</td>
-                                <td className="font-medium text-slate-900 dark:text-white">Rs.{(lead.estimatedValue || 0).toLocaleString()}</td>
-                                <td>
-                                    <span className={`inline-flex items-center justify-center w-10 h-6 rounded-full text-xs font-bold ${getScoreColor(lead.score)}`}>
-                                        {lead.score}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span className={statusConfig[lead.status]?.class || 'badge-gray'}>
-                                        {statusConfig[lead.status]?.label || lead.status}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div className="flex items-center justify-end gap-2">
-                                        <Link to={`/leads/${lead.id}`} className="btn-ghost btn-sm">View</Link>
-                                        <button onClick={() => { setEditingLead(lead); setShowModal(true); }} className="btn-ghost btn-sm">Edit</button>
-                                        <button onClick={() => handleDelete(lead.id)} className="btn-ghost btn-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">Delete</button>
-                                    </div>
-                                </td>
+            {/* Kanban View */}
+            {viewMode === 'kanban' ? (
+                <LeadsKanban
+                    leads={filteredLeads}
+                    onUpdateStatus={handleUpdateStatus}
+                    onViewLead={handleViewLead}
+                />
+            ) : (
+                /* Table View */
+                <div className="card overflow-hidden">
+                    <table className="table">
+                        <thead>
+                            <tr>
+                                <th>Contact</th>
+                                <th>Source</th>
+                                <th>Value</th>
+                                <th>Score</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {filteredLeads.map((lead) => (
+                                <tr key={lead.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <td>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-400 font-semibold">
+                                                {lead.contactName.split(' ').map(n => n[0]).join('')}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-slate-900 dark:text-white">{lead.contactName}</p>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400">{lead.company}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="text-slate-600 dark:text-slate-400">{lead.leadSource}</td>
+                                    <td className="font-medium text-slate-900 dark:text-white">₹{(lead.estimatedValue || 0).toLocaleString()}</td>
+                                    <td>
+                                        <span className={`inline-flex items-center justify-center w-10 h-6 rounded-full text-xs font-bold ${getScoreColor(lead.score)}`}>
+                                            {lead.score}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={statusConfig[lead.status]?.class || 'badge-gray'}>
+                                            {statusConfig[lead.status]?.label || lead.status}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div className="flex items-center gap-2">
+                                            <Link to={`/leads/${lead.id}`} className="btn-ghost btn-sm">View</Link>
+                                            <button onClick={() => { setEditingLead(lead); setShowModal(true); }} className="btn-ghost btn-sm">Edit</button>
+                                            <button onClick={() => handleDelete(lead.id)} className="btn-ghost btn-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
 
-                {filteredLeads.length === 0 && (
-                    <div className="empty-state">
-                        <svg className="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                        <h3 className="empty-state-title">No leads found</h3>
-                        <p className="empty-state-text">Try adjusting your search or filter criteria</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Modal */}
-            {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">{editingLead ? 'Edit Lead' : 'Add New Lead'}</h2>
-                            <button onClick={() => setShowModal(false)} className="btn-ghost p-1">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                    {filteredLeads.length === 0 && (
+                        <div className="empty-state">
+                            <svg className="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                            <h3 className="empty-state-title">No leads found</h3>
+                            <p className="empty-state-text">Try adjusting your search or filter criteria</p>
                         </div>
-                        <div className="modal-body space-y-4">
-                            <div>
-                                <label className="label">Contact Name</label>
-                                <input type="text" className="input" defaultValue={editingLead?.contactName} />
-                            </div>
-                            <div>
-                                <label className="label">Company</label>
-                                <input type="text" className="input" defaultValue={editingLead?.company} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="label">Email</label>
-                                    <input type="email" className="input" defaultValue={editingLead?.email} />
-                                </div>
-                                <div>
-                                    <label className="label">Phone</label>
-                                    <input type="tel" className="input" defaultValue={editingLead?.phone} />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="label">Estimated Value</label>
-                                    <input type="number" className="input" defaultValue={editingLead?.estimatedValue} />
-                                </div>
-                                <div>
-                                    <label className="label">Lead Source</label>
-                                    <select className="select" defaultValue={editingLead?.leadSource || 'Website'}>
-                                        <option value="Website">Website</option>
-                                        <option value="Referral">Referral</option>
-                                        <option value="LinkedIn">LinkedIn</option>
-                                        <option value="Cold Call">Cold Call</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="label">Status</label>
-                                <select className="select" defaultValue={editingLead?.status || 'new'}>
-                                    <option value="new">New</option>
-                                    <option value="qualified">Qualified</option>
-                                    <option value="negotiation">Negotiation</option>
-                                    <option value="won">Won</option>
-                                    <option value="lost">Lost</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                            <button onClick={() => { setShowModal(false); toast.success('Lead saved'); }} className="btn-primary">
-                                {editingLead ? 'Update' : 'Create'}
-                            </button>
-                        </div>
-                    </div>
+                    )}
                 </div>
             )}
+
+            {/* Lead Modal */}
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title={editingLead ? 'Edit Lead' : 'Add New Lead'}
+                footer={
+                    <>
+                        <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
+                        <button onClick={() => { setShowModal(false); toast.success('Lead saved'); }} className="btn-primary">
+                            {editingLead ? 'Update' : 'Create'}
+                        </button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="label">Contact Name</label>
+                        <input type="text" className="input" defaultValue={editingLead?.contactName} />
+                    </div>
+                    <div>
+                        <label className="label">Company</label>
+                        <input type="text" className="input" defaultValue={editingLead?.company} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">Email</label>
+                            <input type="email" className="input" defaultValue={editingLead?.email} />
+                        </div>
+                        <div>
+                            <label className="label">Phone</label>
+                            <input type="tel" className="input" defaultValue={editingLead?.phone} />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">Estimated Value</label>
+                            <input type="number" className="input" defaultValue={editingLead?.estimatedValue} />
+                        </div>
+                        <div>
+                            <label className="label">Lead Source</label>
+                            <select className="select" defaultValue={editingLead?.leadSource || 'Website'}>
+                                <option value="Website">Website</option>
+                                <option value="Referral">Referral</option>
+                                <option value="LinkedIn">LinkedIn</option>
+                                <option value="Cold Call">Cold Call</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="label">Status</label>
+                        <select className="select" defaultValue={editingLead?.status || 'new'}>
+                            <option value="new">New</option>
+                            <option value="qualified">Qualified</option>
+                            <option value="negotiation">Negotiation</option>
+                            <option value="won">Won</option>
+                            <option value="lost">Lost</option>
+                        </select>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Delete Confirmation */}
+            <ConfirmModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={confirmDelete}
+                title="Delete Lead"
+                message="Are you sure you want to delete this lead? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+            />
         </div>
     );
 }

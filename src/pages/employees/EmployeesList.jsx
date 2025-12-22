@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import Modal from '../../components/common/Modal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const mockEmployees = [
     { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@company.com', department: 'Sales', position: 'Sales Manager', status: 'active', phone: '+1 234 567 890' },
@@ -17,6 +19,8 @@ export default function EmployeesList() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [showModal, setShowModal] = useState(false);
     const [editingEmployee, setEditingEmployee] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState(null);
 
     useEffect(() => {
         // Simulate API fetch
@@ -47,9 +51,15 @@ export default function EmployeesList() {
     };
 
     const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this employee?')) {
-            setEmployees(prev => prev.filter(e => e.id !== id));
+        setDeleteTargetId(id);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = () => {
+        if (deleteTargetId) {
+            setEmployees(prev => prev.filter(e => e.id !== deleteTargetId));
             toast.success('Employee deleted successfully');
+            setDeleteTargetId(null);
         }
     };
 
@@ -126,7 +136,7 @@ export default function EmployeesList() {
                             <th>Department</th>
                             <th>Position</th>
                             <th>Status</th>
-                            <th className="text-right">Actions</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -151,7 +161,7 @@ export default function EmployeesList() {
                                 <td>{employee.position}</td>
                                 <td>{getStatusBadge(employee.status)}</td>
                                 <td>
-                                    <div className="flex items-center justify-end gap-2">
+                                    <div className="flex items-center gap-2">
                                         <Link
                                             to={`/employees/${employee.id}`}
                                             className="btn-ghost btn-sm"
@@ -189,69 +199,73 @@ export default function EmployeesList() {
             </div>
 
             {/* Modal */}
-            {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">
-                                {editingEmployee ? 'Edit Employee' : 'Add New Employee'}
-                            </h2>
-                            <button onClick={() => setShowModal(false)} className="btn-ghost p-1">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title={editingEmployee ? 'Edit Employee' : 'Add New Employee'}
+                footer={
+                    <>
+                        <button onClick={() => setShowModal(false)} className="btn-secondary">
+                            Cancel
+                        </button>
+                        <button onClick={() => { setShowModal(false); toast.success('Employee saved'); }} className="btn-primary">
+                            {editingEmployee ? 'Update' : 'Create'}
+                        </button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">First Name</label>
+                            <input type="text" className="input" defaultValue={editingEmployee?.firstName} />
                         </div>
-                        <div className="modal-body space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="label">First Name</label>
-                                    <input type="text" className="input" defaultValue={editingEmployee?.firstName} />
-                                </div>
-                                <div>
-                                    <label className="label">Last Name</label>
-                                    <input type="text" className="input" defaultValue={editingEmployee?.lastName} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="label">Email</label>
-                                <input type="email" className="input" defaultValue={editingEmployee?.email} />
-                            </div>
-                            <div>
-                                <label className="label">Phone</label>
-                                <input type="tel" className="input" defaultValue={editingEmployee?.phone} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="label">Department</label>
-                                    <select className="select" defaultValue={editingEmployee?.department}>
-                                        <option value="Sales">Sales</option>
-                                        <option value="Marketing">Marketing</option>
-                                        <option value="Support">Support</option>
-                                        <option value="Development">Development</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="label">Status</label>
-                                    <select className="select" defaultValue={editingEmployee?.status || 'active'}>
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                        <option value="on_leave">On Leave</option>
-                                    </select>
-                                </div>
-                            </div>
+                        <div>
+                            <label className="label">Last Name</label>
+                            <input type="text" className="input" defaultValue={editingEmployee?.lastName} />
                         </div>
-                        <div className="modal-footer">
-                            <button onClick={() => setShowModal(false)} className="btn-secondary">
-                                Cancel
-                            </button>
-                            <button onClick={() => { setShowModal(false); toast.success('Employee saved'); }} className="btn-primary">
-                                {editingEmployee ? 'Update' : 'Create'}
-                            </button>
+                    </div>
+                    <div>
+                        <label className="label">Email</label>
+                        <input type="email" className="input" defaultValue={editingEmployee?.email} />
+                    </div>
+                    <div>
+                        <label className="label">Phone</label>
+                        <input type="tel" className="input" defaultValue={editingEmployee?.phone} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">Department</label>
+                            <select className="select" defaultValue={editingEmployee?.department}>
+                                <option value="Sales">Sales</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Support">Support</option>
+                                <option value="Development">Development</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="label">Status</label>
+                            <select className="select" defaultValue={editingEmployee?.status || 'active'}>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="on_leave">On Leave</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-            )}
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={confirmDelete}
+                title="Delete Employee"
+                message="Are you sure you want to delete this employee? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+            />
         </div>
     );
 }

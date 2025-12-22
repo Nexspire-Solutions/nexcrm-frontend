@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTenantConfig } from '../../contexts/TenantConfigContext';
 import apiClient from '../../api/axios';
 
@@ -258,7 +259,7 @@ const OrdersList = () => {
  * Order Detail Modal
  */
 const OrderDetailModal = ({ order, onClose }) => {
-    return (
+    return createPortal(
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
@@ -303,7 +304,7 @@ const OrderDetailModal = ({ order, onClose }) => {
             </div>
 
             <style>{`
-                .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+                .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
                 .modal { background: var(--bg-primary); border-radius: 16px; width: 100%; max-width: 500px; max-height: 90vh; overflow: auto; }
                 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border-color); }
                 .modal-header h2 { margin: 0; font-size: 20px; }
@@ -313,7 +314,8 @@ const OrderDetailModal = ({ order, onClose }) => {
                 .order-section h3 { margin: 0 0 12px; font-size: 16px; color: var(--text-secondary); }
                 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
             `}</style>
-        </div>
+        </div>,
+        document.body
     );
 };
 

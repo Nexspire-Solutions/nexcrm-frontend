@@ -93,15 +93,15 @@ export default function Dashboard() {
             {/* Header Bar */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
-                    <p className="text-sm text-slate-500">Welcome back, {user?.firstName || 'Admin'}</p>
+                    <h1 className="text-xl font-semibold text-slate-900 dark:text-white">Dashboard</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Welcome back, {user?.firstName || 'Admin'}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                    <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                         {Icons.calendar}
                         <span>Last 30 days</span>
                     </button>
-                    <Link to="/leads" className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+                    <Link to="/leads" state={{ openModal: true }} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
                         {Icons.plus}
                         <span>Add Lead</span>
                     </Link>
@@ -116,13 +116,13 @@ export default function Dashboard() {
                     { label: 'Total Leads', value: stats.newLeads || 156, change: '+18%', up: true, icon: Icons.leads, color: 'violet' },
                     { label: 'Pending Tasks', value: stats.pendingInquiries || 12, change: '5 urgent', up: false, icon: Icons.tasks, color: 'amber' },
                 ].map((stat, i) => (
-                    <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
+                    <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between mb-3">
-                            <div className={`w-10 h-10 rounded-lg bg-${stat.color}-50 text-${stat.color}-600 flex items-center justify-center`}>{stat.icon}</div>
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${stat.up ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{stat.change}</span>
+                            <div className={`w-10 h-10 rounded-lg bg-${stat.color}-50 dark:bg-${stat.color}-900/30 text-${stat.color}-600 dark:text-${stat.color}-400 flex items-center justify-center`}>{stat.icon}</div>
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${stat.up ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'}`}>{stat.change}</span>
                         </div>
-                        <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-                        <p className="text-sm text-slate-500">{stat.label}</p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">{stat.label}</p>
                     </div>
                 ))}
             </div>
@@ -130,16 +130,16 @@ export default function Dashboard() {
             {/* Main Grid - Mixed Layout */}
             <div className="grid grid-cols-12 gap-5">
                 {/* Revenue Chart - Large */}
-                <div className="col-span-12 lg:col-span-8 bg-white rounded-xl border border-slate-200 p-5">
+                <div className="col-span-12 lg:col-span-8 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">{Icons.chart}</div>
+                            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">{Icons.chart}</div>
                             <div>
-                                <h3 className="font-semibold text-slate-900">Revenue Overview</h3>
-                                <p className="text-xs text-slate-500">Monthly performance</p>
+                                <h3 className="font-semibold text-slate-900 dark:text-white">Revenue Overview</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Monthly performance</p>
                             </div>
                         </div>
-                        <select className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 text-slate-600">
+                        <select className="text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800">
                             <option>2024</option>
                             <option>2023</option>
                         </select>
@@ -164,40 +164,40 @@ export default function Dashboard() {
                         <p className="text-3xl font-bold">₹8.4L</p>
                         <p className="text-sm text-indigo-200 mt-2">21 deals closed · 89% target</p>
                     </div>
-                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">{Icons.phone}</div>
+                            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">{Icons.phone}</div>
                             <div>
-                                <p className="text-xl font-bold text-slate-900">172</p>
-                                <p className="text-xs text-slate-500">Calls this week</p>
+                                <p className="text-xl font-bold text-slate-900 dark:text-white">172</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Calls this week</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">{Icons.mail}</div>
+                            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">{Icons.mail}</div>
                             <div>
-                                <p className="text-xl font-bold text-slate-900">292</p>
-                                <p className="text-xs text-slate-500">Emails sent</p>
+                                <p className="text-xl font-bold text-slate-900 dark:text-white">292</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Emails sent</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Leads Pipeline */}
-                <div className="col-span-12 lg:col-span-5 bg-white rounded-xl border border-slate-200 p-5">
+                <div className="col-span-12 lg:col-span-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">{Icons.leads}</div>
-                            <h3 className="font-semibold text-slate-900">Leads Pipeline</h3>
+                            <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center">{Icons.leads}</div>
+                            <h3 className="font-semibold text-slate-900 dark:text-white">Leads Pipeline</h3>
                         </div>
-                        <Link to="/leads" className="text-sm text-indigo-600 font-medium flex items-center gap-1 hover:text-indigo-700">View all {Icons.arrow}</Link>
+                        <Link to="/leads" className="text-sm text-indigo-600 dark:text-indigo-400 font-medium flex items-center gap-1 hover:text-indigo-700 dark:hover:text-indigo-300">View all {Icons.arrow}</Link>
                     </div>
                     <div className="space-y-2.5">
                         {Object.entries(leadsData).map(([stage, count]) => {
                             const colors = { new: 'bg-blue-500', contacted: 'bg-cyan-500', qualified: 'bg-emerald-500', proposal: 'bg-amber-500', negotiation: 'bg-orange-500', won: 'bg-green-600' };
                             return (
                                 <div key={stage} className="flex items-center gap-3">
-                                    <span className="w-20 text-xs text-slate-600 capitalize font-medium">{stage}</span>
-                                    <div className="flex-1 h-5 bg-slate-100 rounded overflow-hidden">
+                                    <span className="w-20 text-xs text-slate-600 dark:text-slate-400 capitalize font-medium">{stage}</span>
+                                    <div className="flex-1 h-5 bg-slate-100 dark:bg-slate-700 rounded overflow-hidden">
                                         <div className={`h-full ${colors[stage]} transition-all flex items-center justify-end pr-2`} style={{ width: `${(count / totalLeads) * 100}%` }}>
                                             <span className="text-[10px] font-bold text-white">{count}</span>
                                         </div>
@@ -209,13 +209,13 @@ export default function Dashboard() {
                 </div>
 
                 {/* Recent Leads Table */}
-                <div className="col-span-12 lg:col-span-7 bg-white rounded-xl border border-slate-200 overflow-hidden">
-                    <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                        <h3 className="font-semibold text-slate-900">Recent Leads</h3>
-                        <Link to="/leads" className="text-sm text-indigo-600 font-medium">View all</Link>
+                <div className="col-span-12 lg:col-span-7 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+                        <h3 className="font-semibold text-slate-900 dark:text-white">Recent Leads</h3>
+                        <Link to="/leads" className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">View all</Link>
                     </div>
                     <table className="w-full">
-                        <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
+                        <thead className="bg-slate-50 dark:bg-slate-700/50 text-xs text-slate-500 dark:text-slate-400 uppercase">
                             <tr>
                                 <th className="text-left px-4 py-2 font-medium">Lead</th>
                                 <th className="text-left px-4 py-2 font-medium">Value</th>
@@ -223,28 +223,28 @@ export default function Dashboard() {
                                 <th className="text-left px-4 py-2 font-medium">Added</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                             {recentLeads.map((lead) => (
-                                <tr key={lead.id} className="hover:bg-slate-50 transition">
+                                <tr key={lead.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-semibold text-slate-600">{lead.name.charAt(0)}</div>
+                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300">{lead.name.charAt(0)}</div>
                                             <div>
-                                                <p className="text-sm font-medium text-slate-900">{lead.name}</p>
-                                                <p className="text-xs text-slate-500">{lead.email}</p>
+                                                <p className="text-sm font-medium text-slate-900 dark:text-white">{lead.name}</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">{lead.email}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-sm font-medium text-slate-900">{formatCurrency(lead.value)}</td>
+                                    <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-white">{formatCurrency(lead.value)}</td>
                                     <td className="px-4 py-3">
-                                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium capitalize ${lead.status === 'new' ? 'text-blue-600' : lead.status === 'qualified' ? 'text-emerald-600' : 'text-amber-600'
+                                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium capitalize ${lead.status === 'new' ? 'text-blue-600 dark:text-blue-400' : lead.status === 'qualified' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
                                             }`}>
                                             <span className={`w-1.5 h-1.5 rounded-full ${lead.status === 'new' ? 'bg-blue-500' : lead.status === 'qualified' ? 'bg-emerald-500' : 'bg-amber-500'
                                                 }`}></span>
                                             {lead.status}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-slate-500">{lead.createdAt}</td>
+                                    <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{lead.createdAt}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -252,13 +252,13 @@ export default function Dashboard() {
                 </div>
 
                 {/* Team Performance */}
-                <div className="col-span-12 lg:col-span-4 bg-white rounded-xl border border-slate-200 p-5">
+                <div className="col-span-12 lg:col-span-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">{Icons.users}</div>
-                            <h3 className="font-semibold text-slate-900">Team Status</h3>
+                            <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center">{Icons.users}</div>
+                            <h3 className="font-semibold text-slate-900 dark:text-white">Team Status</h3>
                         </div>
-                        <Link to="/employees" className="text-sm text-indigo-600 font-medium">View all</Link>
+                        <Link to="/employees" className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">View all</Link>
                     </div>
                     <div className="space-y-4">
                         {teamMembers.map((member, i) => {
@@ -270,10 +270,10 @@ export default function Dashboard() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-sm font-medium text-slate-900 truncate">{member.name}</p>
-                                            <span className="text-xs text-slate-500">{member.completed}/{member.tasks}</span>
+                                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{member.name}</p>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">{member.completed}/{member.tasks}</span>
                                         </div>
-                                        <div className="mt-1.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div className="mt-1.5 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                                             <div className={`h-full rounded-full ${progress >= 80 ? 'bg-emerald-500' : progress >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${progress}%` }}></div>
                                         </div>
                                     </div>
@@ -284,12 +284,12 @@ export default function Dashboard() {
                 </div>
 
                 {/* Weekly Activity */}
-                <div className="col-span-12 lg:col-span-4 bg-white rounded-xl border border-slate-200 p-5">
+                <div className="col-span-12 lg:col-span-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                     <div className="flex items-center gap-2 mb-4">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">{Icons.chart}</div>
-                        <h3 className="font-semibold text-slate-900">Weekly Activity</h3>
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">{Icons.chart}</div>
+                        <h3 className="font-semibold text-slate-900 dark:text-white">Weekly Activity</h3>
                     </div>
-                    <div className="flex items-center gap-4 mb-3 text-xs">
+                    <div className="flex items-center gap-4 mb-3 text-xs text-slate-600 dark:text-slate-400">
                         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-indigo-500"></span>Calls</span>
                         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-emerald-500"></span>Emails</span>
                     </div>
@@ -307,21 +307,21 @@ export default function Dashboard() {
                 </div>
 
                 {/* Upcoming Tasks */}
-                <div className="col-span-12 lg:col-span-4 bg-white rounded-xl border border-slate-200 p-5">
+                <div className="col-span-12 lg:col-span-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">{Icons.tasks}</div>
-                            <h3 className="font-semibold text-slate-900">Upcoming Tasks</h3>
+                            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">{Icons.tasks}</div>
+                            <h3 className="font-semibold text-slate-900 dark:text-white">Upcoming Tasks</h3>
                         </div>
                     </div>
                     <div className="space-y-3">
                         {upcomingTasks.map((item, i) => (
-                            <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition cursor-pointer">
-                                <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center ${item.priority === 'high' ? 'border-red-400' : item.priority === 'medium' ? 'border-amber-400' : 'border-slate-300'
+                            <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition cursor-pointer">
+                                <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center ${item.priority === 'high' ? 'border-red-400' : item.priority === 'medium' ? 'border-amber-400' : 'border-slate-300 dark:border-slate-600'
                                     }`}></div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-slate-900">{item.task}</p>
-                                    <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500">
+                                    <p className="text-sm font-medium text-slate-900 dark:text-white">{item.task}</p>
+                                    <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                                         {Icons.clock}
                                         <span>{item.due}</span>
                                     </div>

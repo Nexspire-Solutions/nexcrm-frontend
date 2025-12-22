@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import Modal from '../../components/common/Modal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const mockTemplates = [
     { id: 1, name: 'Welcome Email', subject: 'Welcome to Our Platform', category: 'Onboarding', lastModified: '2024-12-20', status: 'active' },
@@ -14,15 +16,23 @@ export default function EmailTemplates() {
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState(null);
 
     const filteredTemplates = templates.filter(t =>
         `${t.name} ${t.subject} ${t.category}`.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this template?')) {
-            setTemplates(prev => prev.filter(t => t.id !== id));
+        setDeleteTargetId(id);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = () => {
+        if (deleteTargetId) {
+            setTemplates(prev => prev.filter(t => t.id !== deleteTargetId));
             toast.success('Template deleted');
+            setDeleteTargetId(null);
         }
     };
 
@@ -109,51 +119,57 @@ export default function EmailTemplates() {
                 </div>
             )}
 
-            {/* Modal */}
-            {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal max-w-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">{editingTemplate ? 'Edit Template' : 'New Template'}</h2>
-                            <button onClick={() => setShowModal(false)} className="btn-ghost p-1">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="modal-body space-y-4">
-                            <div>
-                                <label className="label">Template Name</label>
-                                <input type="text" className="input" defaultValue={editingTemplate?.name} placeholder="e.g., Welcome Email" />
-                            </div>
-                            <div>
-                                <label className="label">Subject Line</label>
-                                <input type="text" className="input" defaultValue={editingTemplate?.subject} placeholder="Email subject" />
-                            </div>
-                            <div>
-                                <label className="label">Category</label>
-                                <select className="select" defaultValue={editingTemplate?.category || 'Sales'}>
-                                    <option value="Onboarding">Onboarding</option>
-                                    <option value="Sales">Sales</option>
-                                    <option value="Scheduling">Scheduling</option>
-                                    <option value="Post-Sale">Post-Sale</option>
-                                    <option value="Marketing">Marketing</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="label">Email Body</label>
-                                <textarea className="input min-h-48" placeholder="Write your email content here..."></textarea>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                            <button onClick={() => { setShowModal(false); toast.success('Template saved'); }} className="btn-primary">
-                                {editingTemplate ? 'Update' : 'Create'}
-                            </button>
-                        </div>
+            {/* Template Modal */}
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title={editingTemplate ? 'Edit Template' : 'New Template'}
+                footer={
+                    <>
+                        <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
+                        <button onClick={() => { setShowModal(false); toast.success('Template saved'); }} className="btn-primary">
+                            {editingTemplate ? 'Update' : 'Create'}
+                        </button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="label">Template Name</label>
+                        <input type="text" className="input" defaultValue={editingTemplate?.name} placeholder="e.g., Welcome Email" />
+                    </div>
+                    <div>
+                        <label className="label">Subject Line</label>
+                        <input type="text" className="input" defaultValue={editingTemplate?.subject} placeholder="Email subject" />
+                    </div>
+                    <div>
+                        <label className="label">Category</label>
+                        <select className="select" defaultValue={editingTemplate?.category || 'Sales'}>
+                            <option value="Onboarding">Onboarding</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Scheduling">Scheduling</option>
+                            <option value="Post-Sale">Post-Sale</option>
+                            <option value="Marketing">Marketing</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="label">Email Body</label>
+                        <textarea className="input min-h-48" placeholder="Write your email content here..."></textarea>
                     </div>
                 </div>
-            )}
+            </Modal>
+
+            {/* Delete Confirmation */}
+            <ConfirmModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={confirmDelete}
+                title="Delete Template"
+                message="Are you sure you want to delete this template? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+            />
         </div>
     );
 }
