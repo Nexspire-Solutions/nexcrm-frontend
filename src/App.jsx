@@ -60,6 +60,27 @@ import Students from './pages/industry/education/Students';
 import Appointments from './pages/industry/services/Appointments';
 import ServicesList from './pages/services/ServicesList';
 
+// Hospitality
+import Rooms from './pages/industry/hospitality/Rooms';
+
+// Fitness
+import Members from './pages/industry/fitness/Members';
+
+// Legal
+import Cases from './pages/industry/legal/Cases';
+
+// Manufacturing
+import Production from './pages/industry/manufacturing/Production';
+
+// Logistics
+import Shipments from './pages/industry/logistics/Shipments';
+
+// Restaurant
+import Menu from './pages/industry/restaurant/Menu';
+
+// Salon
+import Bookings from './pages/industry/salon/Bookings';
+
 function AppRoutes() {
   return (
     <Routes>
@@ -117,6 +138,13 @@ function AppRoutes() {
           <Route path="students" element={<Students />} />
           <Route path="appointments" element={<Appointments />} />
           <Route path="services" element={<ServicesList />} />
+          <Route path="rooms" element={<Rooms />} />
+          <Route path="members" element={<Members />} />
+          <Route path="cases" element={<Cases />} />
+          <Route path="production" element={<Production />} />
+          <Route path="shipments" element={<Shipments />} />
+          <Route path="menu" element={<Menu />} />
+          <Route path="bookings" element={<Bookings />} />
         </Route>
       </Route>
 
