@@ -61,24 +61,24 @@ export default function LeadActivity() {
     };
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8 pb-12">
+        <div className="max-w-5xl mx-auto space-y-6 pb-12">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6 py-5 rounded-xl">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Activity Timeline</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-white">Activity Timeline</h1>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                         Track and manage your interactions with leads
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="btn-secondary">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button className="btn-secondary flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                         Export
                     </button>
-                    <button className="btn-primary">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                         Log Activity
@@ -87,58 +87,42 @@ export default function LeadActivity() {
             </div>
 
             {/* Quick Actions & Stats */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-4">
                 {/* Stats Cards */}
-                <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-                        <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400 mb-2">
-                            <div className="p-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg flex items-center justify-center">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                 </svg>
                             </div>
-                            <span className="text-xs font-semibold uppercase tracking-wider">Total</span>
+                            <div>
+                                <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Total</p>
+                            </div>
                         </div>
-                        <span className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</span>
                     </div>
 
                     {[
-                        { label: 'Calls', value: stats.calls, icon: activityIcons.call.icon, color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
-                        { label: 'Emails', value: stats.emails, icon: activityIcons.email.icon, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/30' },
-                        { label: 'Meetings', value: stats.meetings, icon: activityIcons.meeting.icon, color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/30' }
+                        { label: 'Calls', value: stats.calls, icon: activityIcons.call.icon, gradient: 'from-emerald-500 to-emerald-600' },
+                        { label: 'Emails', value: stats.emails, icon: activityIcons.email.icon, gradient: 'from-blue-500 to-blue-600' },
+                        { label: 'Meetings', value: stats.meetings, icon: activityIcons.meeting.icon, gradient: 'from-purple-500 to-purple-600' }
                     ].map((stat) => (
-                        <div key={stat.label} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-                            <div className={`flex items-center gap-3 ${stat.color} mb-2`}>
-                                <div className={`p-1.5 rounded-lg ${stat.bg}`}>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div key={stat.label} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 bg-gradient-to-br ${stat.gradient} rounded-lg flex items-center justify-center`}>
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
                                     </svg>
                                 </div>
-                                <span className="text-xs font-semibold uppercase tracking-wider">{stat.label}</span>
+                                <div>
+                                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+                                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{stat.label}</p>
+                                </div>
                             </div>
-                            <span className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</span>
                         </div>
                     ))}
-                </div>
-
-                {/* Quick Log Action */}
-                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-5 text-white shadow-lg flex flex-col justify-center">
-                    <h3 className="font-bold text-lg mb-1">Quick Actions</h3>
-                    <p className="text-indigo-100 text-sm mb-4">Log a new interaction instantly</p>
-                    <div className="flex gap-2">
-                        {[
-                            { icon: activityIcons.call.icon, label: 'Call' },
-                            { icon: activityIcons.email.icon, label: 'Email' },
-                            { icon: activityIcons.note.icon, label: 'Note' }
-                        ].map((action) => (
-                            <button key={action.label} className="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg py-2 flex flex-col items-center justify-center gap-1 transition-colors text-xs font-medium">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.icon} />
-                                </svg>
-                                {action.label}
-                            </button>
-                        ))}
-                    </div>
                 </div>
             </div>
 
@@ -152,8 +136,8 @@ export default function LeadActivity() {
                                 key={type}
                                 onClick={() => setFilterType(type)}
                                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${filterType === type
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                                     }`}
                             >
                                 {type.charAt(0).toUpperCase() + type.slice(1)}

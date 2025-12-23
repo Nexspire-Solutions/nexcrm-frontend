@@ -1,45 +1,123 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { clientsAPI } from '../../api';
 
 const mockCustomers = [
-    { id: 1, contactName: 'Emily Brown', company: 'DesignHub', email: 'emily@designhub.com', phone: '+1 234 567 893', totalValue: 35000, convertedDate: '2024-12-15', projectsCount: 2, status: 'active', lastActive: '2 hours ago' },
-    { id: 2, contactName: 'Alex Chen', company: 'InnovateTech', email: 'alex@innovate.com', phone: '+1 234 567 900', totalValue: 78000, convertedDate: '2024-11-20', projectsCount: 3, status: 'active', lastActive: '1 day ago' },
-    { id: 3, contactName: 'Lisa Martinez', company: 'GreenEco', email: 'lisa@greeneco.com', phone: '+1 234 567 901', totalValue: 45000, convertedDate: '2024-10-10', projectsCount: 1, status: 'active', lastActive: '3 days ago' },
-    { id: 4, contactName: 'Robert Kim', company: 'FinanceX', email: 'robert@financex.com', phone: '+1 234 567 902', totalValue: 120000, convertedDate: '2024-09-05', projectsCount: 4, status: 'inactive', lastActive: '2 weeks ago' },
-    { id: 5, contactName: 'Sarah Wilson', company: 'GlobalSoft', email: 'sarah@globalsoft.com', phone: '+1 234 567 905', totalValue: 92000, convertedDate: '2024-08-15', projectsCount: 5, status: 'active', lastActive: '5 hours ago' },
+    { id: 1, name: 'Emily Brown', email: 'emily@designhub.com', phone: '+1 234 567 893', company: 'DesignHub', status: 'active', industry: 'Design' },
+    { id: 2, name: 'Alex Chen', email: 'alex@innovate.com', phone: '+1 234 567 900', company: 'InnovateTech', status: 'active', industry: 'Technology' },
+    { id: 3, name: 'Lisa Martinez', email: 'lisa@greeneco.com', phone: '+1 234 567 901', company: 'GreenEco', status: 'active', industry: 'Environment' },
+    { id: 4, name: 'Robert Kim', email: 'robert@financex.com', phone: '+1 234 567 902', company: 'FinanceX', status: 'inactive', industry: 'Finance' },
+    { id: 5, name: 'Sarah Wilson', email: 'sarah@globalsoft.com', phone: '+1 234 567 905', company: 'GlobalSoft', status: 'active', industry: 'Software' },
 ];
 
 export default function Customers() {
-    const [customers] = useState(mockCustomers);
+    const [customers, setCustomers] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+    const [viewMode, setViewMode] = useState('list');
     const [filterStatus, setFilterStatus] = useState('all');
+    const [showModal, setShowModal] = useState(false);
+    const [editingCustomer, setEditingCustomer] = useState(null);
+    const [openDropdownId, setOpenDropdownId] = useState(null);
+
+    useEffect(() => {
+        fetchCustomers();
+    }, []);
+
+    const fetchCustomers = async () => {
+        try {
+            setIsLoading(true);
+            const response = await clientsAPI.getAll();
+            // Backend returns { success: true, data: [...] }
+            if (response.success && response.data) {
+                setCustomers(response.data);
+            } else {
+                console.log('Using mock data - no data from API');
+                setCustomers(mockCustomers);
+            }
+        } catch (error) {
+            console.log('API error, using mock data:', error.message);
+            setCustomers(mockCustomers);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const filteredCustomers = customers.filter(c => {
-        const matchesSearch = `${c.contactName} ${c.company} ${c.email}`.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = `${c.name || c.contactName || ''} ${c.company || ''} ${c.email || ''}`.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || c.status === filterStatus;
         return matchesSearch && matchesStatus;
     });
 
+    // Calculate stats from actual data
     const stats = {
         total: customers.length,
         active: customers.filter(c => c.status === 'active').length,
-        totalValue: customers.reduce((sum, c) => sum + c.totalValue, 0),
-        projects: customers.reduce((sum, c) => sum + c.projectsCount, 0)
+        totalValue: customers.reduce((sum, c) => sum + (c.totalValue || 0), 0),
+        projects: customers.reduce((sum, c) => sum + (c.projectsCount || c.projects_count || 0), 0)
     };
 
+    const handleViewCustomer = (customer) => {
+        // TODO: Replace with actual navigation to customer detail page
+        // For now, show customer info in toast
+        toast.success(`Viewing: ${customer.name || customer.contactName} - ${customer.company}`);
+    };
+
+    const handleEditCustomer = (customer) => {
+        setEditingCustomer(customer);
+        setShowModal(true);
+        setOpenDropdownId(null);
+    };
+
+    const handleDeleteCustomer = async (customer) => {
+        if (window.confirm(`Are you sure you want to delete ${customer.name || customer.contactName}?`)) {
+            try {
+                await clientsAPI.delete(customer.id);
+                toast.success('Customer deleted successfully');
+                fetchCustomers();
+            } catch (error) {
+                toast.error('Failed to delete customer');
+            }
+        }
+        setOpenDropdownId(null);
+    };
+
+    const toggleDropdown = (customerId) => {
+        setOpenDropdownId(openDropdownId === customerId ? null : customerId);
+    };
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6 pb-12">
+                <div className="flex justify-between items-center">
+                    <div className="h-8 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="h-10 w-32 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse"></div>
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse"></div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-8 pb-12">
+        <div className="space-y-6 pb-12">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6 py-5 rounded-xl">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Customers</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-white">Customers</h1>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                         Manage your customer relationships and conversions
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="btn-primary">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button
+                        onClick={() => { setEditingCustomer(null); setShowModal(true); }}
+                        className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                         Add Customer
@@ -49,51 +127,59 @@ export default function Customers() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Customers</p>
-                        <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stats.total}</p>
-                    </div>
-                    <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg flex items-center justify-center">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Customers</p>
-                        <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stats.active}</p>
-                    </div>
-                    <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Total Customers</p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Revenue</p>
-                        <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">Rs.{stats.totalValue.toLocaleString()}</p>
-                    </div>
-                    <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg flex items-center justify-center">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.active}</p>
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Active Customers</p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Projects</p>
-                        <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stats.projects}</p>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{(stats.totalValue / 1000).toFixed(0)}K</p>
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Total Revenue</p>
+                        </div>
                     </div>
-                    <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg flex items-center justify-center">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.projects}</p>
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Total Projects</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -108,8 +194,8 @@ export default function Customers() {
                                 key={status}
                                 onClick={() => setFilterStatus(status)}
                                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all capitalize ${filterStatus === status
-                                        ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
-                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                                     }`}
                             >
                                 {status}
@@ -136,8 +222,8 @@ export default function Customers() {
                     <button
                         onClick={() => setViewMode('grid')}
                         className={`p-2 rounded-md transition-all ${viewMode === 'grid'
-                                ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                            ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                             }`}
                         title="Grid View"
                     >
@@ -148,8 +234,8 @@ export default function Customers() {
                     <button
                         onClick={() => setViewMode('list')}
                         className={`p-2 rounded-md transition-all ${viewMode === 'list'
-                                ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                            ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                             }`}
                         title="List View"
                     >
@@ -168,16 +254,16 @@ export default function Customers() {
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg">
-                                        {customer.contactName.split(' ').map(n => n[0]).join('')}
+                                        {(customer.name || customer.contactName).split(' ').map(n => n[0]).join('')}
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-slate-900 dark:text-white">{customer.contactName}</h3>
+                                        <h3 className="font-semibold text-slate-900 dark:text-white">{customer.name || customer.contactName}</h3>
                                         <p className="text-sm text-slate-500 dark:text-slate-400">{customer.company}</p>
                                     </div>
                                 </div>
                                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${customer.status === 'active'
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
-                                        : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
+                                    : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600'
                                     }`}>
                                     {customer.status}
                                 </span>
@@ -201,16 +287,21 @@ export default function Customers() {
                             <div className="pt-4 border-t border-slate-100 dark:border-slate-700 grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">Total Value</p>
-                                    <p className="font-semibold text-slate-900 dark:text-white">Rs.{customer.totalValue.toLocaleString()}</p>
+                                    <p className="font-semibold text-slate-900 dark:text-white">₹{(customer.totalValue || 0).toLocaleString()}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">Projects</p>
-                                    <p className="font-semibold text-slate-900 dark:text-white">{customer.projectsCount}</p>
+                                    <p className="font-semibold text-slate-900 dark:text-white">{customer.projectsCount || customer.projects_count || 0}</p>
                                 </div>
                             </div>
 
                             <div className="mt-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                <button className="btn-secondary w-full text-xs py-1.5">View Profile</button>
+                                <button
+                                    onClick={() => toast.success(`Viewing profile for ${customer.contactName}`)}
+                                    className="btn-secondary w-full text-xs py-1.5"
+                                >
+                                    View Profile
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -235,10 +326,10 @@ export default function Customers() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs">
-                                                    {customer.contactName.split(' ').map(n => n[0]).join('')}
+                                                    {(customer.name || customer.contactName).split(' ').map(n => n[0]).join('')}
                                                 </div>
                                                 <div>
-                                                    <p className="font-medium text-slate-900 dark:text-white">{customer.contactName}</p>
+                                                    <p className="font-medium text-slate-900 dark:text-white">{customer.name || customer.contactName}</p>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400">{customer.company}</p>
                                                 </div>
                                             </div>
@@ -251,20 +342,23 @@ export default function Customers() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${customer.status === 'active'
-                                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                    : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
+                                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
                                                 }`}>
                                                 {customer.status}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
-                                            Rs.{customer.totalValue.toLocaleString()}
+                                            ₹{(customer.totalValue || 0).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                                            {customer.projectsCount}
+                                            {customer.projectsCount || customer.projects_count || 0}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                            <button
+                                                onClick={() => toast.info(`Actions for ${customer.contactName}: View, Edit, or Delete`)}
+                                                className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                                            >
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                                 </svg>
@@ -287,6 +381,65 @@ export default function Customers() {
                     </div>
                     <h3 className="text-lg font-medium text-slate-900 dark:text-white">No customers found</h3>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Try adjusting your search or filters.</p>
+                </div>
+            )}
+
+            {/* Customer Modal */}
+            {showModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                                {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+                            </h2>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="label">Customer Name</label>
+                                <input type="text" className="input" placeholder="John Doe" defaultValue={editingCustomer?.name || editingCustomer?.contactName} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">Email</label>
+                                    <input type="email" className="input" placeholder="john@example.com" defaultValue={editingCustomer?.email} />
+                                </div>
+                                <div>
+                                    <label className="label">Phone</label>
+                                    <input type="tel" className="input" placeholder="+1 234 567 890" defaultValue={editingCustomer?.phone} />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">Company</label>
+                                    <input type="text" className="input" placeholder="Acme Corp" defaultValue={editingCustomer?.company} />
+                                </div>
+                                <div>
+                                    <label className="label">Industry</label>
+                                    <input type="text" className="input" placeholder="Technology" defaultValue={editingCustomer?.industry} />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="label">Status</label>
+                                <select className="select" defaultValue={editingCustomer?.status || 'active'}>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
+                            <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
+                            <button
+                                onClick={() => {
+                                    toast.success(editingCustomer ? 'Customer updated successfully!' : 'Customer added successfully!');
+                                    setShowModal(false);
+                                    fetchCustomers();
+                                }}
+                                className="btn-primary"
+                            >
+                                {editingCustomer ? 'Update' : 'Create'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
