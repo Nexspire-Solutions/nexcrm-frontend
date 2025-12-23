@@ -43,6 +43,13 @@ import OrdersList from './pages/industry/ecommerce/Orders';
 import Analytics from './pages/industry/ecommerce/Analytics';
 import InventoryList from './pages/ecommerce/InventoryList';
 import ReturnsList from './pages/ecommerce/ReturnsList';
+import CustomersList from './pages/ecommerce/CustomersList';
+import ReviewsList from './pages/ecommerce/ReviewsList';
+import CouponsList from './pages/ecommerce/CouponsList';
+import ShippingManagement from './pages/ecommerce/ShippingManagement';
+import CMSManagement from './pages/ecommerce/CMSManagement';
+import VendorsList from './pages/ecommerce/VendorsList';
+import ReportsPage from './pages/ecommerce/ReportsPage';
 
 // Real Estate
 import Properties from './pages/industry/realestate/Properties';
@@ -130,6 +137,13 @@ function AppRoutes() {
           <Route path="analytics" element={<Analytics />} />
           <Route path="inventory" element={<InventoryList />} />
           <Route path="returns" element={<ReturnsList />} />
+          <Route path="customers" element={<CustomersList />} />
+          <Route path="reviews" element={<ReviewsList />} />
+          <Route path="coupons" element={<CouponsList />} />
+          <Route path="shipping" element={<ShippingManagement />} />
+          <Route path="cms" element={<CMSManagement />} />
+          <Route path="vendors" element={<VendorsList />} />
+          <Route path="reports" element={<ReportsPage />} />
 
           {/* Industry Modules */}
           <Route path="properties" element={<Properties />} />

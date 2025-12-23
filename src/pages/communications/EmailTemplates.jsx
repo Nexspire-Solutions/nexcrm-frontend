@@ -41,7 +41,7 @@ export default function EmailTemplates() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6 py-5 rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6  rounded-xl">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 dark:text-white">Email Templates</h1>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
