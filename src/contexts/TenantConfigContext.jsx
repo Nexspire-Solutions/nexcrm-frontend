@@ -12,8 +12,8 @@ const TenantConfigContext = createContext(null);
 
 // Default config for development
 const DEFAULT_CONFIG = {
-    industry: 'general',
-    plan: 'starter',
+    industry: 'ecommerce',
+    plan: 'professional',
     modules: [
         'dashboard',
         'leads',
@@ -22,13 +22,16 @@ const DEFAULT_CONFIG = {
         'users',
         'documents',
         'communications',
-        'activities'
+        'activities',
+        'products',
+        'orders',
+        'inventory'
     ],
-    features: ['basic_reports', 'email_templates', 'in_app_notifications'],
+    features: ['*'], // Enable all features
     limits: {
-        users: { limit: 3, used: 0, remaining: 3 },
-        leads: { limit: 500, used: 0, remaining: 500 },
-        clients: { limit: 100, used: 0, remaining: 100 }
+        users: { limit: -1, used: 0, remaining: -1 },
+        leads: { limit: -1, used: 0, remaining: -1 },
+        clients: { limit: -1, used: 0, remaining: -1 }
     },
     communication: {
         emails_per_month: 500,
