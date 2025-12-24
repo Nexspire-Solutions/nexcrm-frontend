@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useTenantConfig } from '../../contexts/TenantConfigContext';
 import apiClient from '../../api/axios';
+import toast from 'react-hot-toast';
+import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
 /**
@@ -38,6 +39,7 @@ const ProductsList = () => {
             setProducts(response.data.data || []);
         } catch (error) {
             console.error('Failed to fetch products:', error);
+            toast.error('Failed to load products');
         } finally {
             setLoading(false);
         }
@@ -70,72 +72,136 @@ const ProductsList = () => {
         if (!deleteTargetId) return;
         try {
             await apiClient.delete(`/products/${deleteTargetId}`);
+            toast.success('Product archived successfully');
             fetchProducts();
+            fetchStats();
             setDeleteTargetId(null);
         } catch (error) {
             console.error('Failed to delete:', error);
+            toast.error('Failed to archive product');
         }
+    };
+
+    const handleSave = () => {
+        setShowModal(false);
+        fetchProducts();
+        fetchStats();
+        toast.success(editProduct ? 'Product updated successfully' : 'Product created successfully');
     };
 
     if (!hasModule('products')) {
         return (
-            <div className="upgrade-prompt">
-                <h2>E-Commerce Module</h2>
-                <p>Upgrade your plan to access Products & Orders management.</p>
-                <button className="btn-primary">Upgrade Plan</button>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+                <div className="max-w-md text-center">
+                    <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">E-Commerce Module</h2>
+                    <p className="text-slate-600 dark:text-slate-400 mb-6">Upgrade your plan to access Products & Orders management.</p>
+                    <button className="btn-primary">Upgrade Plan</button>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="products-page">
+        <div className="space-y-6">
             {/* Header */}
-            <div className="page-header">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6  rounded-xl">
                 <div>
-                    <h1>Products</h1>
-                    <p className="subtitle">Manage your product catalog</p>
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-white">Products</h1>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Manage your product catalog</p>
                 </div>
-                <button className="btn-primary" onClick={() => { setEditProduct(null); setShowModal(true); }}>
-                    + Add Product
+                <button
+                    onClick={() => { setEditProduct(null); setShowModal(true); }}
+                    className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Product
                 </button>
             </div>
 
             {/* Stats Cards */}
-            <div className="stats-grid">
-                <div className="stat-card">
-                    <span className="stat-value">{stats.total || 0}</span>
-                    <span className="stat-label">Total Products</span>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total || 0}</p>
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Total Products</p>
+                        </div>
+                    </div>
                 </div>
-                <div className="stat-card success">
-                    <span className="stat-value">{stats.active || 0}</span>
-                    <span className="stat-label">Active</span>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.active || 0}</p>
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Active</p>
+                        </div>
+                    </div>
                 </div>
-                <div className="stat-card warning">
-                    <span className="stat-value">{stats.low_stock || 0}</span>
-                    <span className="stat-label">Low Stock</span>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.low_stock || 0}</p>
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Low Stock</p>
+                        </div>
+                    </div>
                 </div>
-                <div className="stat-card danger">
-                    <span className="stat-value">{stats.out_of_stock || 0}</span>
-                    <span className="stat-label">Out of Stock</span>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.out_of_stock || 0}</p>
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Out of Stock</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="filters-bar">
-                <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="search-input"
-                />
-                <select value={category} onChange={(e) => setCategory(e.target.value)}>
+            <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                    <input
+                        type="text"
+                        placeholder="Search products..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="input pl-10 w-full"
+                    />
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className="select">
                     <option value="">All Categories</option>
                     {categories.map(cat => (
                         <option key={cat.id} value={cat.slug}>{cat.name}</option>
                     ))}
                 </select>
-                <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                <select value={status} onChange={(e) => setStatus(e.target.value)} className="select">
                     <option value="">All Status</option>
                     <option value="active">Active</option>
                     <option value="draft">Draft</option>
@@ -145,63 +211,93 @@ const ProductsList = () => {
 
             {/* Products Table */}
             {loading ? (
-                <div className="loading">Loading products...</div>
+                <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                </div>
             ) : (
-                <div className="table-container">
-                    <table>
-                        <thead>
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-700">
                             <tr>
-                                <th>Product</th>
-                                <th>SKU</th>
-                                <th>Category</th>
-                                <th>Price</th>
-                                <th>Stock</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th className="px-6 py-4">Product</th>
+                                <th className="px-6 py-4">SKU</th>
+                                <th className="px-6 py-4">Category</th>
+                                <th className="px-6 py-4">Price</th>
+                                <th className="px-6 py-4">Stock</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                             {products.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="empty-state">
-                                        No products found. Add your first product!
+                                    <td colSpan="7" className="px-6 py-12">
+                                        <div className="empty-state">
+                                            <svg className="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                            </svg>
+                                            <h3 className="empty-state-title">No products found</h3>
+                                            <p className="empty-state-text">Add your first product to get started</p>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (
                                 products.map(product => (
-                                    <tr key={product.id}>
-                                        <td>
-                                            <div className="product-cell">
-                                                <div className="product-image">
+                                    <tr key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
                                                     {product.images?.[0] ? (
-                                                        <img src={product.images[0]} alt={product.name} />
+                                                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
                                                     ) : (
-                                                        <div className="placeholder">📦</div>
+                                                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                        </svg>
                                                     )}
                                                 </div>
-                                                <span className="product-name">{product.name}</span>
+                                                <span className="font-medium text-slate-900 dark:text-white">{product.name}</span>
                                             </div>
                                         </td>
-                                        <td><code>{product.sku || '-'}</code></td>
-                                        <td>{product.category || '-'}</td>
-                                        <td className="price">₹{product.price?.toLocaleString()}</td>
-                                        <td>
-                                            <span className={`stock ${product.stock <= 10 ? 'low' : ''}`}>
+                                        <td className="px-6 py-4">
+                                            <code className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-400">
+                                                {product.sku || '-'}
+                                            </code>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{product.category || '-'}</td>
+                                        <td className="px-6 py-4 font-semibold text-indigo-600 dark:text-indigo-400">
+                                            ₹{product.price?.toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.stock <= 0 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                                product.stock <= 10 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                }`}>
                                                 {product.stock}
                                             </span>
                                         </td>
-                                        <td>
-                                            <span className={`status-badge ${product.status}`}>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.status === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                                product.status === 'draft' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                    'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
+                                                }`}>
                                                 {product.status}
                                             </span>
                                         </td>
-                                        <td>
-                                            <div className="actions">
-                                                <button onClick={() => { setEditProduct(product); setShowModal(true); }}>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => { setEditProduct(product); setShowModal(true); }}
+                                                    className="btn-ghost btn-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                                                >
                                                     Edit
                                                 </button>
-                                                <button className="danger" onClick={() => handleDelete(product.id)}>
-                                                    Delete
+                                                <button
+                                                    onClick={() => handleDelete(product.id)}
+                                                    className="btn-ghost btn-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
                                                 </button>
                                             </div>
                                         </td>
@@ -219,7 +315,7 @@ const ProductsList = () => {
                     product={editProduct}
                     categories={categories}
                     onClose={() => setShowModal(false)}
-                    onSave={() => { setShowModal(false); fetchProducts(); fetchStats(); }}
+                    onSave={handleSave}
                 />
             )}
 
@@ -234,55 +330,6 @@ const ProductsList = () => {
                 cancelText="Cancel"
                 variant="danger"
             />
-
-            <style>{`
-                .products-page { padding: 24px; }
-                .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-                .page-header h1 { margin: 0; font-size: 24px; }
-                .subtitle { color: var(--text-secondary); margin: 4px 0 0; }
-                
-                .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-                .stat-card { background: var(--bg-secondary); border-radius: 12px; padding: 20px; text-align: center; }
-                .stat-value { display: block; font-size: 32px; font-weight: 700; }
-                .stat-label { color: var(--text-secondary); font-size: 14px; }
-                .stat-card.success .stat-value { color: #10b981; }
-                .stat-card.warning .stat-value { color: #f59e0b; }
-                .stat-card.danger .stat-value { color: #ef4444; }
-                
-                .filters-bar { display: flex; gap: 12px; margin-bottom: 20px; }
-                .search-input { flex: 1; padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; }
-                .filters-bar select { padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; }
-                
-                .table-container { background: var(--bg-secondary); border-radius: 12px; overflow: hidden; }
-                table { width: 100%; border-collapse: collapse; }
-                th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border-color); }
-                th { background: var(--bg-tertiary); font-weight: 600; font-size: 13px; text-transform: uppercase; }
-                
-                .product-cell { display: flex; align-items: center; gap: 12px; }
-                .product-image { width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: var(--bg-tertiary); }
-                .product-image img { width: 100%; height: 100%; object-fit: cover; }
-                .placeholder { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 20px; }
-                
-                .price { font-weight: 600; color: var(--primary-color); }
-                .stock { padding: 4px 10px; border-radius: 20px; background: #d1fae5; color: #065f46; font-size: 13px; }
-                .stock.low { background: #fee2e2; color: #991b1b; }
-                
-                .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; text-transform: capitalize; }
-                .status-badge.active { background: #d1fae5; color: #065f46; }
-                .status-badge.draft { background: #fef3c7; color: #92400e; }
-                .status-badge.archived { background: #e5e7eb; color: #4b5563; }
-                
-                .actions { display: flex; gap: 8px; }
-                .actions button { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
-                .actions button.danger { background: #fee2e2; color: #991b1b; }
-                
-                .btn-primary { background: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; }
-                .empty-state { text-align: center; padding: 40px; color: var(--text-secondary); }
-                .loading { text-align: center; padding: 40px; }
-                
-                .upgrade-prompt { text-align: center; padding: 60px; }
-                .upgrade-prompt h2 { margin-bottom: 12px; }
-            `}</style>
         </div>
     );
 };
@@ -299,9 +346,44 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
         compare_price: product?.compare_price || '',
         category: product?.category || '',
         stock: product?.stock || 0,
-        status: product?.status || 'draft'
+        status: product?.status || 'draft',
+        images: product?.images || []
     });
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
+    const handleImageUpload = async (e) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('images', files[i]);
+            }
+
+            const response = await apiClient.post('/upload/product-images', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (response.data.success) {
+                const newImages = [...(form.images || []), ...response.data.urls];
+                setForm({ ...form, images: newImages });
+                toast.success('Images uploaded successfully');
+            }
+        } catch (error) {
+            console.error('Upload failed:', error);
+            toast.error('Failed to upload images');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const removeImage = (index) => {
+        const newImages = form.images.filter((_, i) => i !== index);
+        setForm({ ...form, images: newImages });
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -315,115 +397,156 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
             onSave();
         } catch (error) {
             console.error('Save failed:', error);
-            alert('Failed to save product');
+            toast.error('Failed to save product');
         } finally {
             setSaving(false);
         }
     };
 
-    return createPortal(
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h2>{product ? 'Edit Product' : 'Add Product'}</h2>
-                    <button className="close-btn" onClick={onClose}>×</button>
+    return (
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            title={product ? 'Edit Product' : 'Add Product'}
+            footer={
+                <>
+                    <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
+                    <button type="submit" form="product-form" className="btn-primary" disabled={saving}>
+                        {saving ? 'Saving...' : (product ? 'Update' : 'Create')}
+                    </button>
+                </>
+            }
+        >
+            <form id="product-form" onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="label">Product Name *</label>
+                    <input
+                        type="text"
+                        value={form.name}
+                        onChange={e => setForm({ ...form, name: e.target.value })}
+                        className="input"
+                        required
+                    />
                 </div>
-                <form onSubmit={handleSubmit}>
-                    <div className="form-grid">
-                        <div className="form-group full">
-                            <label>Product Name *</label>
-                            <input
-                                type="text"
-                                value={form.name}
-                                onChange={e => setForm({ ...form, name: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>SKU</label>
-                            <input
-                                type="text"
-                                value={form.sku}
-                                onChange={e => setForm({ ...form, sku: e.target.value })}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Category</label>
-                            <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                                <option value="">Select category</option>
-                                {categories.map(cat => (
-                                    <option key={cat.id} value={cat.slug}>{cat.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label>Price *</label>
-                            <input
-                                type="number"
-                                value={form.price}
-                                onChange={e => setForm({ ...form, price: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Compare Price</label>
-                            <input
-                                type="number"
-                                value={form.compare_price}
-                                onChange={e => setForm({ ...form, compare_price: e.target.value })}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Stock</label>
-                            <input
-                                type="number"
-                                value={form.stock}
-                                onChange={e => setForm({ ...form, stock: e.target.value })}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Status</label>
-                            <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                                <option value="draft">Draft</option>
-                                <option value="active">Active</option>
-                            </select>
-                        </div>
-                        <div className="form-group full">
-                            <label>Description</label>
-                            <textarea
-                                value={form.description}
-                                onChange={e => setForm({ ...form, description: e.target.value })}
-                                rows="3"
-                            />
-                        </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="label">SKU</label>
+                        <input
+                            type="text"
+                            value={form.sku}
+                            onChange={e => setForm({ ...form, sku: e.target.value })}
+                            className="input"
+                        />
                     </div>
-                    <div className="modal-footer">
-                        <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="btn-primary" disabled={saving}>
-                            {saving ? 'Saving...' : (product ? 'Update' : 'Create')}
-                        </button>
+                    <div>
+                        <label className="label">Category</label>
+                        <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="select">
+                            <option value="">Select category</option>
+                            {categories.map(cat => (
+                                <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                            ))}
+                        </select>
                     </div>
-                </form>
-            </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="label">Price *</label>
+                        <input
+                            type="number"
+                            value={form.price}
+                            onChange={e => setForm({ ...form, price: e.target.value })}
+                            className="input"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="label">Compare Price</label>
+                        <input
+                            type="number"
+                            value={form.compare_price}
+                            onChange={e => setForm({ ...form, compare_price: e.target.value })}
+                            className="input"
+                        />
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="label">Stock</label>
+                        <input
+                            type="number"
+                            value={form.stock}
+                            onChange={e => setForm({ ...form, stock: e.target.value })}
+                            className="input"
+                        />
+                    </div>
+                    <div>
+                        <label className="label">Status</label>
+                        <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="select">
+                            <option value="draft">Draft</option>
+                            <option value="active">Active</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label className="label">Description</label>
+                    <textarea
+                        value={form.description}
+                        onChange={e => setForm({ ...form, description: e.target.value })}
+                        rows="3"
+                        className="input"
+                    />
+                </div>
 
-            <style>{`
-                .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-                .modal { background: var(--bg-primary); border-radius: 16px; width: 100%; max-width: 600px; max-height: 90vh; overflow: auto; }
-                .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border-color); }
-                .modal-header h2 { margin: 0; font-size: 20px; }
-                .close-btn { background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); }
-                
-                .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 24px; }
-                .form-group { display: flex; flex-direction: column; gap: 6px; }
-                .form-group.full { grid-column: span 2; }
-                .form-group label { font-weight: 500; font-size: 14px; }
-                .form-group input, .form-group select, .form-group textarea { padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
-                
-                .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--border-color); }
-                .btn-secondary { background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 8px; cursor: pointer; }
-            `}</style>
-        </div>,
-        document.body
+                {/* Image Upload */}
+                <div>
+                    <label className="label">Product Images</label>
+                    <div className="space-y-3">
+                        {/* Image Preview Grid */}
+                        {form.images && form.images.length > 0 && (
+                            <div className="grid grid-cols-4 gap-3">
+                                {form.images.map((img, idx) => (
+                                    <div key={idx} className="relative group">
+                                        <img
+                                            src={`http://localhost:3001${img}`}
+                                            alt={`Product ${idx + 1}`}
+                                            className="w-full h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeImage(idx)}
+                                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Upload Button */}
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <svg className="w-8 h-8 mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                    {uploading ? 'Uploading...' : 'Click to upload or drag and drop'}
+                                </p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500">PNG, JPG, GIF up to 5MB</p>
+                            </div>
+                            <input
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleImageUpload}
+                                disabled={uploading}
+                            />
+                        </label>
+                    </div>
+                </div>
+            </form>
+        </Modal>
     );
 };
 

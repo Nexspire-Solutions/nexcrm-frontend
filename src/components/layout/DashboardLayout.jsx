@@ -1,13 +1,51 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import NotificationBell from '../common/NotificationBell';
+import NotificationSidebar from '../common/NotificationSidebar';
+import { getSocket } from '../../utils/socket';
+
+// Mock notifications
+const mockNotifications = [
+    { id: 1, type: 'lead', title: 'New Lead Added', message: 'John Smith from TechCorp submitted a contact form', time: '2 min ago', read: false },
+    { id: 2, type: 'message', title: 'New Message', message: 'Sarah sent you a message in #General', time: '15 min ago', read: false },
+    { id: 3, type: 'task', title: 'Task Completed', message: 'Follow-up call with DataFlow Inc marked as done', time: '1 hour ago', read: true },
+    { id: 4, type: 'system', title: 'System Update', message: 'New features are now available', time: '3 hours ago', read: true },
+];
 
 export default function DashboardLayout() {
     const location = useLocation();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [notificationOpen, setNotificationOpen] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [notifications, setNotifications] = useState(mockNotifications);
+
+    // Listen for real-time notifications
+    useEffect(() => {
+        const socket = getSocket();
+        if (socket) {
+            socket.on('notification', (notification) => {
+                setNotifications(prev => [notification, ...prev]);
+            });
+        }
+    }, []);
+
+    const handleMarkAsRead = (id) => {
+        setNotifications(prev =>
+            prev.map(n => n.id === id ? { ...n, read: true } : n)
+        );
+    };
+
+    const handleMarkAllAsRead = () => {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    };
+
+    const handleClearAll = () => {
+        setNotifications([]);
+        setNotificationOpen(false);
+    };
 
     const getPageTitle = () => {
         const path = location.pathname;
@@ -122,21 +160,84 @@ export default function DashboardLayout() {
                         </div>
 
                         {/* Notifications */}
-                        <NotificationBell />
+                        <NotificationBell
+                            onClick={() => setNotificationOpen(true)}
+                            unreadCount={notifications.filter(n => !n.read).length}
+                        />
 
-                        {/* User */}
-                        <div className="hidden sm:flex items-center gap-3 ml-2 pl-4 border-l border-slate-200 dark:border-slate-700">
-                            <div className="text-right">
-                                <p className="text-sm font-medium text-slate-900 dark:text-white">
-                                    {user?.firstName || 'User'}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-                                    {user?.role || 'user'}
-                                </p>
-                            </div>
-                            <div className="w-9 h-9 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold">
-                                {user?.firstName?.[0] || 'U'}
-                            </div>
+                        {/* User Dropdown */}
+                        <div className="relative ml-2 pl-4 border-l border-slate-200 dark:border-slate-700 hidden sm:block">
+                            <button
+                                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                            >
+                                <div className="text-right">
+                                    <p className="text-sm font-medium text-slate-900 dark:text-white">
+                                        {user?.firstName || 'User'}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
+                                        {user?.role || 'user'}
+                                    </p>
+                                </div>
+                                <div className="w-9 h-9 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold">
+                                    {user?.firstName?.[0] || 'U'}
+                                </div>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {userMenuOpen && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-30"
+                                        onClick={() => setUserMenuOpen(false)}
+                                    />
+                                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-lg shadow-lg border border-slate-200 dark:border-slate-800 z-40 py-1 animate-scale-in">
+                                        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                                {user?.email}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setUserMenuOpen(false);
+                                                // navigate('/profile'); // Future implementation
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                            Profile
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setUserMenuOpen(false);
+                                                // navigate('/settings'); // Future implementation
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            Settings
+                                        </button>
+                                        <div className="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                                        <button
+                                            onClick={() => {
+                                                setUserMenuOpen(false);
+                                                logout();
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                            </svg>
+                                            Logout
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </header>
@@ -146,6 +247,16 @@ export default function DashboardLayout() {
                     <Outlet />
                 </main>
             </div>
+
+            {/* Notification Sidebar */}
+            <NotificationSidebar
+                isOpen={notificationOpen}
+                onClose={() => setNotificationOpen(false)}
+                notifications={notifications}
+                onMarkAsRead={handleMarkAsRead}
+                onMarkAllAsRead={handleMarkAllAsRead}
+                onClearAll={handleClearAll}
+            />
         </div>
     );
 }

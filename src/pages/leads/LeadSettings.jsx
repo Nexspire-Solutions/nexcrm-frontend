@@ -28,14 +28,14 @@ export default function LeadSettings() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="page-header">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6  rounded-xl">
                 <div>
-                    <h1 className="page-title">Lead Settings</h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-white">Lead Settings</h1>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                         Configure lead statuses, scoring, and assignment rules
                     </p>
                 </div>
-                <button onClick={handleSave} className="btn-primary">
+                <button onClick={handleSave} className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
