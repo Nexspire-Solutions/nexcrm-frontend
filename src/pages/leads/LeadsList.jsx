@@ -32,16 +32,86 @@ export default function LeadsList() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
     const [viewMode, setViewMode] = useState('list');
+    const [saving, setSaving] = useState(false);
+    const [formData, setFormData] = useState({
+        contactName: '',
+        company: '',
+        email: '',
+        phone: '',
+        estimatedValue: '',
+        leadSource: 'Website',
+        status: 'new'
+    });
     const location = useLocation();
     const navigate = useNavigate();
 
     useEffect(() => {
         if (location.state?.openModal) {
+            resetForm();
             setEditingLead(null);
             setShowModal(true);
             window.history.replaceState({}, document.title);
         }
     }, [location]);
+
+    const resetForm = () => {
+        setFormData({
+            contactName: '',
+            company: '',
+            email: '',
+            phone: '',
+            estimatedValue: '',
+            leadSource: 'Website',
+            status: 'new'
+        });
+    };
+
+    const handleSubmit = async () => {
+        if (!formData.contactName.trim()) {
+            toast.error('Contact name is required');
+            return;
+        }
+        setSaving(true);
+        try {
+            if (editingLead) {
+                // Update existing lead
+                await leadsAPI.update(editingLead.id, formData);
+                toast.success('Lead updated successfully');
+            } else {
+                // Create new lead
+                await leadsAPI.create(formData);
+                toast.success('Lead created successfully');
+            }
+            setShowModal(false);
+            resetForm();
+            fetchLeads(); // Refresh the list
+        } catch (error) {
+            console.error('Failed to save lead:', error);
+            toast.error(error.response?.data?.error || 'Failed to save lead');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const openCreateModal = () => {
+        resetForm();
+        setEditingLead(null);
+        setShowModal(true);
+    };
+
+    const openEditModal = (lead) => {
+        setFormData({
+            contactName: lead.contactName || '',
+            company: lead.company || '',
+            email: lead.email || '',
+            phone: lead.phone || '',
+            estimatedValue: lead.estimatedValue || '',
+            leadSource: lead.leadSource || 'Website',
+            status: lead.status || 'new'
+        });
+        setEditingLead(lead);
+        setShowModal(true);
+    };
 
     useEffect(() => {
         fetchLeads();
@@ -175,7 +245,7 @@ export default function LeadsList() {
                         </button>
                     </div>
                     <button
-                        onClick={() => { setEditingLead(null); setShowModal(true); }}
+                        onClick={openCreateModal}
                         className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,7 +413,7 @@ export default function LeadsList() {
                                                 <Link to={`/leads/${lead.id}`} className="px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors">
                                                     View
                                                 </Link>
-                                                <button onClick={() => { setEditingLead(lead); setShowModal(true); }} className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                                                <button onClick={() => openEditModal(lead)} className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
                                                     Edit
                                                 </button>
                                                 <button onClick={() => handleDelete(lead.id)} className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
@@ -378,40 +448,74 @@ export default function LeadsList() {
                 title={editingLead ? 'Edit Lead' : 'Add New Lead'}
                 footer={
                     <>
-                        <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                        <button onClick={() => { setShowModal(false); toast.success('Lead saved'); }} className="btn-primary">
-                            {editingLead ? 'Update' : 'Create'}
+                        <button onClick={() => setShowModal(false)} className="btn-secondary" disabled={saving}>Cancel</button>
+                        <button onClick={handleSubmit} className="btn-primary" disabled={saving}>
+                            {saving ? 'Saving...' : (editingLead ? 'Update' : 'Create')}
                         </button>
                     </>
                 }
             >
                 <div className="space-y-4">
                     <div>
-                        <label className="label">Contact Name</label>
-                        <input type="text" className="input" defaultValue={editingLead?.contactName} />
+                        <label className="label">Contact Name *</label>
+                        <input
+                            type="text"
+                            className="input"
+                            value={formData.contactName}
+                            onChange={(e) => setFormData(prev => ({ ...prev, contactName: e.target.value }))}
+                            placeholder="Enter contact name"
+                        />
                     </div>
                     <div>
                         <label className="label">Company</label>
-                        <input type="text" className="input" defaultValue={editingLead?.company} />
+                        <input
+                            type="text"
+                            className="input"
+                            value={formData.company}
+                            onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
+                            placeholder="Enter company name"
+                        />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="label">Email</label>
-                            <input type="email" className="input" defaultValue={editingLead?.email} />
+                            <input
+                                type="email"
+                                className="input"
+                                value={formData.email}
+                                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                                placeholder="email@example.com"
+                            />
                         </div>
                         <div>
                             <label className="label">Phone</label>
-                            <input type="tel" className="input" defaultValue={editingLead?.phone} />
+                            <input
+                                type="tel"
+                                className="input"
+                                value={formData.phone}
+                                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                                placeholder="+91 XXXXX XXXXX"
+                            />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="label">Estimated Value</label>
-                            <input type="number" className="input" defaultValue={editingLead?.estimatedValue} />
+                            <input
+                                type="number"
+                                className="input"
+                                value={formData.estimatedValue}
+                                onChange={(e) => setFormData(prev => ({ ...prev, estimatedValue: e.target.value }))}
+                                placeholder="50000"
+                            />
                         </div>
                         <div>
                             <label className="label">Lead Source</label>
-                            <select className="select" defaultValue={editingLead?.leadSource || 'Website'}>
+                            <select
+                                className="select"
+                                value={formData.leadSource}
+                                onChange={(e) => setFormData(prev => ({ ...prev, leadSource: e.target.value }))}
+                            >
                                 <option value="Website">Website</option>
                                 <option value="Referral">Referral</option>
                                 <option value="LinkedIn">LinkedIn</option>
@@ -422,9 +526,15 @@ export default function LeadsList() {
                     </div>
                     <div>
                         <label className="label">Status</label>
-                        <select className="select" defaultValue={editingLead?.status || 'new'}>
+                        <select
+                            className="select"
+                            value={formData.status}
+                            onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                        >
                             <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
                             <option value="qualified">Qualified</option>
+                            <option value="proposal">Proposal</option>
                             <option value="negotiation">Negotiation</option>
                             <option value="won">Won</option>
                             <option value="lost">Lost</option>

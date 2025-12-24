@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import NotificationBell from '../common/NotificationBell';
 import NotificationSidebar from '../common/NotificationSidebar';
+import FloatingChatWidget from '../common/FloatingChatWidget';
 import { getSocket } from '../../utils/socket';
 
 // Mock notifications
@@ -257,6 +258,9 @@ export default function DashboardLayout() {
                 onMarkAllAsRead={handleMarkAllAsRead}
                 onClearAll={handleClearAll}
             />
+
+            {/* Floating Chat Widget */}
+            <FloatingChatWidget />
         </div>
     );
 }
