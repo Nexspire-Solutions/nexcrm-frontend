@@ -14,36 +14,37 @@ const Icons = {
     phone: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>,
     mail: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
     users: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
-    trophy: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>,
     arrow: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
     plus: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
     clock: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-    check: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
 };
 
 export default function Dashboard() {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
-    const [stats, setStats] = useState({ revenue: 0, activeProjects: 0, newLeads: 0, pendingInquiries: 0 });
-    const [recentLeads, setRecentLeads] = useState([]);
+
+    // All dashboard data from API
+    const [dashboardData, setDashboardData] = useState({
+        stats: { revenue: 0, totalLeads: 0, newLeads: 0, totalClients: 0, pendingTasks: 0 },
+        leadsPipeline: {},
+        monthlyRevenue: [],
+        teamPerformance: [],
+        weeklyActivity: [],
+        upcomingTasks: [],
+        recentLeads: [],
+        thisMonth: { revenue: 0, dealsClosed: 0 },
+        communication: { calls: 0, emails: 0 }
+    });
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const [statsData, activityData] = await Promise.all([
-                    dashboardAPI.getStats(),
-                    dashboardAPI.getRecentActivity()
-                ]);
-                setStats(statsData);
-                setRecentLeads(activityData.recentLeads || []);
+                const response = await dashboardAPI.getCRMStats();
+                if (response.success && response.data) {
+                    setDashboardData(response.data);
+                }
             } catch (error) {
-                setStats({ revenue: 845000, activeProjects: 24, newLeads: 156, pendingInquiries: 12 });
-                setRecentLeads([
-                    { id: 1, name: 'Acme Corporation', email: 'contact@acme.com', status: 'new', value: 150000, createdAt: '2h ago' },
-                    { id: 2, name: 'TechStart Inc', email: 'hello@techstart.io', status: 'contacted', value: 85000, createdAt: '5h ago' },
-                    { id: 3, name: 'Global Solutions', email: 'info@globalsol.com', status: 'qualified', value: 220000, createdAt: '1d ago' },
-                    { id: 4, name: 'InnovateTech', email: 'sales@innovate.com', status: 'proposal', value: 180000, createdAt: '2d ago' },
-                ]);
+                console.error('Failed to fetch dashboard data:', error);
             } finally {
                 setIsLoading(false);
             }
@@ -52,41 +53,27 @@ export default function Dashboard() {
     }, []);
 
     const formatCurrency = (amt) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
-
-    // Data
-    const revenueData = [45, 62, 58, 75, 82, 91, 68, 95, 88, 102, 98, 115];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const leadsData = { new: 45, contacted: 32, qualified: 28, proposal: 18, negotiation: 12, won: 21 };
-    const teamMembers = [
-        { name: 'Rahul Sharma', role: 'Sales Lead', tasks: 8, completed: 6 },
-        { name: 'Priya Mehta', role: 'Account Manager', tasks: 12, completed: 10 },
-        { name: 'Amit Kumar', role: 'Sales Representative', tasks: 6, completed: 4 },
-        { name: 'Sneha Tiwari', role: 'Sales Representative', tasks: 9, completed: 7 },
-    ];
-    const activityData = [
-        { day: 'Mon', calls: 24, emails: 45 },
-        { day: 'Tue', calls: 32, emails: 52 },
-        { day: 'Wed', calls: 28, emails: 48 },
-        { day: 'Thu', calls: 35, emails: 60 },
-        { day: 'Fri', calls: 30, emails: 55 },
-    ];
-    const upcomingTasks = [
-        { task: 'Follow up with Acme Corp', due: 'Today, 3:00 PM', priority: 'high' },
-        { task: 'Prepare proposal for TechStart', due: 'Tomorrow, 10:00 AM', priority: 'medium' },
-        { task: 'Team meeting - Weekly review', due: 'Friday, 4:00 PM', priority: 'low' },
-    ];
+    const formatShortCurrency = (amt) => {
+        if (amt >= 100000) return `₹${(amt / 100000).toFixed(1)}L`;
+        if (amt >= 1000) return `₹${(amt / 1000).toFixed(0)}K`;
+        return `₹${amt}`;
+    };
 
     if (isLoading) {
         return (
             <div className="space-y-5 animate-pulse">
-                <div className="grid grid-cols-4 gap-4">{[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-slate-200 rounded-xl"></div>)}</div>
-                <div className="grid grid-cols-3 gap-5"><div className="col-span-2 h-64 bg-slate-200 rounded-xl"></div><div className="h-64 bg-slate-200 rounded-xl"></div></div>
+                <div className="grid grid-cols-4 gap-4">{[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>)}</div>
+                <div className="grid grid-cols-3 gap-5"><div className="col-span-2 h-64 bg-slate-200 dark:bg-slate-800 rounded-xl"></div><div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl"></div></div>
             </div>
         );
     }
 
-    const maxRevenue = Math.max(...revenueData);
-    const totalLeads = Object.values(leadsData).reduce((a, b) => a + b, 0);
+    // Extract data from API response
+    const { stats, leadsPipeline, monthlyRevenue, teamPerformance, weeklyActivity, upcomingTasks, recentLeads, thisMonth, communication } = dashboardData;
+
+    // Calculate max for charts
+    const maxRevenue = Math.max(...monthlyRevenue.map(m => m.revenue), 1);
+    const totalLeads = Object.values(leadsPipeline).reduce((a, b) => a + b, 0) || 1;
 
     return (
         <div className="space-y-5">
@@ -108,18 +95,18 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Stats Cards - Dynamic */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Revenue', value: formatCurrency(stats.revenue || 845000), change: '+12.5%', up: true, icon: Icons.revenue, color: 'emerald' },
-                    { label: 'Active Projects', value: stats.activeProjects || 24, change: '+3', up: true, icon: Icons.projects, color: 'blue' },
-                    { label: 'Total Leads', value: stats.newLeads || 156, change: '+18%', up: true, icon: Icons.leads, color: 'violet' },
-                    { label: 'Pending Tasks', value: stats.pendingInquiries || 12, change: '5 urgent', up: false, icon: Icons.tasks, color: 'amber' },
+                    { label: 'Total Revenue', value: formatCurrency(stats.revenue), change: '', icon: Icons.revenue, color: 'emerald' },
+                    { label: 'Total Clients', value: stats.totalClients, change: '', icon: Icons.projects, color: 'blue' },
+                    { label: 'Total Leads', value: stats.totalLeads, change: `${stats.newLeads} new`, icon: Icons.leads, color: 'violet' },
+                    { label: 'Pending Tasks', value: stats.pendingTasks, change: '', icon: Icons.tasks, color: 'amber' },
                 ].map((stat, i) => (
                     <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between mb-3">
                             <div className={`w-10 h-10 rounded-lg bg-${stat.color}-50 dark:bg-${stat.color}-900/30 text-${stat.color}-600 dark:text-${stat.color}-400 flex items-center justify-center`}>{stat.icon}</div>
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${stat.up ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'}`}>{stat.change}</span>
+                            {stat.change && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">{stat.change}</span>}
                         </div>
                         <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
                         <p className="text-sm text-slate-500 dark:text-slate-400">{stat.label}</p>
@@ -129,60 +116,58 @@ export default function Dashboard() {
 
             {/* Main Grid - Mixed Layout */}
             <div className="grid grid-cols-12 gap-5">
-                {/* Revenue Chart - Large */}
+                {/* Revenue Chart - Dynamic */}
                 <div className="col-span-12 lg:col-span-8 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">{Icons.chart}</div>
                             <div>
                                 <h3 className="font-semibold text-slate-900 dark:text-white">Revenue Overview</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Monthly performance</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Monthly performance (last 12 months)</p>
                             </div>
                         </div>
-                        <select className="text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800">
-                            <option>2024</option>
-                            <option>2023</option>
-                        </select>
                     </div>
                     <div className="h-48 flex items-end gap-2 pt-4">
-                        {revenueData.map((value, i) => (
+                        {monthlyRevenue.length > 0 ? monthlyRevenue.map((item, i) => (
                             <div key={i} className="flex-1 flex flex-col items-center group">
                                 <div className="relative w-full">
-                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium text-slate-600 opacity-0 group-hover:opacity-100 transition bg-slate-800 text-white px-2 py-1 rounded">₹{value}k</div>
-                                    <div className="w-full bg-indigo-500 rounded-t hover:bg-indigo-600 transition cursor-pointer" style={{ height: `${(value / maxRevenue) * 160}px` }}></div>
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium text-slate-600 opacity-0 group-hover:opacity-100 transition bg-slate-800 text-white px-2 py-1 rounded">₹{item.revenue}k</div>
+                                    <div className="w-full bg-indigo-500 rounded-t hover:bg-indigo-600 transition cursor-pointer" style={{ height: `${Math.max((item.revenue / maxRevenue) * 160, 4)}px` }}></div>
                                 </div>
-                                <span className="text-xs text-slate-400 mt-2">{months[i]}</span>
+                                <span className="text-xs text-slate-400 mt-2">{item.month}</span>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="flex-1 flex items-center justify-center text-slate-400">No data</div>
+                        )}
                     </div>
                 </div>
 
-                {/* Quick Stats - Small Cards */}
+                {/* Quick Stats - Dynamic */}
                 <div className="col-span-12 lg:col-span-4 grid grid-rows-2 gap-4">
                     <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl p-5 text-white">
                         <p className="text-sm text-indigo-100 mb-1">This Month</p>
-                        <p className="text-3xl font-bold">₹8.4L</p>
-                        <p className="text-sm text-indigo-200 mt-2">21 deals closed · 89% target</p>
+                        <p className="text-3xl font-bold">{formatShortCurrency(thisMonth.revenue)}</p>
+                        <p className="text-sm text-indigo-200 mt-2">{thisMonth.dealsClosed} deals closed</p>
                     </div>
                     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">{Icons.phone}</div>
                             <div>
-                                <p className="text-xl font-bold text-slate-900 dark:text-white">172</p>
+                                <p className="text-xl font-bold text-slate-900 dark:text-white">{communication.calls}</p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">Calls this week</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">{Icons.mail}</div>
                             <div>
-                                <p className="text-xl font-bold text-slate-900 dark:text-white">292</p>
+                                <p className="text-xl font-bold text-slate-900 dark:text-white">{communication.emails}</p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">Emails sent</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Leads Pipeline */}
+                {/* Leads Pipeline - Dynamic */}
                 <div className="col-span-12 lg:col-span-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
@@ -192,23 +177,25 @@ export default function Dashboard() {
                         <Link to="/leads" className="text-sm text-indigo-600 dark:text-indigo-400 font-medium flex items-center gap-1 hover:text-indigo-700 dark:hover:text-indigo-300">View all {Icons.arrow}</Link>
                     </div>
                     <div className="space-y-2.5">
-                        {Object.entries(leadsData).map(([stage, count]) => {
-                            const colors = { new: 'bg-blue-500', contacted: 'bg-cyan-500', qualified: 'bg-emerald-500', proposal: 'bg-amber-500', negotiation: 'bg-orange-500', won: 'bg-green-600' };
+                        {Object.keys(leadsPipeline).length > 0 ? Object.entries(leadsPipeline).map(([stage, count]) => {
+                            const colors = { new: 'bg-blue-500', contacted: 'bg-cyan-500', qualified: 'bg-emerald-500', proposal: 'bg-amber-500', negotiation: 'bg-orange-500', won: 'bg-green-600', lost: 'bg-red-500' };
                             return (
                                 <div key={stage} className="flex items-center gap-3">
                                     <span className="w-20 text-xs text-slate-600 dark:text-slate-400 capitalize font-medium">{stage}</span>
                                     <div className="flex-1 h-5 bg-slate-100 dark:bg-slate-700 rounded overflow-hidden">
-                                        <div className={`h-full ${colors[stage]} transition-all flex items-center justify-end pr-2`} style={{ width: `${(count / totalLeads) * 100}%` }}>
+                                        <div className={`h-full ${colors[stage] || 'bg-slate-500'} transition-all flex items-center justify-end pr-2`} style={{ width: `${Math.max((count / totalLeads) * 100, 5)}%` }}>
                                             <span className="text-[10px] font-bold text-white">{count}</span>
                                         </div>
                                     </div>
                                 </div>
                             );
-                        })}
+                        }) : (
+                            <p className="text-sm text-slate-400">No leads data</p>
+                        )}
                     </div>
                 </div>
 
-                {/* Recent Leads Table */}
+                {/* Recent Leads Table - Dynamic */}
                 <div className="col-span-12 lg:col-span-7 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                     <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
                         <h3 className="font-semibold text-slate-900 dark:text-white">Recent Leads</h3>
@@ -224,49 +211,49 @@ export default function Dashboard() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                            {recentLeads.map((lead) => (
+                            {recentLeads.length > 0 ? recentLeads.map((lead) => (
                                 <tr key={lead.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300">{lead.name.charAt(0)}</div>
+                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300">{lead.name?.charAt(0) || '?'}</div>
                                             <div>
                                                 <p className="text-sm font-medium text-slate-900 dark:text-white">{lead.name}</p>
                                                 <p className="text-xs text-slate-500 dark:text-slate-400">{lead.email}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-white">{formatCurrency(lead.value)}</td>
+                                    <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-white">{formatCurrency(lead.value || 0)}</td>
                                     <td className="px-4 py-3">
-                                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium capitalize ${lead.status === 'new' ? 'text-blue-600 dark:text-blue-400' : lead.status === 'qualified' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
-                                            }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${lead.status === 'new' ? 'bg-blue-500' : lead.status === 'qualified' ? 'bg-emerald-500' : 'bg-amber-500'
-                                                }`}></span>
+                                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium capitalize ${lead.status === 'new' ? 'text-blue-600 dark:text-blue-400' : lead.status === 'qualified' ? 'text-emerald-600 dark:text-emerald-400' : lead.status === 'won' ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${lead.status === 'new' ? 'bg-blue-500' : lead.status === 'qualified' ? 'bg-emerald-500' : lead.status === 'won' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
                                             {lead.status}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{lead.createdAt}</td>
                                 </tr>
-                            ))}
+                            )) : (
+                                <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">No leads found</td></tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
 
-                {/* Team Performance */}
+                {/* Team Performance - Dynamic */}
                 <div className="col-span-12 lg:col-span-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center">{Icons.users}</div>
                             <h3 className="font-semibold text-slate-900 dark:text-white">Team Status</h3>
                         </div>
-                        <Link to="/employees" className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">View all</Link>
+                        <Link to="/users" className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">View all</Link>
                     </div>
                     <div className="space-y-4">
-                        {teamMembers.map((member, i) => {
-                            const progress = (member.completed / member.tasks) * 100;
+                        {teamPerformance.length > 0 ? teamPerformance.map((member, i) => {
+                            const progress = member.tasks > 0 ? (member.completed / member.tasks) * 100 : 0;
                             return (
                                 <div key={i} className="flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white text-xs font-bold">
-                                        {member.name.split(' ').map(n => n[0]).join('')}
+                                        {member.name?.split(' ').map(n => n[0]).join('') || '?'}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between">
@@ -279,11 +266,13 @@ export default function Dashboard() {
                                     </div>
                                 </div>
                             );
-                        })}
+                        }) : (
+                            <p className="text-sm text-slate-400">No team data</p>
+                        )}
                     </div>
                 </div>
 
-                {/* Weekly Activity */}
+                {/* Weekly Activity - Dynamic */}
                 <div className="col-span-12 lg:col-span-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                     <div className="flex items-center gap-2 mb-4">
                         <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">{Icons.chart}</div>
@@ -294,19 +283,23 @@ export default function Dashboard() {
                         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-emerald-500"></span>Emails</span>
                     </div>
                     <div className="h-32 flex items-end gap-3">
-                        {activityData.map((day, i) => (
-                            <div key={i} className="flex-1">
-                                <div className="flex gap-1 h-24 items-end">
-                                    <div className="flex-1 bg-indigo-500 rounded-t" style={{ height: `${(day.calls / 40) * 100}%` }}></div>
-                                    <div className="flex-1 bg-emerald-500 rounded-t" style={{ height: `${(day.emails / 70) * 100}%` }}></div>
+                        {weeklyActivity.map((day, i) => {
+                            const maxCalls = Math.max(...weeklyActivity.map(d => d.calls || 0), 1);
+                            const maxEmails = Math.max(...weeklyActivity.map(d => d.emails || 0), 1);
+                            return (
+                                <div key={i} className="flex-1">
+                                    <div className="flex gap-1 h-24 items-end">
+                                        <div className="flex-1 bg-indigo-500 rounded-t" style={{ height: `${Math.max((day.calls / maxCalls) * 100, 4)}%` }}></div>
+                                        <div className="flex-1 bg-emerald-500 rounded-t" style={{ height: `${Math.max((day.emails / maxEmails) * 100, 4)}%` }}></div>
+                                    </div>
+                                    <p className="text-xs text-slate-400 text-center mt-2">{day.day?.substring(0, 3)}</p>
                                 </div>
-                                <p className="text-xs text-slate-400 text-center mt-2">{day.day}</p>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
-                {/* Upcoming Tasks */}
+                {/* Upcoming Tasks - Dynamic */}
                 <div className="col-span-12 lg:col-span-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
@@ -315,10 +308,9 @@ export default function Dashboard() {
                         </div>
                     </div>
                     <div className="space-y-3">
-                        {upcomingTasks.map((item, i) => (
+                        {upcomingTasks.length > 0 ? upcomingTasks.map((item, i) => (
                             <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition cursor-pointer">
-                                <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center ${item.priority === 'high' ? 'border-red-400' : item.priority === 'medium' ? 'border-amber-400' : 'border-slate-300 dark:border-slate-600'
-                                    }`}></div>
+                                <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center ${item.priority === 'high' ? 'border-red-400' : item.priority === 'medium' ? 'border-amber-400' : 'border-slate-300 dark:border-slate-600'}`}></div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-slate-900 dark:text-white">{item.task}</p>
                                     <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -327,7 +319,9 @@ export default function Dashboard() {
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <p className="text-sm text-slate-400 text-center py-4">No upcoming tasks</p>
+                        )}
                     </div>
                 </div>
             </div>
