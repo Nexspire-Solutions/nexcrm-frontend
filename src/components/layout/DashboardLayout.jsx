@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
@@ -17,6 +17,7 @@ const mockNotifications = [
 
 export default function DashboardLayout() {
     const location = useLocation();
+    const navigate = useNavigate();
     const { user, logout } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notificationOpen, setNotificationOpen] = useState(false);
@@ -201,7 +202,7 @@ export default function DashboardLayout() {
                                         <button
                                             onClick={() => {
                                                 setUserMenuOpen(false);
-                                                // navigate('/profile'); // Future implementation
+                                                navigate('/profile');
                                             }}
                                             className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
                                         >
@@ -213,7 +214,7 @@ export default function DashboardLayout() {
                                         <button
                                             onClick={() => {
                                                 setUserMenuOpen(false);
-                                                // navigate('/settings'); // Future implementation
+                                                navigate('/settings');
                                             }}
                                             className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
                                         >
