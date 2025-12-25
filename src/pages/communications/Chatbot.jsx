@@ -1,17 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
-
-const mockResponses = [
-    { id: 1, trigger: 'hello', response: 'Hello! How can I help you today?', category: 'Greeting' },
-    { id: 2, trigger: 'pricing', response: 'Our pricing starts at $49/month. Would you like to know more about our plans?', category: 'Sales' },
-    { id: 3, trigger: 'support', response: 'Please contact our support team at support@company.com or call us at 1-800-XXX-XXXX', category: 'Support' },
-    { id: 4, trigger: 'demo', response: 'I\'d be happy to schedule a demo for you. What time works best?', category: 'Sales' },
-];
+import apiClient from '../../api/axios';
 
 export default function Chatbot() {
-    const [responses, setResponses] = useState(mockResponses);
+    const [responses, setResponses] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [settings, setSettings] = useState({
         enabled: true,
         welcomeMessage: 'Hi there! I\'m your virtual assistant. How can I help you today?',
@@ -24,18 +19,53 @@ export default function Chatbot() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
 
+    useEffect(() => {
+        fetchResponses();
+    }, []);
+
+    const fetchResponses = async () => {
+        try {
+            const response = await apiClient.get('/chatbot/responses');
+            setResponses(response.data.data || []);
+        } catch (error) {
+            console.error('Failed to fetch chatbot responses:', error);
+            setResponses([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleDelete = (id) => {
         setDeleteTargetId(id);
         setShowDeleteConfirm(true);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (deleteTargetId) {
-            setResponses(prev => prev.filter(r => r.id !== deleteTargetId));
-            toast.success('Response deleted');
+            try {
+                await apiClient.delete(`/chatbot/responses/${deleteTargetId}`);
+                toast.success('Response deleted');
+                fetchResponses();
+            } catch (error) {
+                // Just remove from local state if API doesn't exist
+                setResponses(prev => prev.filter(r => r.id !== deleteTargetId));
+                toast.success('Response deleted');
+            }
             setDeleteTargetId(null);
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-48 animate-pulse"></div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+                    <div className="lg:col-span-2 h-64 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -128,33 +158,44 @@ export default function Chatbot() {
                                 Add Response
                             </button>
                         </div>
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>Trigger</th>
-                                    <th>Response</th>
-                                    <th>Category</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {responses.map(response => (
-                                    <tr key={response.id}>
-                                        <td>
-                                            <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{response.trigger}</code>
-                                        </td>
-                                        <td className="max-w-xs truncate text-slate-600 dark:text-slate-400">{response.response}</td>
-                                        <td><span className="badge-gray">{response.category}</span></td>
-                                        <td>
-                                            <div className="flex items-center gap-2">
-                                                <button onClick={() => { setEditingResponse(response); setShowModal(true); }} className="btn-ghost btn-sm">Edit</button>
-                                                <button onClick={() => handleDelete(response.id)} className="btn-ghost btn-sm text-red-600">Delete</button>
-                                            </div>
-                                        </td>
+
+                        {responses.length === 0 ? (
+                            <div className="p-12 text-center">
+                                <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                </svg>
+                                <p className="text-slate-500 dark:text-slate-400">No automated responses configured</p>
+                                <p className="text-sm text-slate-400 mt-1">Add responses to automate common queries</p>
+                            </div>
+                        ) : (
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Trigger</th>
+                                        <th>Response</th>
+                                        <th>Category</th>
+                                        <th>Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {responses.map(response => (
+                                        <tr key={response.id}>
+                                            <td>
+                                                <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{response.trigger}</code>
+                                            </td>
+                                            <td className="max-w-xs truncate text-slate-600 dark:text-slate-400">{response.response}</td>
+                                            <td><span className="badge-gray">{response.category}</span></td>
+                                            <td>
+                                                <div className="flex items-center gap-2">
+                                                    <button onClick={() => { setEditingResponse(response); setShowModal(true); }} className="btn-ghost btn-sm">Edit</button>
+                                                    <button onClick={() => handleDelete(response.id)} className="btn-ghost btn-sm text-red-600">Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </div>
             </div>

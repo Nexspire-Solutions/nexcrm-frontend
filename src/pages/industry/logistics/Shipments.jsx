@@ -1,83 +1,70 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProHeader from '../../../components/common/ProHeader';
-import ProCard from '../../../components/common/ProCard';
 import ProTable from '../../../components/common/ProTable';
+import ProCard from '../../../components/common/ProCard';
 import StatusBadge from '../../../components/common/StatusBadge';
-
-const mockShipments = [
-    { id: 'SHP-001', origin: 'New York, NY', destination: 'Los Angeles, CA', status: 'in-transit', eta: '2024-12-25', carrier: 'FedEx' },
-    { id: 'SHP-002', origin: 'Chicago, IL', destination: 'Miami, FL', status: 'delivered', eta: '2024-12-20', carrier: 'UPS' },
-    { id: 'SHP-003', origin: 'Seattle, WA', destination: 'Boston, MA', status: 'pending', eta: '2024-12-28', carrier: 'DHL' },
-    { id: 'SHP-004', origin: 'Houston, TX', destination: 'Denver, CO', status: 'in-transit', eta: '2024-12-24', carrier: 'FedEx' },
-];
+import apiClient from '../../../api/axios';
 
 export default function Shipments() {
-    const [shipments] = useState(mockShipments);
+    const [shipments, setShipments] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchShipments();
+    }, []);
+
+    const fetchShipments = async () => {
+        try {
+            const response = await apiClient.get('/shipments');
+            setShipments(response.data.data || []);
+        } catch (error) {
+            console.error('Failed to fetch shipments:', error);
+            setShipments([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const columns = [
-        { header: 'Shipment ID', accessor: 'id', className: 'font-medium text-slate-900 dark:text-white' },
-        {
-            header: 'Route',
-            accessor: 'origin',
-            render: (row) => (
-                <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{row.origin}</p>
-                    <p className="text-xs text-slate-500">→ {row.destination}</p>
-                </div>
-            )
-        },
-        { header: 'Carrier', accessor: 'carrier' },
-        { header: 'ETA', accessor: 'eta', className: 'font-medium' },
-        {
-            header: 'Status',
-            accessor: 'status',
-            render: (row) => (
-                <StatusBadge
-                    status={row.status}
-                    variant={row.status === 'delivered' ? 'success' : row.status === 'in-transit' ? 'info' : 'warning'}
-                />
-            )
-        },
-        {
-            header: 'Actions',
-            align: 'right',
-            render: () => (
-                <button className="text-indigo-600 hover:text-indigo-900 font-medium text-sm">Track</button>
-            )
-        }
+        { header: 'Tracking #', accessor: 'trackingNumber', className: 'font-medium' },
+        { header: 'Origin', accessor: 'origin' },
+        { header: 'Destination', accessor: 'destination' },
+        { header: 'Ship Date', accessor: 'shipDate', render: (row) => row.shipDate ? new Date(row.shipDate).toLocaleDateString() : '-' },
+        { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status || 'pending'} variant={row.status === 'delivered' ? 'success' : row.status === 'in_transit' ? 'info' : 'warning'} /> },
     ];
+
+    if (isLoading) {
+        return (
+            <div className="p-6 max-w-7xl mx-auto">
+                <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-48 animate-pulse mb-6"></div>
+                <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
             <ProHeader
                 title="Shipments"
-                subtitle="Track and manage logistics"
+                subtitle="Track and manage shipments"
                 breadcrumbs={[{ label: 'Dashboard', to: '/' }, { label: 'Logistics' }, { label: 'Shipments' }]}
                 actions={<button className="btn-primary">New Shipment</button>}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {shipments.length === 0 ? (
                 <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Shipments</p>
-                    <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">234</p>
+                    <div className="text-center py-12">
+                        <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                        </svg>
+                        <p className="text-slate-500 dark:text-slate-400">No shipments found</p>
+                    </div>
                 </ProCard>
-                <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">In Transit</p>
-                    <p className="text-3xl font-bold text-indigo-600 mt-2">45</p>
+            ) : (
+                <ProCard noPadding>
+                    <ProTable columns={columns} data={shipments} />
                 </ProCard>
-                <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">On Time Rate</p>
-                    <p className="text-3xl font-bold text-emerald-600 mt-2">94%</p>
-                </ProCard>
-                <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Delayed</p>
-                    <p className="text-3xl font-bold text-red-600 mt-2">3</p>
-                </ProCard>
-            </div>
-
-            <ProCard noPadding>
-                <ProTable columns={columns} data={shipments} />
-            </ProCard>
+            )}
         </div>
     );
 }

@@ -1,13 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
+import { templatesAPI } from '../../api';
 
-const mockCampaigns = [
-    { id: 1, name: 'Q4 Product Launch', status: 'active', sent: 1250, opened: 856, clicked: 234, startDate: '2024-12-15', endDate: '2024-12-31' },
-    { id: 2, name: 'Holiday Promotion', status: 'completed', sent: 2500, opened: 1875, clicked: 520, startDate: '2024-12-01', endDate: '2024-12-20' },
-    { id: 3, name: 'New Year Campaign', status: 'scheduled', sent: 0, opened: 0, clicked: 0, startDate: '2024-12-28', endDate: '2025-01-15' },
-    { id: 4, name: 'Customer Feedback', status: 'draft', sent: 0, opened: 0, clicked: 0, startDate: null, endDate: null },
-];
+// TODO: Add campaignsAPI when backend endpoints are ready
+// import { campaignsAPI } from '../../api';
 
 const statusStyles = {
     active: 'badge-success',
@@ -17,15 +14,91 @@ const statusStyles = {
 };
 
 export default function EmailCampaigns() {
-    const [campaigns] = useState(mockCampaigns);
+    const [campaigns, setCampaigns] = useState([]);
+    const [templates, setTemplates] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        templateId: '',
+        startDate: '',
+        endDate: '',
+        launchOption: 'now',
+        scheduleDate: '',
+        scheduleTime: '09:00'
+    });
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            // Fetch templates for the dropdown
+            const templatesRes = await templatesAPI.getAll().catch(() => ({ data: [] }));
+            setTemplates(templatesRes.data || []);
+
+            // TODO: Replace with actual API call when backend is ready
+            // const campaignsRes = await campaignsAPI.getAll();
+            // setCampaigns(campaignsRes.data || []);
+            setCampaigns([]); // Empty until API is ready
+        } catch (error) {
+            console.error('Failed to load data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const stats = {
         total: campaigns.length,
         active: campaigns.filter(c => c.status === 'active').length,
-        totalSent: campaigns.reduce((sum, c) => sum + c.sent, 0),
-        avgOpenRate: Math.round(campaigns.reduce((sum, c) => sum + (c.sent > 0 ? (c.opened / c.sent * 100) : 0), 0) / campaigns.filter(c => c.sent > 0).length) || 0
+        totalSent: campaigns.reduce((sum, c) => sum + (c.sent || 0), 0),
+        avgOpenRate: campaigns.filter(c => c.sent > 0).length > 0
+            ? Math.round(campaigns.reduce((sum, c) => sum + (c.sent > 0 ? ((c.opened || 0) / c.sent * 100) : 0), 0) / campaigns.filter(c => c.sent > 0).length)
+            : 0
     };
+
+    const handleCreate = async () => {
+        if (!formData.name.trim()) {
+            toast.error('Campaign name is required');
+            return;
+        }
+        setSaving(true);
+        try {
+            // TODO: Replace with actual API call when backend is ready
+            // await campaignsAPI.create(formData);
+            toast.success('Campaign created');
+            setShowModal(false);
+            setFormData({
+                name: '',
+                templateId: '',
+                startDate: '',
+                endDate: '',
+                launchOption: 'now',
+                scheduleDate: '',
+                scheduleTime: '09:00'
+            });
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to create campaign');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3 animate-pulse"></div>
+                <div className="grid grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-20 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -104,62 +177,72 @@ export default function EmailCampaigns() {
 
             {/* Campaigns Table */}
             <div className="card overflow-hidden">
-                <table className="table">
-                    <thead>
-                        <tr>
-                            <th>Campaign</th>
-                            <th>Status</th>
-                            <th>Sent</th>
-                            <th>Open Rate</th>
-                            <th>Click Rate</th>
-                            <th>Duration</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {campaigns.map((campaign) => {
-                            const openRate = campaign.sent > 0 ? Math.round(campaign.opened / campaign.sent * 100) : 0;
-                            const clickRate = campaign.sent > 0 ? Math.round(campaign.clicked / campaign.sent * 100) : 0;
+                {campaigns.length === 0 ? (
+                    <div className="p-8 text-center">
+                        <svg className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-slate-500 dark:text-slate-400">No campaigns created yet</p>
+                        <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Create your first email campaign above</p>
+                    </div>
+                ) : (
+                    <table className="table">
+                        <thead>
+                            <tr>
+                                <th>Campaign</th>
+                                <th>Status</th>
+                                <th>Sent</th>
+                                <th>Open Rate</th>
+                                <th>Click Rate</th>
+                                <th>Duration</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {campaigns.map((campaign) => {
+                                const openRate = campaign.sent > 0 ? Math.round((campaign.opened || 0) / campaign.sent * 100) : 0;
+                                const clickRate = campaign.sent > 0 ? Math.round((campaign.clicked || 0) / campaign.sent * 100) : 0;
 
-                            return (
-                                <tr key={campaign.id}>
-                                    <td>
-                                        <p className="font-medium text-slate-900 dark:text-white">{campaign.name}</p>
-                                    </td>
-                                    <td>
-                                        <span className={statusStyles[campaign.status]}>{campaign.status}</span>
-                                    </td>
-                                    <td className="text-slate-600 dark:text-slate-400">{campaign.sent.toLocaleString()}</td>
-                                    <td>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full">
-                                                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${openRate}%` }}></div>
+                                return (
+                                    <tr key={campaign.id}>
+                                        <td>
+                                            <p className="font-medium text-slate-900 dark:text-white">{campaign.name}</p>
+                                        </td>
+                                        <td>
+                                            <span className={statusStyles[campaign.status] || 'badge-gray'}>{campaign.status}</span>
+                                        </td>
+                                        <td className="text-slate-600 dark:text-slate-400">{(campaign.sent || 0).toLocaleString()}</td>
+                                        <td>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full">
+                                                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${openRate}%` }}></div>
+                                                </div>
+                                                <span className="text-sm text-slate-600 dark:text-slate-400">{openRate}%</span>
                                             </div>
-                                            <span className="text-sm text-slate-600 dark:text-slate-400">{openRate}%</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full">
-                                                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${clickRate}%` }}></div>
+                                        </td>
+                                        <td>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full">
+                                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${clickRate}%` }}></div>
+                                                </div>
+                                                <span className="text-sm text-slate-600 dark:text-slate-400">{clickRate}%</span>
                                             </div>
-                                            <span className="text-sm text-slate-600 dark:text-slate-400">{clickRate}%</span>
-                                        </div>
-                                    </td>
-                                    <td className="text-sm text-slate-500 dark:text-slate-400">
-                                        {campaign.startDate ? `${campaign.startDate} - ${campaign.endDate || 'Ongoing'}` : '-'}
-                                    </td>
-                                    <td>
-                                        <div className="flex items-center gap-2">
-                                            <button className="btn-ghost btn-sm">View</button>
-                                            <button className="btn-ghost btn-sm">Edit</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                                        </td>
+                                        <td className="text-sm text-slate-500 dark:text-slate-400">
+                                            {campaign.startDate ? `${campaign.startDate} - ${campaign.endDate || 'Ongoing'}` : '-'}
+                                        </td>
+                                        <td>
+                                            <div className="flex items-center gap-2">
+                                                <button className="btn-ghost btn-sm">View</button>
+                                                <button className="btn-ghost btn-sm">Edit</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
             {/* Campaign Modal */}
@@ -169,33 +252,55 @@ export default function EmailCampaigns() {
                 title="New Campaign"
                 footer={
                     <>
-                        <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                        <button onClick={() => { setShowModal(false); toast.success('Campaign created'); }} className="btn-primary">Create Campaign</button>
+                        <button onClick={() => setShowModal(false)} className="btn-secondary" disabled={saving}>Cancel</button>
+                        <button onClick={handleCreate} className="btn-primary" disabled={saving}>
+                            {saving ? 'Creating...' : 'Create Campaign'}
+                        </button>
                     </>
                 }
             >
                 <div className="space-y-4">
                     <div>
-                        <label className="label">Campaign Name</label>
-                        <input type="text" className="input" placeholder="e.g., Summer Sale 2024" />
+                        <label className="label">Campaign Name *</label>
+                        <input
+                            type="text"
+                            className="input"
+                            placeholder="e.g., Summer Sale 2024"
+                            value={formData.name}
+                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        />
                     </div>
                     <div>
                         <label className="label">Email Template</label>
-                        <select className="select">
+                        <select
+                            className="select"
+                            value={formData.templateId}
+                            onChange={(e) => setFormData(prev => ({ ...prev, templateId: e.target.value }))}
+                        >
                             <option value="">Select template</option>
-                            <option value="1">Welcome Email</option>
-                            <option value="2">Follow-up Reminder</option>
-                            <option value="3">Meeting Confirmation</option>
+                            {templates.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
                         </select>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="label">Start Date</label>
-                            <input type="date" className="input" />
+                            <input
+                                type="date"
+                                className="input"
+                                value={formData.startDate}
+                                onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                            />
                         </div>
                         <div>
                             <label className="label">End Date</label>
-                            <input type="date" className="input" />
+                            <input
+                                type="date"
+                                className="input"
+                                value={formData.endDate}
+                                onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                            />
                         </div>
                     </div>
 
@@ -204,38 +309,64 @@ export default function EmailCampaigns() {
                         <label className="label">Launch Options</label>
                         <div className="flex gap-4">
                             <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="launch" value="now" defaultChecked className="w-4 h-4 text-indigo-600" />
+                                <input
+                                    type="radio"
+                                    name="launch"
+                                    value="now"
+                                    checked={formData.launchOption === 'now'}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, launchOption: e.target.value }))}
+                                    className="w-4 h-4 text-indigo-600"
+                                />
                                 <span className="text-sm text-slate-700 dark:text-slate-300">Send Now</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="launch" value="schedule" className="w-4 h-4 text-indigo-600" />
+                                <input
+                                    type="radio"
+                                    name="launch"
+                                    value="schedule"
+                                    checked={formData.launchOption === 'schedule'}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, launchOption: e.target.value }))}
+                                    className="w-4 h-4 text-indigo-600"
+                                />
                                 <span className="text-sm text-slate-700 dark:text-slate-300">Schedule for Later</span>
                             </label>
                         </div>
                     </div>
 
                     {/* Schedule Time Picker (shown when scheduling) */}
-                    <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">
-                        <div className="flex items-center gap-2 mb-3">
-                            <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-400">Schedule Send Time</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs text-indigo-600 dark:text-indigo-400 mb-1 block">Date</label>
-                                <input type="date" className="input text-sm" />
+                    {formData.launchOption === 'schedule' && (
+                        <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">
+                            <div className="flex items-center gap-2 mb-3">
+                                <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span className="text-sm font-medium text-indigo-700 dark:text-indigo-400">Schedule Send Time</span>
                             </div>
-                            <div>
-                                <label className="text-xs text-indigo-600 dark:text-indigo-400 mb-1 block">Time</label>
-                                <input type="time" className="input text-sm" defaultValue="09:00" />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs text-indigo-600 dark:text-indigo-400 mb-1 block">Date</label>
+                                    <input
+                                        type="date"
+                                        className="input text-sm"
+                                        value={formData.scheduleDate}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, scheduleDate: e.target.value }))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-indigo-600 dark:text-indigo-400 mb-1 block">Time</label>
+                                    <input
+                                        type="time"
+                                        className="input text-sm"
+                                        value={formData.scheduleTime}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, scheduleTime: e.target.value }))}
+                                    />
+                                </div>
                             </div>
+                            <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-2">
+                                Emails will be sent automatically at the scheduled time
+                            </p>
                         </div>
-                        <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-2">
-                            Emails will be sent automatically at the scheduled time
-                        </p>
-                    </div>
+                    )}
                 </div>
             </Modal>
         </div>

@@ -2,13 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { clientsAPI } from '../../api';
 
-const mockCustomers = [
-    { id: 1, name: 'Emily Brown', email: 'emily@designhub.com', phone: '+1 234 567 893', company: 'DesignHub', status: 'active', industry: 'Design' },
-    { id: 2, name: 'Alex Chen', email: 'alex@innovate.com', phone: '+1 234 567 900', company: 'InnovateTech', status: 'active', industry: 'Technology' },
-    { id: 3, name: 'Lisa Martinez', email: 'lisa@greeneco.com', phone: '+1 234 567 901', company: 'GreenEco', status: 'active', industry: 'Environment' },
-    { id: 4, name: 'Robert Kim', email: 'robert@financex.com', phone: '+1 234 567 902', company: 'FinanceX', status: 'inactive', industry: 'Finance' },
-    { id: 5, name: 'Sarah Wilson', email: 'sarah@globalsoft.com', phone: '+1 234 567 905', company: 'GlobalSoft', status: 'active', industry: 'Software' },
-];
+
 
 export default function Customers() {
     const [customers, setCustomers] = useState([]);
@@ -28,16 +22,14 @@ export default function Customers() {
         try {
             setIsLoading(true);
             const response = await clientsAPI.getAll();
-            // Backend returns { success: true, data: [...] }
             if (response.success && response.data) {
                 setCustomers(response.data);
             } else {
-                console.log('Using mock data - no data from API');
-                setCustomers(mockCustomers);
+                setCustomers([]);
             }
         } catch (error) {
-            console.log('API error, using mock data:', error.message);
-            setCustomers(mockCustomers);
+            console.error('Failed to fetch customers:', error);
+            setCustomers([]);
         } finally {
             setIsLoading(false);
         }
@@ -386,7 +378,7 @@ export default function Customers() {
 
             {/* Customer Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
                     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white">

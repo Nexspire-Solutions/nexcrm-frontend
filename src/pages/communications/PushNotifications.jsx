@@ -1,16 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 
-const mockNotifications = [
-    { id: 1, title: 'New Feature Announcement', message: 'Check out our new dashboard features!', sentAt: '2024-12-21 10:00', recipients: 1250, clicked: 234 },
-    { id: 2, title: 'Holiday Hours', message: 'Our offices will be closed...', sentAt: '2024-12-20 14:30', recipients: 3500, clicked: 567 },
-    { id: 3, title: 'System Maintenance', message: 'Scheduled maintenance on Dec 25', sentAt: '2024-12-18 09:00', recipients: 3500, clicked: 890 },
-];
+// TODO: Add notificationsAPI when backend endpoints are ready
+// import { notificationsAPI } from '../../api';
 
 export default function PushNotifications() {
-    const [notifications] = useState(mockNotifications);
+    const [notifications, setNotifications] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [formData, setFormData] = useState({
+        title: '',
+        message: '',
+        audience: 'all',
+        link: ''
+    });
     const [settings, setSettings] = useState({
         enabled: true,
         leadUpdates: true,
@@ -19,16 +24,63 @@ export default function PushNotifications() {
         teamMessages: false
     });
 
-    const stats = {
-        total: notifications.length,
-        totalSent: notifications.reduce((sum, n) => sum + n.recipients, 0),
-        avgClickRate: Math.round(notifications.reduce((sum, n) => sum + (n.clicked / n.recipients * 100), 0) / notifications.length)
+    useEffect(() => {
+        fetchNotifications();
+    }, []);
+
+    const fetchNotifications = async () => {
+        try {
+            // TODO: Replace with actual API call when backend is ready
+            // const response = await notificationsAPI.getAll();
+            // setNotifications(response.data || []);
+            setNotifications([]); // Empty until API is ready
+        } catch (error) {
+            console.error('Failed to load notifications:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleSend = () => {
-        setShowModal(false);
-        toast.success('Notification scheduled');
+    const stats = {
+        total: notifications.length,
+        totalSent: notifications.reduce((sum, n) => sum + (n.recipients || 0), 0),
+        avgClickRate: notifications.length > 0
+            ? Math.round(notifications.reduce((sum, n) => sum + ((n.clicked || 0) / (n.recipients || 1) * 100), 0) / notifications.length)
+            : 0
     };
+
+    const handleSend = async () => {
+        if (!formData.title.trim() || !formData.message.trim()) {
+            toast.error('Title and message are required');
+            return;
+        }
+        setSaving(true);
+        try {
+            // TODO: Replace with actual API call when backend is ready
+            // await notificationsAPI.send(formData);
+            toast.success('Notification scheduled');
+            setShowModal(false);
+            setFormData({ title: '', message: '', audience: 'all', link: '' });
+            fetchNotifications();
+        } catch (error) {
+            toast.error('Failed to send notification');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3 animate-pulse"></div>
+                <div className="grid grid-cols-3 gap-4">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="h-20 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -122,36 +174,46 @@ export default function PushNotifications() {
                     <div className="p-4 border-b border-slate-200 dark:border-slate-800">
                         <h3 className="font-semibold text-slate-900 dark:text-white">Recent Notifications</h3>
                     </div>
-                    <table className="table">
-                        <thead>
-                            <tr>
-                                <th>Notification</th>
-                                <th>Sent At</th>
-                                <th>Recipients</th>
-                                <th>Click Rate</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {notifications.map(notification => (
-                                <tr key={notification.id}>
-                                    <td>
-                                        <p className="font-medium text-slate-900 dark:text-white">{notification.title}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400 truncate max-w-xs">{notification.message}</p>
-                                    </td>
-                                    <td className="text-sm text-slate-500 dark:text-slate-400">{notification.sentAt}</td>
-                                    <td>{notification.recipients.toLocaleString()}</td>
-                                    <td>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full">
-                                                <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.round(notification.clicked / notification.recipients * 100)}%` }}></div>
-                                            </div>
-                                            <span className="text-sm">{Math.round(notification.clicked / notification.recipients * 100)}%</span>
-                                        </div>
-                                    </td>
+                    {notifications.length === 0 ? (
+                        <div className="p-8 text-center">
+                            <svg className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <p className="text-slate-500 dark:text-slate-400">No notifications sent yet</p>
+                            <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Create your first notification above</p>
+                        </div>
+                    ) : (
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Notification</th>
+                                    <th>Sent At</th>
+                                    <th>Recipients</th>
+                                    <th>Click Rate</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {notifications.map(notification => (
+                                    <tr key={notification.id}>
+                                        <td>
+                                            <p className="font-medium text-slate-900 dark:text-white">{notification.title}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400 truncate max-w-xs">{notification.message}</p>
+                                        </td>
+                                        <td className="text-sm text-slate-500 dark:text-slate-400">{notification.sentAt}</td>
+                                        <td>{(notification.recipients || 0).toLocaleString()}</td>
+                                        <td>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full">
+                                                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.round((notification.clicked || 0) / (notification.recipients || 1) * 100)}%` }}></div>
+                                                </div>
+                                                <span className="text-sm">{Math.round((notification.clicked || 0) / (notification.recipients || 1) * 100)}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
 
@@ -162,23 +224,40 @@ export default function PushNotifications() {
                 title="New Push Notification"
                 footer={
                     <>
-                        <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                        <button onClick={handleSend} className="btn-primary">Send Notification</button>
+                        <button onClick={() => setShowModal(false)} className="btn-secondary" disabled={saving}>Cancel</button>
+                        <button onClick={handleSend} className="btn-primary" disabled={saving}>
+                            {saving ? 'Sending...' : 'Send Notification'}
+                        </button>
                     </>
                 }
             >
                 <div className="space-y-4">
                     <div>
-                        <label className="label">Title</label>
-                        <input type="text" className="input" placeholder="Notification title" />
+                        <label className="label">Title *</label>
+                        <input
+                            type="text"
+                            className="input"
+                            placeholder="Notification title"
+                            value={formData.title}
+                            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                        />
                     </div>
                     <div>
-                        <label className="label">Message</label>
-                        <textarea className="input min-h-24" placeholder="Notification message..."></textarea>
+                        <label className="label">Message *</label>
+                        <textarea
+                            className="input min-h-24"
+                            placeholder="Notification message..."
+                            value={formData.message}
+                            onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                        ></textarea>
                     </div>
                     <div>
                         <label className="label">Target Audience</label>
-                        <select className="select">
+                        <select
+                            className="select"
+                            value={formData.audience}
+                            onChange={(e) => setFormData(prev => ({ ...prev, audience: e.target.value }))}
+                        >
                             <option value="all">All Subscribers</option>
                             <option value="leads">Leads Only</option>
                             <option value="customers">Customers Only</option>
@@ -187,7 +266,13 @@ export default function PushNotifications() {
                     </div>
                     <div>
                         <label className="label">Link (optional)</label>
-                        <input type="url" className="input" placeholder="https://" />
+                        <input
+                            type="url"
+                            className="input"
+                            placeholder="https://"
+                            value={formData.link}
+                            onChange={(e) => setFormData(prev => ({ ...prev, link: e.target.value }))}
+                        />
                     </div>
                 </div>
             </Modal>

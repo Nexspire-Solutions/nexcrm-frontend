@@ -3,14 +3,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
-
-const mockEmployees = [
-    { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@company.com', department: 'Sales', position: 'Sales Manager', status: 'active', phone: '+1 234 567 890' },
-    { id: 2, firstName: 'Jane', lastName: 'Smith', email: 'jane@company.com', department: 'Marketing', position: 'Marketing Lead', status: 'active', phone: '+1 234 567 891' },
-    { id: 3, firstName: 'Mike', lastName: 'Johnson', email: 'mike@company.com', department: 'Sales', position: 'Sales Rep', status: 'active', phone: '+1 234 567 892' },
-    { id: 4, firstName: 'Sarah', lastName: 'Williams', email: 'sarah@company.com', department: 'Support', position: 'Support Lead', status: 'on_leave', phone: '+1 234 567 893' },
-    { id: 5, firstName: 'David', lastName: 'Brown', email: 'david@company.com', department: 'Development', position: 'Developer', status: 'inactive', phone: '+1 234 567 894' },
-];
+import { usersAPI } from '../../api';
 
 export default function EmployeesList() {
     const [employees, setEmployees] = useState([]);
@@ -23,15 +16,24 @@ export default function EmployeesList() {
     const [deleteTargetId, setDeleteTargetId] = useState(null);
 
     useEffect(() => {
-        // Simulate API fetch
-        setTimeout(() => {
-            setEmployees(mockEmployees);
-            setIsLoading(false);
-        }, 500);
+        fetchEmployees();
     }, []);
 
+    const fetchEmployees = async () => {
+        try {
+            const response = await usersAPI.getAll();
+            setEmployees(response.data || []);
+        } catch (error) {
+            console.error('Failed to fetch employees:', error);
+            setEmployees([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const filteredEmployees = employees.filter(emp => {
-        const matchesSearch = `${emp.firstName} ${emp.lastName} ${emp.email}`.toLowerCase().includes(searchTerm.toLowerCase());
+        const name = emp.firstName ? `${emp.firstName} ${emp.lastName}` : emp.name || '';
+        const matchesSearch = `${name} ${emp.email || ''}`.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || emp.status === filterStatus;
         return matchesSearch && matchesStatus;
     });
@@ -47,7 +49,7 @@ export default function EmployeesList() {
             inactive: 'Inactive',
             on_leave: 'On Leave'
         };
-        return <span className={styles[status]}>{labels[status]}</span>;
+        return <span className={styles[status] || 'badge-gray'}>{labels[status] || status || 'Active'}</span>;
     };
 
     const handleDelete = (id) => {
@@ -55,10 +57,15 @@ export default function EmployeesList() {
         setShowDeleteConfirm(true);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (deleteTargetId) {
-            setEmployees(prev => prev.filter(e => e.id !== deleteTargetId));
-            toast.success('Employee deleted successfully');
+            try {
+                await usersAPI.delete(deleteTargetId);
+                toast.success('Employee deleted successfully');
+                fetchEmployees();
+            } catch (error) {
+                toast.error('Failed to delete employee');
+            }
             setDeleteTargetId(null);
         }
     };
@@ -145,11 +152,11 @@ export default function EmployeesList() {
                                 <td>
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold">
-                                            {employee.firstName[0]}{employee.lastName[0]}
+                                            {(employee.firstName || employee.name || 'U')[0]}{(employee.lastName || '')[0] || ''}
                                         </div>
                                         <div>
                                             <p className="font-medium text-slate-900 dark:text-white">
-                                                {employee.firstName} {employee.lastName}
+                                                {employee.firstName ? `${employee.firstName} ${employee.lastName}` : employee.name}
                                             </p>
                                             <p className="text-sm text-slate-500 dark:text-slate-400">
                                                 {employee.email}
@@ -157,8 +164,8 @@ export default function EmployeesList() {
                                         </div>
                                     </div>
                                 </td>
-                                <td>{employee.department}</td>
-                                <td>{employee.position}</td>
+                                <td>{employee.department || '-'}</td>
+                                <td>{employee.position || employee.role || '-'}</td>
                                 <td>{getStatusBadge(employee.status)}</td>
                                 <td>
                                     <div className="flex items-center gap-2">
@@ -208,7 +215,7 @@ export default function EmployeesList() {
                         <button onClick={() => setShowModal(false)} className="btn-secondary">
                             Cancel
                         </button>
-                        <button onClick={() => { setShowModal(false); toast.success('Employee saved'); }} className="btn-primary">
+                        <button onClick={() => { setShowModal(false); toast.success('Employee saved'); fetchEmployees(); }} className="btn-primary">
                             {editingEmployee ? 'Update' : 'Create'}
                         </button>
                     </>
@@ -218,11 +225,11 @@ export default function EmployeesList() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="label">First Name</label>
-                            <input type="text" className="input" defaultValue={editingEmployee?.firstName} />
+                            <input type="text" className="input" defaultValue={editingEmployee?.firstName || editingEmployee?.name?.split(' ')[0]} />
                         </div>
                         <div>
                             <label className="label">Last Name</label>
-                            <input type="text" className="input" defaultValue={editingEmployee?.lastName} />
+                            <input type="text" className="input" defaultValue={editingEmployee?.lastName || editingEmployee?.name?.split(' ')[1]} />
                         </div>
                     </div>
                     <div>
