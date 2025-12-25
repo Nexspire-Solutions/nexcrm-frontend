@@ -3,13 +3,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
-
-const mockUsers = [
-    { id: 1, firstName: 'Admin', lastName: 'User', email: 'admin@company.com', role: 'admin', status: 'active', lastLogin: '2024-12-21 10:30' },
-    { id: 2, firstName: 'John', lastName: 'Manager', email: 'john@company.com', role: 'manager', status: 'active', lastLogin: '2024-12-21 09:15' },
-    { id: 3, firstName: 'Sarah', lastName: 'Sales', email: 'sarah@company.com', role: 'sales_operator', status: 'active', lastLogin: '2024-12-20 16:45' },
-    { id: 4, firstName: 'Mike', lastName: 'User', email: 'mike@company.com', role: 'user', status: 'inactive', lastLogin: '2024-12-15 11:00' },
-];
+import { usersAPI } from '../../api';
 
 const roleColors = {
     admin: 'badge-danger',
@@ -34,13 +28,92 @@ export default function UsersList() {
     const [editingUser, setEditingUser] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        phone: '',
+        role: 'user',
+        status: 'active'
+    });
 
     useEffect(() => {
-        setTimeout(() => {
-            setUsers(mockUsers);
-            setIsLoading(false);
-        }, 500);
+        fetchUsers();
     }, []);
+
+    const fetchUsers = async () => {
+        try {
+            const response = await usersAPI.getAll();
+            setUsers(response.data || []);
+        } catch (error) {
+            toast.error('Failed to load users');
+            console.error('Fetch users error:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const resetForm = () => {
+        setFormData({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            phone: '',
+            role: 'user',
+            status: 'active'
+        });
+    };
+
+    const handleSubmit = async () => {
+        if (!formData.firstName.trim() || !formData.email.trim()) {
+            toast.error('First name and email are required');
+            return;
+        }
+        if (!editingUser && !formData.password.trim()) {
+            toast.error('Password is required for new users');
+            return;
+        }
+        setSaving(true);
+        try {
+            if (editingUser) {
+                await usersAPI.update(editingUser.id, formData);
+                toast.success('User updated successfully');
+            } else {
+                await usersAPI.create(formData);
+                toast.success('User created successfully');
+            }
+            setShowModal(false);
+            resetForm();
+            fetchUsers();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to save user');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const openCreateModal = () => {
+        resetForm();
+        setEditingUser(null);
+        setShowModal(true);
+    };
+
+    const openEditModal = (user) => {
+        setFormData({
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            email: user.email || '',
+            password: '',
+            phone: user.phone || '',
+            role: user.role || 'user',
+            status: user.status || 'active'
+        });
+        setEditingUser(user);
+        setShowModal(true);
+    };
 
     const filteredUsers = users.filter(user => {
         const matchesSearch = `${user.firstName} ${user.lastName} ${user.email}`.toLowerCase().includes(searchTerm.toLowerCase());
@@ -53,10 +126,15 @@ export default function UsersList() {
         setShowDeleteConfirm(true);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (deleteTargetId) {
-            setUsers(prev => prev.filter(u => u.id !== deleteTargetId));
-            toast.success('User deleted successfully');
+            try {
+                await usersAPI.delete(deleteTargetId);
+                toast.success('User deleted successfully');
+                fetchUsers();
+            } catch (error) {
+                toast.error('Failed to delete user');
+            }
             setDeleteTargetId(null);
         }
     };
@@ -91,10 +169,7 @@ export default function UsersList() {
                         </svg>
                         Manage Roles
                     </Link>
-                    <button
-                        onClick={() => { setEditingUser(null); setShowModal(true); }}
-                        className="btn-primary"
-                    >
+                    <button onClick={openCreateModal} className="btn-primary">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
@@ -155,7 +230,7 @@ export default function UsersList() {
                             <th>User</th>
                             <th>Role</th>
                             <th>Status</th>
-                            <th>Last Login</th>
+                            <th>Phone</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -165,7 +240,7 @@ export default function UsersList() {
                                 <td>
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold">
-                                            {user.firstName[0]}{user.lastName[0]}
+                                            {user.firstName?.[0]}{user.lastName?.[0]}
                                         </div>
                                         <div>
                                             <p className="font-medium text-slate-900 dark:text-white">
@@ -178,7 +253,7 @@ export default function UsersList() {
                                     </div>
                                 </td>
                                 <td>
-                                    <span className={roleColors[user.role]}>{roleLabels[user.role]}</span>
+                                    <span className={roleColors[user.role]}>{roleLabels[user.role] || user.role}</span>
                                 </td>
                                 <td>
                                     <span className={user.status === 'active' ? 'badge-success' : 'badge-gray'}>
@@ -186,12 +261,12 @@ export default function UsersList() {
                                     </span>
                                 </td>
                                 <td className="text-slate-500 dark:text-slate-400 text-sm">
-                                    {user.lastLogin}
+                                    {user.phone || '-'}
                                 </td>
                                 <td>
                                     <div className="flex items-center gap-2">
                                         <button
-                                            onClick={() => { setEditingUser(user); setShowModal(true); }}
+                                            onClick={() => openEditModal(user)}
                                             className="btn-ghost btn-sm"
                                         >
                                             Edit
@@ -227,9 +302,9 @@ export default function UsersList() {
                 title={editingUser ? 'Edit User' : 'Add New User'}
                 footer={
                     <>
-                        <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                        <button onClick={() => { setShowModal(false); toast.success('User saved'); }} className="btn-primary">
-                            {editingUser ? 'Update' : 'Create'}
+                        <button onClick={() => setShowModal(false)} className="btn-secondary" disabled={saving}>Cancel</button>
+                        <button onClick={handleSubmit} className="btn-primary" disabled={saving}>
+                            {saving ? 'Saving...' : (editingUser ? 'Update' : 'Create')}
                         </button>
                     </>
                 }
@@ -237,28 +312,66 @@ export default function UsersList() {
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="label">First Name</label>
-                            <input type="text" className="input" defaultValue={editingUser?.firstName} />
+                            <label className="label">First Name *</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={formData.firstName}
+                                onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                                placeholder="John"
+                            />
                         </div>
                         <div>
                             <label className="label">Last Name</label>
-                            <input type="text" className="input" defaultValue={editingUser?.lastName} />
+                            <input
+                                type="text"
+                                className="input"
+                                value={formData.lastName}
+                                onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                                placeholder="Doe"
+                            />
                         </div>
                     </div>
                     <div>
-                        <label className="label">Email</label>
-                        <input type="email" className="input" defaultValue={editingUser?.email} />
+                        <label className="label">Email *</label>
+                        <input
+                            type="email"
+                            className="input"
+                            value={formData.email}
+                            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                            placeholder="john@example.com"
+                        />
                     </div>
                     {!editingUser && (
                         <div>
-                            <label className="label">Password</label>
-                            <input type="password" className="input" placeholder="Enter password" />
+                            <label className="label">Password *</label>
+                            <input
+                                type="password"
+                                className="input"
+                                value={formData.password}
+                                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                                placeholder="Enter password"
+                            />
                         </div>
                     )}
+                    <div>
+                        <label className="label">Phone</label>
+                        <input
+                            type="tel"
+                            className="input"
+                            value={formData.phone}
+                            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                            placeholder="+91 XXXXX XXXXX"
+                        />
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="label">Role</label>
-                            <select className="select" defaultValue={editingUser?.role || 'user'}>
+                            <select
+                                className="select"
+                                value={formData.role}
+                                onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
+                            >
                                 <option value="admin">Admin</option>
                                 <option value="manager">Manager</option>
                                 <option value="sales_operator">Sales Operator</option>
@@ -267,7 +380,11 @@ export default function UsersList() {
                         </div>
                         <div>
                             <label className="label">Status</label>
-                            <select className="select" defaultValue={editingUser?.status || 'active'}>
+                            <select
+                                className="select"
+                                value={formData.status}
+                                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                            >
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
                             </select>

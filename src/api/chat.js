@@ -49,6 +49,14 @@ export const chatAPI = {
     },
 
     /**
+     * Create or get existing DM channel with a user
+     */
+    getOrCreateDM: async (userId) => {
+        const response = await apiClient.post(`/chat/dm/${userId}`);
+        return response.data;
+    },
+
+    /**
      * Get online users
      */
     getOnlineUsers: async () => {

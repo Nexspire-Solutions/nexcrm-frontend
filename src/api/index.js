@@ -128,6 +128,34 @@ export const leadsAPI = {
     },
 };
 
+// Users API
+export const usersAPI = {
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/users', { params });
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/users/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/users', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.put(`/users/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/users/${id}`);
+        return response.data;
+    },
+};
+
 export const inquiriesAPI = {
     getAll: async (params = {}) => {
         const response = await apiClient.get('/inquiries', { params });
@@ -224,6 +252,16 @@ export const dashboardAPI = {
 
     getRecentActivity: async () => {
         const response = await apiClient.get('/dashboard/recent');
+        return response.data;
+    },
+
+    getCRMStats: async () => {
+        const response = await apiClient.get('/dashboard/crm-stats');
+        return response.data;
+    },
+
+    getEcommerceStats: async () => {
+        const response = await apiClient.get('/dashboard/ecommerce-stats');
         return response.data;
     }
 };

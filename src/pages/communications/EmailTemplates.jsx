@@ -1,18 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
-
-const mockTemplates = [
-    { id: 1, name: 'Welcome Email', subject: 'Welcome to Our Platform', category: 'Onboarding', lastModified: '2024-12-20', status: 'active' },
-    { id: 2, name: 'Follow-up Reminder', subject: 'Following up on our conversation', category: 'Sales', lastModified: '2024-12-19', status: 'active' },
-    { id: 3, name: 'Meeting Confirmation', subject: 'Your meeting is confirmed', category: 'Scheduling', lastModified: '2024-12-18', status: 'active' },
-    { id: 4, name: 'Quote Proposal', subject: 'Your custom quote', category: 'Sales', lastModified: '2024-12-15', status: 'draft' },
-    { id: 5, name: 'Thank You Note', subject: 'Thank you for your business', category: 'Post-Sale', lastModified: '2024-12-10', status: 'active' },
-];
+import { templatesAPI } from '../../api';
 
 export default function EmailTemplates() {
-    const [templates, setTemplates] = useState(mockTemplates);
+    const [templates, setTemplates] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState(null);
@@ -20,6 +14,83 @@ export default function EmailTemplates() {
     const [deleteTargetId, setDeleteTargetId] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [previewTemplate, setPreviewTemplate] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        subject: '',
+        category: 'Sales',
+        body: '',
+        status: 'active'
+    });
+
+    useEffect(() => {
+        fetchTemplates();
+    }, []);
+
+    const fetchTemplates = async () => {
+        try {
+            const response = await templatesAPI.getAll();
+            setTemplates(response.data || []);
+        } catch (error) {
+            console.error('Failed to load templates:', error);
+            // Use empty array, no mock data
+            setTemplates([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const resetForm = () => {
+        setFormData({
+            name: '',
+            subject: '',
+            category: 'Sales',
+            body: '',
+            status: 'active'
+        });
+    };
+
+    const handleSubmit = async () => {
+        if (!formData.name.trim() || !formData.subject.trim()) {
+            toast.error('Name and subject are required');
+            return;
+        }
+        setSaving(true);
+        try {
+            if (editingTemplate) {
+                await templatesAPI.update(editingTemplate.id, formData);
+                toast.success('Template updated successfully');
+            } else {
+                await templatesAPI.create(formData);
+                toast.success('Template created successfully');
+            }
+            setShowModal(false);
+            resetForm();
+            fetchTemplates();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to save template');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const openCreateModal = () => {
+        resetForm();
+        setEditingTemplate(null);
+        setShowModal(true);
+    };
+
+    const openEditModal = (template) => {
+        setFormData({
+            name: template.name || '',
+            subject: template.subject || '',
+            category: template.category || 'Sales',
+            body: template.body || '',
+            status: template.status || 'active'
+        });
+        setEditingTemplate(template);
+        setShowModal(true);
+    };
 
     const filteredTemplates = templates.filter(t =>
         `${t.name} ${t.subject} ${t.category}`.toLowerCase().includes(searchTerm.toLowerCase())
@@ -30,13 +101,31 @@ export default function EmailTemplates() {
         setShowDeleteConfirm(true);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (deleteTargetId) {
-            setTemplates(prev => prev.filter(t => t.id !== deleteTargetId));
-            toast.success('Template deleted');
+            try {
+                await templatesAPI.delete(deleteTargetId);
+                toast.success('Template deleted');
+                fetchTemplates();
+            } catch (error) {
+                toast.error('Failed to delete template');
+            }
             setDeleteTargetId(null);
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3 animate-pulse"></div>
+                <div className="card p-4 space-y-3">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 rounded animate-pulse"></div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -48,7 +137,7 @@ export default function EmailTemplates() {
                         Create and manage reusable email templates
                     </p>
                 </div>
-                <button onClick={() => { setEditingTemplate(null); setShowModal(true); }} className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow">
+                <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
@@ -81,7 +170,6 @@ export default function EmailTemplates() {
                             <th className="px-6 py-4">Subject</th>
                             <th className="px-6 py-4">Category</th>
                             <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4">Last Modified</th>
                             <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
@@ -112,10 +200,9 @@ export default function EmailTemplates() {
                                         {template.status}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{template.lastModified}</td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end gap-2">
-                                        <button onClick={() => { setEditingTemplate(template); setShowModal(true); }} className="btn-ghost btn-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                                        <button onClick={() => openEditModal(template)} className="btn-ghost btn-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
                                             Edit
                                         </button>
                                         <button
@@ -156,35 +243,69 @@ export default function EmailTemplates() {
                 title={editingTemplate ? 'Edit Template' : 'New Template'}
                 footer={
                     <>
-                        <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                        <button onClick={() => { setShowModal(false); toast.success('Template saved'); }} className="btn-primary">
-                            {editingTemplate ? 'Update' : 'Create'}
+                        <button onClick={() => setShowModal(false)} className="btn-secondary" disabled={saving}>Cancel</button>
+                        <button onClick={handleSubmit} className="btn-primary" disabled={saving}>
+                            {saving ? 'Saving...' : (editingTemplate ? 'Update' : 'Create')}
                         </button>
                     </>
                 }
             >
                 <div className="space-y-4">
                     <div>
-                        <label className="label">Template Name</label>
-                        <input type="text" className="input" defaultValue={editingTemplate?.name} placeholder="e.g., Welcome Email" />
+                        <label className="label">Template Name *</label>
+                        <input
+                            type="text"
+                            className="input"
+                            value={formData.name}
+                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="e.g., Welcome Email"
+                        />
                     </div>
                     <div>
-                        <label className="label">Subject Line</label>
-                        <input type="text" className="input" defaultValue={editingTemplate?.subject} placeholder="Email subject" />
+                        <label className="label">Subject Line *</label>
+                        <input
+                            type="text"
+                            className="input"
+                            value={formData.subject}
+                            onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+                            placeholder="Email subject"
+                        />
                     </div>
-                    <div>
-                        <label className="label">Category</label>
-                        <select className="select" defaultValue={editingTemplate?.category || 'Sales'}>
-                            <option value="Onboarding">Onboarding</option>
-                            <option value="Sales">Sales</option>
-                            <option value="Scheduling">Scheduling</option>
-                            <option value="Post-Sale">Post-Sale</option>
-                            <option value="Marketing">Marketing</option>
-                        </select>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">Category</label>
+                            <select
+                                className="select"
+                                value={formData.category}
+                                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                            >
+                                <option value="Onboarding">Onboarding</option>
+                                <option value="Sales">Sales</option>
+                                <option value="Scheduling">Scheduling</option>
+                                <option value="Post-Sale">Post-Sale</option>
+                                <option value="Marketing">Marketing</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="label">Status</label>
+                            <select
+                                className="select"
+                                value={formData.status}
+                                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                            >
+                                <option value="active">Active</option>
+                                <option value="draft">Draft</option>
+                            </select>
+                        </div>
                     </div>
                     <div>
                         <label className="label">Email Body</label>
-                        <textarea className="input min-h-48" placeholder="Write your email content here..."></textarea>
+                        <textarea
+                            className="input min-h-48"
+                            value={formData.body}
+                            onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value }))}
+                            placeholder="Write your email content here..."
+                        ></textarea>
                     </div>
                 </div>
             </Modal>
@@ -209,7 +330,7 @@ export default function EmailTemplates() {
                 footer={
                     <>
                         <button onClick={() => setShowPreview(false)} className="btn-secondary">Close</button>
-                        <button onClick={() => { setEditingTemplate(previewTemplate); setShowPreview(false); setShowModal(true); }} className="btn-primary">Edit Template</button>
+                        <button onClick={() => { openEditModal(previewTemplate); setShowPreview(false); }} className="btn-primary">Edit Template</button>
                     </>
                 }
             >
@@ -240,13 +361,10 @@ export default function EmailTemplates() {
                         <div>
                             <label className="label">Email Body Preview</label>
                             <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-700 min-h-48">
-                                <p className="text-slate-600 dark:text-slate-400 italic">
-                                    Email content preview would be displayed here...
+                                <p className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+                                    {previewTemplate.body || 'No email body content yet...'}
                                 </p>
                             </div>
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                            Last modified: {previewTemplate.lastModified}
                         </div>
                     </div>
                 )}
