@@ -5,14 +5,9 @@ import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import LeadsKanban from './LeadsKanban';
+import { useDashboardRefresh } from '../../contexts/DashboardRefreshContext';
 
-const mockLeads = [
-    { id: 1, contactName: 'John Smith', company: 'TechCorp', email: 'john@techcorp.com', phone: '+1 234 567 890', status: 'new', leadSource: 'Website', estimatedValue: 25000, score: 85, created_at: '2024-12-20' },
-    { id: 2, contactName: 'Sarah Johnson', company: 'DataFlow Inc', email: 'sarah@dataflow.com', phone: '+1 234 567 891', status: 'qualified', leadSource: 'Referral', estimatedValue: 45000, score: 92, created_at: '2024-12-19' },
-    { id: 3, contactName: 'Mike Wilson', company: 'StartupXYZ', email: 'mike@xyz.com', phone: '+1 234 567 892', status: 'negotiation', leadSource: 'LinkedIn', estimatedValue: 15000, score: 65, created_at: '2024-12-18' },
-    { id: 4, contactName: 'Emily Brown', company: 'DesignHub', email: 'emily@designhub.com', phone: '+1 234 567 893', status: 'won', leadSource: 'Website', estimatedValue: 35000, score: 100, created_at: '2024-12-15' },
-    { id: 5, contactName: 'David Lee', company: 'CloudSync', email: 'david@cloudsync.com', phone: '+1 234 567 894', status: 'lost', leadSource: 'Cold Call', estimatedValue: 20000, score: 30, created_at: '2024-12-10' },
-];
+
 
 const statusConfig = {
     new: { label: 'New', class: 'badge-primary' },
@@ -44,6 +39,7 @@ export default function LeadsList() {
     });
     const location = useLocation();
     const navigate = useNavigate();
+    const { triggerRefresh } = useDashboardRefresh();
 
     useEffect(() => {
         if (location.state?.openModal) {
@@ -85,6 +81,7 @@ export default function LeadsList() {
             setShowModal(false);
             resetForm();
             fetchLeads(); // Refresh the list
+            triggerRefresh('leads'); // Notify dashboard to update
         } catch (error) {
             console.error('Failed to save lead:', error);
             toast.error(error.response?.data?.error || 'Failed to save lead');
@@ -120,10 +117,10 @@ export default function LeadsList() {
     const fetchLeads = async () => {
         try {
             const response = await leadsAPI.getAll();
-            setLeads(response.leads || mockLeads);
+            setLeads(response.leads || []);
         } catch (error) {
-            console.log('Using mock data');
-            setLeads(mockLeads);
+            console.error('Failed to fetch leads:', error);
+            setLeads([]);
         } finally {
             setIsLoading(false);
         }
@@ -154,6 +151,7 @@ export default function LeadsList() {
                 await leadsAPI.delete(deleteTargetId);
                 setLeads(prev => prev.filter(l => l.id !== deleteTargetId));
                 toast.success('Lead deleted successfully');
+                triggerRefresh('leads'); // Notify dashboard
             } catch (error) {
                 setLeads(prev => prev.filter(l => l.id !== deleteTargetId));
                 toast.success('Lead deleted');

@@ -1,88 +1,71 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProHeader from '../../../components/common/ProHeader';
-import ProCard from '../../../components/common/ProCard';
 import ProTable from '../../../components/common/ProTable';
+import ProCard from '../../../components/common/ProCard';
 import StatusBadge from '../../../components/common/StatusBadge';
-
-const mockStudents = [
-    { id: 'STU-001', name: 'Alex Thompson', course: 'Web Development', grade: 'A', attendance: '95%', status: 'active' },
-    { id: 'STU-002', name: 'Maria Garcia', course: 'Data Science', grade: 'B+', attendance: '88%', status: 'active' },
-    { id: 'STU-003', name: 'James Lee', course: 'UI/UX Design', grade: 'A-', attendance: '92%', status: 'active' },
-    { id: 'STU-004', name: 'Sophie Turner', course: 'Mobile Development', grade: 'B', attendance: '85%', status: 'warning' },
-    { id: 'STU-005', name: 'Ryan Mitchell', course: 'Web Development', grade: 'C', attendance: '70%', status: 'at-risk' },
-];
+import apiClient from '../../../api/axios';
 
 export default function Students() {
-    const [students] = useState(mockStudents);
+    const [students, setStudents] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchStudents();
+    }, []);
+
+    const fetchStudents = async () => {
+        try {
+            const response = await apiClient.get('/students');
+            setStudents(response.data.data || []);
+        } catch (error) {
+            console.error('Failed to fetch students:', error);
+            setStudents([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const columns = [
-        {
-            header: 'Student',
-            accessor: 'name',
-            render: (row) => (
-                <div>
-                    <p className="font-semibold text-slate-900 dark:text-white">{row.name}</p>
-                    <p className="text-xs text-slate-500">{row.id}</p>
-                </div>
-            )
-        },
+        { header: 'Name', accessor: 'name', className: 'font-medium text-slate-900 dark:text-white' },
+        { header: 'Email', accessor: 'email' },
+        { header: 'Phone', accessor: 'phone' },
         { header: 'Course', accessor: 'course' },
-        {
-            header: 'Grade',
-            accessor: 'grade',
-            className: 'font-bold text-indigo-600'
-        },
-        { header: 'Attendance', accessor: 'attendance' },
-        {
-            header: 'Status',
-            accessor: 'status',
-            render: (row) => (
-                <StatusBadge
-                    status={row.status}
-                    variant={row.status === 'active' ? 'success' : row.status === 'warning' ? 'warning' : 'error'}
-                />
-            )
-        },
-        {
-            header: 'Actions',
-            align: 'right',
-            render: () => (
-                <button className="text-indigo-600 hover:text-indigo-900 font-medium text-sm">View</button>
-            )
-        }
+        { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status || 'active'} variant={row.status === 'active' ? 'success' : 'neutral'} /> },
     ];
+
+    if (isLoading) {
+        return (
+            <div className="p-6 max-w-7xl mx-auto">
+                <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-48 animate-pulse mb-6"></div>
+                <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
             <ProHeader
                 title="Students"
-                subtitle="Track student performance and attendance"
+                subtitle="Manage enrolled students"
                 breadcrumbs={[{ label: 'Dashboard', to: '/' }, { label: 'Education' }, { label: 'Students' }]}
-                actions={<button className="btn-primary">Enroll Student</button>}
+                actions={<button className="btn-primary">Add Student</button>}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {students.length === 0 ? (
                 <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Students</p>
-                    <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">128</p>
+                    <div className="text-center py-12">
+                        <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <p className="text-slate-500 dark:text-slate-400">No students found</p>
+                        <p className="text-sm text-slate-400 mt-1">Add your first student to get started</p>
+                    </div>
                 </ProCard>
-                <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Active Courses</p>
-                    <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">12</p>
+            ) : (
+                <ProCard noPadding>
+                    <ProTable columns={columns} data={students} />
                 </ProCard>
-                <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Avg Attendance</p>
-                    <p className="text-3xl font-bold text-emerald-600 mt-2">89%</p>
-                </ProCard>
-                <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">At Risk</p>
-                    <p className="text-3xl font-bold text-red-600 mt-2">3</p>
-                </ProCard>
-            </div>
-
-            <ProCard noPadding>
-                <ProTable columns={columns} data={students} />
-            </ProCard>
+            )}
         </div>
     );
 }

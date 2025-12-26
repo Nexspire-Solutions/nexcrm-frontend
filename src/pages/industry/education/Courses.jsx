@@ -1,68 +1,83 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProHeader from '../../../components/common/ProHeader';
 import ProCard from '../../../components/common/ProCard';
 import StatusBadge from '../../../components/common/StatusBadge';
-
-const mockCourses = [
-    { id: 1, title: 'Web Development Bootcamp', instructor: 'Sarah Johnson', students: 45, duration: '12 weeks', status: 'active', price: '$599' },
-    { id: 2, title: 'Data Science Fundamentals', instructor: 'Michael Chen', students: 32, duration: '10 weeks', status: 'active', price: '$799' },
-    { id: 3, title: 'UI/UX Design Mastery', instructor: 'Emily Davis', students: 28, duration: '8 weeks', status: 'upcoming', price: '$499' },
-    { id: 4, title: 'Mobile App Development', instructor: 'David Wilson', students: 18, duration: '14 weeks', status: 'completed', price: '$699' },
-];
+import apiClient from '../../../api/axios';
 
 export default function Courses() {
-    const [courses] = useState(mockCourses);
+    const [courses, setCourses] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchCourses();
+    }, []);
+
+    const fetchCourses = async () => {
+        try {
+            const response = await apiClient.get('/courses');
+            setCourses(response.data.data || []);
+        } catch (error) {
+            console.error('Failed to fetch courses:', error);
+            setCourses([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="p-6 max-w-7xl mx-auto">
+                <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-48 animate-pulse mb-6"></div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="h-48 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
             <ProHeader
                 title="Courses"
-                subtitle="Manage your educational programs"
+                subtitle="Manage your educational courses"
                 breadcrumbs={[{ label: 'Dashboard', to: '/' }, { label: 'Education' }, { label: 'Courses' }]}
-                actions={<button className="btn-primary">Create Course</button>}
+                actions={<button className="btn-primary">Add Course</button>}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {courses.map(course => (
-                    <ProCard key={course.id} className="hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors cursor-pointer">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="font-bold text-lg text-slate-900 dark:text-white">{course.title}</h3>
-                            <StatusBadge
-                                status={course.status}
-                                variant={course.status === 'active' ? 'success' : course.status === 'upcoming' ? 'info' : 'neutral'}
-                            />
-                        </div>
-
-                        <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                <span>{course.instructor}</span>
+            {courses.length === 0 ? (
+                <ProCard>
+                    <div className="text-center py-12">
+                        <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        <p className="text-slate-500 dark:text-slate-400">No courses found</p>
+                        <p className="text-sm text-slate-400 mt-1">Create your first course to get started</p>
+                    </div>
+                </ProCard>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {courses.map(course => (
+                        <ProCard key={course.id} className="hover:shadow-lg transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                    </svg>
+                                </div>
+                                <StatusBadge status={course.status || 'active'} variant={course.status === 'active' ? 'success' : 'neutral'} />
                             </div>
-
-                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                                <span>{course.students} Students</span>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg">{course.name}</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{course.instructor || 'No instructor'}</p>
+                            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 text-sm">
+                                <span className="text-slate-500">{course.students || 0} Students</span>
+                                <span className="text-slate-500">{course.duration || '-'}</span>
                             </div>
-
-                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span>{course.duration}</span>
-                            </div>
-                        </div>
-
-                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                            <span className="text-2xl font-bold text-indigo-600">{course.price}</span>
-                            <button className="text-sm font-medium text-indigo-600 hover:text-indigo-900">View Details</button>
-                        </div>
-                    </ProCard>
-                ))}
-            </div>
+                        </ProCard>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

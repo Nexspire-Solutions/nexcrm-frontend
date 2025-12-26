@@ -1,86 +1,70 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProHeader from '../../../components/common/ProHeader';
-import ProCard from '../../../components/common/ProCard';
 import ProTable from '../../../components/common/ProTable';
+import ProCard from '../../../components/common/ProCard';
 import StatusBadge from '../../../components/common/StatusBadge';
-
-const mockCases = [
-    { id: 'CASE-2024-001', title: 'Contract Dispute - ABC Corp', client: 'ABC Corporation', attorney: 'John Smith', courtDate: '2025-01-15', status: 'active', priority: 'high' },
-    { id: 'CASE-2024-002', title: 'Property Settlement', client: 'Jane Doe', attorney: 'Sarah Williams', courtDate: '2025-02-10', status: 'pending', priority: 'medium' },
-    { id: 'CASE-2023-089', title: 'Employment Matter', client: 'XYZ Inc', attorney: 'Mike Davis', courtDate: '2024-12-18', status: 'closed', priority: 'low' },
-    { id: 'CASE-2024-003', title: 'Criminal Defense', client: 'Robert Johnson', attorney: 'Emily Brown', courtDate: '2025-01-20', status: 'active', priority: 'critical' },
-];
+import apiClient from '../../../api/axios';
 
 export default function Cases() {
-    const [cases] = useState(mockCases);
+    const [cases, setCases] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchCases();
+    }, []);
+
+    const fetchCases = async () => {
+        try {
+            const response = await apiClient.get('/cases');
+            setCases(response.data.data || []);
+        } catch (error) {
+            console.error('Failed to fetch cases:', error);
+            setCases([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const columns = [
-        {
-            header: 'Case',
-            accessor: 'title',
-            render: (row) => (
-                <div>
-                    <p className="font-semibold text-slate-900 dark:text-white">{row.title}</p>
-                    <p className="text-xs text-slate-500">{row.id}</p>
-                </div>
-            )
-        },
-        { header: 'Client', accessor: 'client' },
-        { header: 'Attorney', accessor: 'attorney' },
-        { header: 'Court Date', accessor: 'courtDate', className: 'font-medium' },
-        {
-            header: 'Priority',
-            accessor: 'priority',
-            render: (row) => (
-                <StatusBadge
-                    status={row.priority}
-                    variant={row.priority === 'critical' ? 'error' : row.priority === 'high' ? 'warning' : row.priority === 'medium' ? 'info' : 'neutral'}
-                />
-            )
-        },
-        {
-            header: 'Status',
-            accessor: 'status',
-            render: (row) => (
-                <StatusBadge
-                    status={row.status}
-                    variant={row.status === 'active' ? 'success' : row.status === 'pending' ? 'warning' : 'neutral'}
-                />
-            )
-        }
+        { header: 'Case #', accessor: 'caseNumber', className: 'font-medium' },
+        { header: 'Client', accessor: 'clientName', className: 'font-medium text-slate-900 dark:text-white' },
+        { header: 'Type', accessor: 'caseType' },
+        { header: 'Filed Date', accessor: 'filedDate', render: (row) => row.filedDate ? new Date(row.filedDate).toLocaleDateString() : '-' },
+        { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status || 'open'} variant={row.status === 'closed' ? 'success' : row.status === 'pending' ? 'warning' : 'info'} /> },
     ];
+
+    if (isLoading) {
+        return (
+            <div className="p-6 max-w-7xl mx-auto">
+                <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-48 animate-pulse mb-6"></div>
+                <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
             <ProHeader
                 title="Cases"
-                subtitle="Manage legal cases and court dates"
+                subtitle="Manage legal cases"
                 breadcrumbs={[{ label: 'Dashboard', to: '/' }, { label: 'Legal' }, { label: 'Cases' }]}
                 actions={<button className="btn-primary">New Case</button>}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {cases.length === 0 ? (
                 <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Active Cases</p>
-                    <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">24</p>
+                    <div className="text-center py-12">
+                        <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                        </svg>
+                        <p className="text-slate-500 dark:text-slate-400">No cases found</p>
+                    </div>
                 </ProCard>
-                <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Upcoming Hearings</p>
-                    <p className="text-3xl font-bold text-indigo-600 mt-2">8</p>
+            ) : (
+                <ProCard noPadding>
+                    <ProTable columns={columns} data={cases} />
                 </ProCard>
-                <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Critical Priority</p>
-                    <p className="text-3xl font-bold text-red-600 mt-2">3</p>
-                </ProCard>
-                <ProCard>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Cases Won (YTD)</p>
-                    <p className="text-3xl font-bold text-emerald-600 mt-2">45</p>
-                </ProCard>
-            </div>
-
-            <ProCard noPadding>
-                <ProTable columns={columns} data={cases} />
-            </ProCard>
+            )}
         </div>
     );
 }
