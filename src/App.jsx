@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TenantConfigProvider } from './contexts/TenantConfigContext';
+import { DashboardRefreshProvider } from './contexts/DashboardRefreshContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/Login';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -53,40 +54,57 @@ import ReportsPage from './pages/ecommerce/ReportsPage';
 
 // Real Estate
 import Properties from './pages/industry/realestate/Properties';
-import ViewingsList from './pages/realestate/ViewingsList';
+import Viewings from './pages/industry/realestate/Viewings';
+import Listings from './pages/industry/realestate/Listings';
 
 // Healthcare
 import Patients from './pages/industry/healthcare/Patients';
-import PrescriptionsList from './pages/healthcare/PrescriptionsList';
+import Prescriptions from './pages/industry/healthcare/Prescriptions';
 
 // Education
 import Courses from './pages/industry/education/Courses';
 import Students from './pages/industry/education/Students';
+import Enrollments from './pages/industry/education/Enrollments';
 
 // Services
 import Appointments from './pages/industry/services/Appointments';
-import ServicesList from './pages/services/ServicesList';
+import ServicesList from './pages/industry/services/ServicesList';
+import Clients from './pages/industry/services/Clients';
 
 // Hospitality
 import Rooms from './pages/industry/hospitality/Rooms';
+import Reservations from './pages/industry/hospitality/Reservations';
+import Housekeeping from './pages/industry/hospitality/Housekeeping';
 
 // Fitness
 import Members from './pages/industry/fitness/Members';
+import Classes from './pages/industry/fitness/Classes';
+import Trainers from './pages/industry/fitness/Trainers';
 
 // Legal
 import Cases from './pages/industry/legal/Cases';
+import Billing from './pages/industry/legal/Billing';
 
 // Manufacturing
 import Production from './pages/industry/manufacturing/Production';
+import WorkOrders from './pages/industry/manufacturing/WorkOrders';
 
 // Logistics
 import Shipments from './pages/industry/logistics/Shipments';
+import Tracking from './pages/industry/logistics/Tracking';
+import Vehicles from './pages/industry/logistics/Vehicles';
 
 // Restaurant
 import Menu from './pages/industry/restaurant/Menu';
-
+import KitchenOrders from './pages/industry/restaurant/KitchenOrders';
+import Tables from './pages/industry/restaurant/Tables';
 // Salon
 import Bookings from './pages/industry/salon/Bookings';
+import SalonServices from './pages/industry/salon/SalonServices';
+import Staff from './pages/industry/salon/Staff';
+
+// Admin
+import IndustryTest from './pages/admin/IndustryTest';
 
 function AppRoutes() {
   return (
@@ -99,6 +117,7 @@ function AppRoutes() {
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="industry-test" element={<IndustryTest />} />
 
           {/* Employees - Admin & Manager */}
           <Route path="employees" element={<EmployeesList />} />
@@ -146,19 +165,57 @@ function AppRoutes() {
           <Route path="reports" element={<ReportsPage />} />
 
           {/* Industry Modules */}
+          {/* Real Estate */}
           <Route path="properties" element={<Properties />} />
+          <Route path="viewings" element={<Viewings />} />
+          <Route path="listings" element={<Listings />} />
+
+          {/* Healthcare */}
           <Route path="patients" element={<Patients />} />
+          <Route path="prescriptions" element={<Prescriptions />} />
+
+          {/* Education */}
           <Route path="courses" element={<Courses />} />
           <Route path="students" element={<Students />} />
+          <Route path="enrollments" element={<Enrollments />} />
+
+          {/* Services */}
           <Route path="appointments" element={<Appointments />} />
           <Route path="services" element={<ServicesList />} />
+          <Route path="clients" element={<Clients />} />
+
+          {/* Hospitality */}
           <Route path="rooms" element={<Rooms />} />
+          <Route path="reservations" element={<Reservations />} />
+          <Route path="housekeeping" element={<Housekeeping />} />
+
+          {/* Fitness */}
           <Route path="members" element={<Members />} />
+          <Route path="classes" element={<Classes />} />
+          <Route path="trainers" element={<Trainers />} />
+
+          {/* Legal */}
           <Route path="cases" element={<Cases />} />
+          <Route path="billing" element={<Billing />} />
+
+          {/* Manufacturing */}
           <Route path="production" element={<Production />} />
+          <Route path="work-orders" element={<WorkOrders />} />
+
+          {/* Logistics */}
           <Route path="shipments" element={<Shipments />} />
+          <Route path="tracking" element={<Tracking />} />
+          <Route path="vehicles" element={<Vehicles />} />
+
+          {/* Restaurant */}
           <Route path="menu" element={<Menu />} />
+          <Route path="kitchen-orders" element={<KitchenOrders />} />
+          <Route path="tables" element={<Tables />} />
+
+          {/* Salon */}
           <Route path="bookings" element={<Bookings />} />
+          <Route path="salon-services" element={<SalonServices />} />
+          <Route path="staff" element={<Staff />} />
         </Route>
       </Route>
 
@@ -174,42 +231,44 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <TenantConfigProvider>
-            <AppRoutes />
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#1e293b',
-                  color: '#f8fafc',
-                  borderRadius: '8px',
-                  padding: '12px 16px',
-                  fontSize: '14px',
-                },
-                success: {
+            <DashboardRefreshProvider>
+              <AppRoutes />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
                   style: {
-                    background: '#059669',
+                    background: '#1e293b',
+                    color: '#f8fafc',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    fontSize: '14px',
                   },
-                  iconTheme: {
-                    primary: '#ffffff',
-                    secondary: '#059669',
+                  success: {
+                    style: {
+                      background: '#059669',
+                    },
+                    iconTheme: {
+                      primary: '#ffffff',
+                      secondary: '#059669',
+                    },
                   },
-                },
-                error: {
-                  style: {
-                    background: '#dc2626',
+                  error: {
+                    style: {
+                      background: '#dc2626',
+                    },
+                    iconTheme: {
+                      primary: '#ffffff',
+                      secondary: '#dc2626',
+                    },
+                    duration: 5000,
                   },
-                  iconTheme: {
-                    primary: '#ffffff',
-                    secondary: '#dc2626',
-                  },
-                  duration: 5000,
-                },
-              }}
-            />
+                }}
+              />
+            </DashboardRefreshProvider>
           </TenantConfigProvider>
         </AuthProvider>
       </ThemeProvider>
-    </BrowserRouter>
+    </BrowserRouter >
   );
 }

@@ -38,11 +38,15 @@ export default function TopNav({ onMobileMenuToggle }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeDropdown, setActiveDropdown] = useState(null);
     const dropdownRef = useRef(null);
+    const userMenuRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
                 setActiveDropdown(null);
+            }
+            if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+                setUserMenuOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -179,9 +183,12 @@ export default function TopNav({ onMobileMenuToggle }) {
                 <NotificationBell onClick={() => { }} unreadCount={3} />
 
                 {/* User Menu */}
-                <div className="relative">
+                <div className="relative" ref={userMenuRef}>
                     <button
-                        onClick={() => setUserMenuOpen(!userMenuOpen)}
+                        onClick={() => {
+                            setActiveDropdown(null); // Close other dropdowns
+                            setUserMenuOpen(!userMenuOpen);
+                        }}
                         className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     >
                         <div className="avatar avatar-sm text-xs">
@@ -193,45 +200,45 @@ export default function TopNav({ onMobileMenuToggle }) {
                     </button>
 
                     {userMenuOpen && (
-                        <>
-                            <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 py-1 animate-modal-in">
-                                <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-                                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                                        {user?.firstName} {user?.lastName}
-                                    </p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                                        {user?.email}
-                                    </p>
-                                </div>
-                                <div className="py-1">
-                                    <NavLink
-                                        to="/profile"
-                                        onClick={() => setUserMenuOpen(false)}
-                                        className="top-nav-dropdown-item"
-                                    >
-                                        {Icons.profile}
-                                        My Profile
-                                    </NavLink>
-                                    <button
-                                        onClick={() => setUserMenuOpen(false)}
-                                        className="top-nav-dropdown-item w-full"
-                                    >
-                                        {Icons.settings}
-                                        Settings
-                                    </button>
-                                </div>
-                                <div className="border-t border-slate-200 dark:border-slate-700 py-1">
-                                    <button
-                                        onClick={() => { setUserMenuOpen(false); handleLogout(); }}
-                                        className="top-nav-dropdown-item w-full text-rose-600 hover:text-rose-700"
-                                    >
-                                        {Icons.logout}
-                                        Sign Out
-                                    </button>
-                                </div>
+                        <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-[100] py-1 animate-modal-in">
+                            <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+                                <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                                    {user?.firstName} {user?.lastName}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                    {user?.email}
+                                </p>
                             </div>
-                        </>
+                            <div className="py-1">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate('/profile');
+                                        setUserMenuOpen(false);
+                                    }}
+                                    className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors w-full text-left"
+                                >
+                                    {Icons.profile}
+                                    My Profile
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setUserMenuOpen(false); }}
+                                    className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors w-full text-left"
+                                >
+                                    {Icons.settings}
+                                    Settings
+                                </button>
+                            </div>
+                            <div className="border-t border-slate-200 dark:border-slate-700 py-1">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setUserMenuOpen(false); handleLogout(); }}
+                                    className="flex items-center gap-3 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors w-full text-left"
+                                >
+                                    {Icons.logout}
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
                     )}
                 </div>
 
@@ -243,6 +250,6 @@ export default function TopNav({ onMobileMenuToggle }) {
                     {Icons.menu}
                 </button>
             </div>
-        </nav>
+        </nav >
     );
 }

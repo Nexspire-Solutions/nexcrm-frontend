@@ -390,7 +390,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             roles: ['admin', 'manager', 'sales_operator'],
             items: [
                 { name: 'Bookings', path: '/bookings', icon: Icons.calendar },
-                { name: 'Services', path: '/services', icon: Icons.activity },
+                { name: 'Services', path: '/salon-services', icon: Icons.activity },
                 { name: 'Staff', path: '/staff', icon: Icons.employees }
             ]
         },

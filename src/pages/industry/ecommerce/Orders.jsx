@@ -1,16 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProHeader from '../../../components/common/ProHeader';
 import ProTable from '../../../components/common/ProTable';
 import StatusBadge from '../../../components/common/StatusBadge';
 import ProCard from '../../../components/common/ProCard';
-
-const mockOrders = [
-    { id: 'ORD-001', customer: 'John Smith', date: '2024-12-23', amount: '$540.00', status: 'pending', items: 3 },
-    { id: 'ORD-002', customer: 'Sarah Johnson', date: '2024-12-22', amount: '$120.50', status: 'shipped', items: 1 },
-    { id: 'ORD-003', customer: 'Michael Brown', date: '2024-12-22', amount: '$1,250.00', status: 'delivered', items: 5 },
-    { id: 'ORD-004', customer: 'Emily Davis', date: '2024-12-21', amount: '$75.00', status: 'processing', items: 2 },
-    { id: 'ORD-005', customer: 'David Wilson', date: '2024-12-20', amount: '$320.00', status: 'cancelled', items: 1 },
-];
+import apiClient from '../../../api/axios';
+import toast from 'react-hot-toast';
 
 const statusVariants = {
     pending: 'warning',
@@ -21,15 +15,33 @@ const statusVariants = {
 };
 
 export default function OrderList() {
-    const [viewMode, setViewMode] = useState('list'); // 'list' | 'kanban'
-    const [orders] = useState(mockOrders);
+    const [viewMode, setViewMode] = useState('list');
+    const [orders, setOrders] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchOrders();
+    }, []);
+
+    const fetchOrders = async () => {
+        try {
+            const response = await apiClient.get('/orders');
+            setOrders(response.data.data || []);
+        } catch (error) {
+            console.error('Failed to fetch orders:', error);
+            // Empty state instead of mock data
+            setOrders([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const columns = [
-        { header: 'Order ID', accessor: 'id', className: 'font-medium text-slate-900 dark:text-white' },
-        { header: 'Customer', accessor: 'customer' },
-        { header: 'Date', accessor: 'date', className: 'text-slate-500' },
-        { header: 'Items', accessor: 'items', align: 'right' },
-        { header: 'Amount', accessor: 'amount', align: 'right', className: 'font-medium' },
+        { header: 'Order ID', accessor: 'order_number', className: 'font-medium text-slate-900 dark:text-white' },
+        { header: 'Customer', accessor: 'shipping_name' },
+        { header: 'Date', accessor: 'created_at', className: 'text-slate-500', render: (row) => new Date(row.created_at).toLocaleDateString() },
+        { header: 'Items', accessor: 'items', align: 'right', render: (row) => row.items?.length || 0 },
+        { header: 'Amount', accessor: 'total', align: 'right', className: 'font-medium', render: (row) => `₹${(row.total || 0).toLocaleString()}` },
         {
             header: 'Status',
             accessor: 'status',
@@ -43,6 +55,15 @@ export default function OrderList() {
             )
         }
     ];
+
+    if (isLoading) {
+        return (
+            <div className="p-6 max-w-7xl mx-auto">
+                <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-48 animate-pulse mb-6"></div>
+                <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
@@ -68,7 +89,16 @@ export default function OrderList() {
                 }
             />
 
-            {viewMode === 'list' ? (
+            {orders.length === 0 ? (
+                <ProCard>
+                    <div className="text-center py-12">
+                        <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                        <p className="text-slate-500 dark:text-slate-400">No orders found</p>
+                    </div>
+                </ProCard>
+            ) : viewMode === 'list' ? (
                 <ProCard noPadding>
                     <ProTable
                         columns={columns}
@@ -90,13 +120,13 @@ export default function OrderList() {
                                 {orders.filter(o => o.status === status).map(order => (
                                     <div key={order.id} className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-indigo-300 transition-colors">
                                         <div className="flex justify-between items-start mb-2">
-                                            <span className="font-medium text-slate-900 dark:text-white text-sm">{order.id}</span>
-                                            <span className="text-xs text-slate-500">{order.date}</span>
+                                            <span className="font-medium text-slate-900 dark:text-white text-sm">{order.order_number}</span>
+                                            <span className="text-xs text-slate-500">{new Date(order.created_at).toLocaleDateString()}</span>
                                         </div>
-                                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">{order.customer}</p>
+                                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">{order.shipping_name}</p>
                                         <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-700">
-                                            <span className="text-xs text-slate-500">{order.items} Items</span>
-                                            <span className="font-bold text-slate-900 dark:text-white text-sm">{order.amount}</span>
+                                            <span className="text-xs text-slate-500">{order.items?.length || 0} Items</span>
+                                            <span className="font-bold text-slate-900 dark:text-white text-sm">₹{(order.total || 0).toLocaleString()}</span>
                                         </div>
                                     </div>
                                 ))}

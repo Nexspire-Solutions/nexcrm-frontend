@@ -1,13 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
-
-const mockActivities = [
-    { id: 1, type: 'call', contact: 'John Smith', company: 'TechCorp', title: 'Discovery call', date: '2024-12-23 14:30', user: 'Jane Admin', duration: '15 min', notes: 'Discussed initial requirements and budget constraints.' },
-    { id: 2, type: 'email', contact: 'Sarah Johnson', company: 'DataFlow', title: 'Follow-up email sent', date: '2024-12-23 10:00', user: 'Mike Sales', duration: null, notes: 'Sent proposal v1.2 for review.' },
-    { id: 3, type: 'meeting', contact: 'Emily Brown', company: 'DesignHub', title: 'Product demo', date: '2024-12-22 15:00', user: 'Jane Admin', duration: '45 min', notes: 'Demo went well, interested in premium plan.' },
-    { id: 4, type: 'note', contact: 'David Lee', company: 'CloudSync', title: 'Updated requirements', date: '2024-12-22 11:30', user: 'Mike Sales', duration: null, notes: 'Client requested additional security features.' },
-    { id: 5, type: 'call', contact: 'Mike Wilson', company: 'StartupXYZ', title: 'Pricing discussion', date: '2024-12-21 16:00', user: 'Jane Admin', duration: '20 min', notes: 'Negotiated annual contract terms.' },
-];
+import { activitiesAPI } from '../../api';
 
 const activityIcons = {
     call: {
@@ -33,12 +26,30 @@ const activityIcons = {
 };
 
 export default function LeadActivity() {
-    const [activities] = useState(mockActivities);
+    const [activities, setActivities] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [filterType, setFilterType] = useState('all');
+
+    useEffect(() => {
+        fetchActivities();
+    }, []);
+
+    const fetchActivities = async () => {
+        try {
+            const response = await activitiesAPI.getAll();
+            setActivities(response.data || []);
+        } catch (error) {
+            console.error('Failed to fetch activities:', error);
+            setActivities([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Group activities by date
     const groupedActivities = activities.reduce((groups, activity) => {
-        const date = activity.date.split(' ')[0];
+        const dateStr = activity.created_at || activity.date;
+        const date = dateStr ? dateStr.split('T')[0].split(' ')[0] : 'Unknown';
         if (!groups[date]) {
             groups[date] = [];
         }
@@ -47,10 +58,14 @@ export default function LeadActivity() {
     }, {});
 
     const getDateLabel = (dateStr) => {
-        const date = parseISO(dateStr);
-        if (isToday(date)) return 'Today';
-        if (isYesterday(date)) return 'Yesterday';
-        return format(date, 'MMMM d, yyyy');
+        try {
+            const date = parseISO(dateStr);
+            if (isToday(date)) return 'Today';
+            if (isYesterday(date)) return 'Yesterday';
+            return format(date, 'MMMM d, yyyy');
+        } catch {
+            return dateStr;
+        }
     };
 
     const stats = {
@@ -59,6 +74,19 @@ export default function LeadActivity() {
         emails: activities.filter(a => a.type === 'email').length,
         meetings: activities.filter(a => a.type === 'meeting').length
     };
+
+    if (isLoading) {
+        return (
+            <div className="max-w-5xl mx-auto space-y-6 pb-12">
+                <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-48 animate-pulse"></div>
+                <div className="grid grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-20 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-5xl mx-auto space-y-6 pb-12">
@@ -86,44 +114,41 @@ export default function LeadActivity() {
                 </div>
             </div>
 
-            {/* Quick Actions & Stats */}
-            <div className="grid grid-cols-1 gap-4">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Total</p>
+                        </div>
+                    </div>
+                </div>
+
+                {[
+                    { label: 'Calls', value: stats.calls, icon: activityIcons.call.icon, gradient: 'from-emerald-500 to-emerald-600' },
+                    { label: 'Emails', value: stats.emails, icon: activityIcons.email.icon, gradient: 'from-blue-500 to-blue-600' },
+                    { label: 'Meetings', value: stats.meetings, icon: activityIcons.meeting.icon, gradient: 'from-purple-500 to-purple-600' }
+                ].map((stat) => (
+                    <div key={stat.label} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg flex items-center justify-center">
+                            <div className={`w-10 h-10 bg-gradient-to-br ${stat.gradient} rounded-lg flex items-center justify-center`}>
                                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
                                 </svg>
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
-                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Total</p>
+                                <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{stat.label}</p>
                             </div>
                         </div>
                     </div>
-
-                    {[
-                        { label: 'Calls', value: stats.calls, icon: activityIcons.call.icon, gradient: 'from-emerald-500 to-emerald-600' },
-                        { label: 'Emails', value: stats.emails, icon: activityIcons.email.icon, gradient: 'from-blue-500 to-blue-600' },
-                        { label: 'Meetings', value: stats.meetings, icon: activityIcons.meeting.icon, gradient: 'from-purple-500 to-purple-600' }
-                    ].map((stat) => (
-                        <div key={stat.label} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
-                            <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 bg-gradient-to-br ${stat.gradient} rounded-lg flex items-center justify-center`}>
-                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
-                                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{stat.label}</p>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                ))}
             </div>
 
             {/* Main Content */}
@@ -148,92 +173,61 @@ export default function LeadActivity() {
 
                 {/* Timeline */}
                 <div className="p-6">
-                    <div className="space-y-10">
-                        {Object.entries(groupedActivities).map(([date, dateActivities]) => (
-                            <div key={date} className="relative">
-                                {/* Date Header */}
-                                <div className="sticky top-0 z-10 flex items-center mb-6">
-                                    <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">
-                                        {getDateLabel(date)}
+                    {Object.keys(groupedActivities).length > 0 ? (
+                        <div className="space-y-10">
+                            {Object.entries(groupedActivities).map(([date, dateActivities]) => (
+                                <div key={date} className="relative">
+                                    <div className="sticky top-0 z-10 flex items-center mb-6">
+                                        <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">
+                                            {getDateLabel(date)}
+                                        </div>
+                                        <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1 ml-4"></div>
                                     </div>
-                                    <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1 ml-4"></div>
-                                </div>
 
-                                <div className="space-y-8 pl-4 sm:pl-8 relative">
-                                    {/* Vertical Line */}
-                                    <div className="absolute left-4 sm:left-8 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700 -translate-x-1/2"></div>
+                                    <div className="space-y-8 pl-4 sm:pl-8 relative">
+                                        <div className="absolute left-4 sm:left-8 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700 -translate-x-1/2"></div>
 
-                                    {dateActivities.filter(a => filterType === 'all' || a.type === filterType).map((activity) => (
-                                        <div key={activity.id} className="relative flex gap-4 group">
-                                            {/* Icon */}
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 relative z-10 ring-4 ring-white dark:ring-slate-800 ${activityIcons[activity.type].color} ${activityIcons[activity.type].ring} shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={activityIcons[activity.type].icon} />
-                                                </svg>
-                                            </div>
+                                        {dateActivities.filter(a => filterType === 'all' || a.type === filterType).map((activity) => (
+                                            <div key={activity.id} className="relative flex gap-4 group">
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 relative z-10 ring-4 ring-white dark:ring-slate-800 ${activityIcons[activity.type]?.color || activityIcons.note.color} shadow-sm group-hover:scale-110 transition-transform duration-200`}>
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={activityIcons[activity.type]?.icon || activityIcons.note.icon} />
+                                                    </svg>
+                                                </div>
 
-                                            {/* Card */}
-                                            <div className="flex-1 bg-white dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md transition-all">
-                                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
-                                                    <div>
-                                                        <h3 className="font-semibold text-slate-900 dark:text-white text-base">
-                                                            {activity.title}
-                                                        </h3>
-                                                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                                                            with <span className="font-medium text-slate-700 dark:text-slate-300">{activity.contact}</span>
-                                                            <span className="mx-1">•</span>
-                                                            {activity.company}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        {activity.duration && (
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-600">
-                                                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                </svg>
-                                                                {activity.duration}
-                                                            </span>
-                                                        )}
+                                                <div className="flex-1 bg-white dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md transition-all">
+                                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
+                                                        <div>
+                                                            <h3 className="font-semibold text-slate-900 dark:text-white text-base capitalize">
+                                                                {activity.type}
+                                                            </h3>
+                                                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                                                                {activity.description}
+                                                            </p>
+                                                        </div>
                                                         <span className="text-xs font-medium text-slate-400">
-                                                            {format(parseISO(activity.date), 'h:mm a')}
+                                                            {activity.created_at ? new Date(activity.created_at).toLocaleTimeString() : ''}
                                                         </span>
                                                     </div>
                                                 </div>
-
-                                                {activity.notes && (
-                                                    <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 text-sm text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-800 mt-3">
-                                                        {activity.notes}
-                                                    </div>
-                                                )}
-
-                                                <div className="mt-3 flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                                                    <span className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-xs font-bold text-indigo-700 dark:text-indigo-400">
-                                                        {activity.user.charAt(0)}
-                                                    </span>
-                                                    <span className="text-xs text-slate-500 dark:text-slate-400">
-                                                        Logged by {activity.user}
-                                                    </span>
-                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {activities.length === 0 && (
-                    <div className="p-12 text-center">
-                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            ))}
                         </div>
-                        <h3 className="text-lg font-medium text-slate-900 dark:text-white">No activities found</h3>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1">Start by logging your first call, email, or meeting.</p>
-                    </div>
-                )}
+                    ) : (
+                        <div className="p-12 text-center">
+                            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-medium text-slate-900 dark:text-white">No activities found</h3>
+                            <p className="text-slate-500 dark:text-slate-400 mt-1">Start by logging your first call, email, or meeting.</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

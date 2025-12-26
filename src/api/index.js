@@ -263,6 +263,11 @@ export const dashboardAPI = {
     getEcommerceStats: async () => {
         const response = await apiClient.get('/dashboard/ecommerce-stats');
         return response.data;
+    },
+
+    getIndustryStats: async (industry) => {
+        const response = await apiClient.get(`/dashboard/${industry}-stats`);
+        return response.data;
     }
 };
 
