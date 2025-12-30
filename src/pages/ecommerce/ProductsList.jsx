@@ -21,6 +21,10 @@ const ProductsList = () => {
     const [stats, setStats] = useState({});
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
+    // Bulk import state
+    const [showBulkImport, setShowBulkImport] = useState(false);
+    const [importing, setImporting] = useState(false);
+    const [importResults, setImportResults] = useState(null);
 
     useEffect(() => {
         fetchProducts();
@@ -89,6 +93,40 @@ const ProductsList = () => {
         toast.success(editProduct ? 'Product updated successfully' : 'Product created successfully');
     };
 
+    // Bulk import handler
+    const handleBulkImport = async (file, duplicateAction) => {
+        setImporting(true);
+        setImportResults(null);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('duplicateAction', duplicateAction);
+
+            const response = await apiClient.post('/products/bulk-import', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            setImportResults(response.data.results);
+            if (response.data.success) {
+                toast.success(response.data.message);
+                fetchProducts();
+                fetchStats();
+            }
+        } catch (error) {
+            console.error('Bulk import failed:', error);
+            toast.error(error.response?.data?.error || 'Failed to import products');
+        } finally {
+            setImporting(false);
+        }
+    };
+
+    const downloadTemplate = () => {
+        const link = document.createElement('a');
+        link.href = `${import.meta.env.VITE_API_URL}/products/bulk-import/template`;
+        link.download = 'product_import_template.csv';
+        link.click();
+    };
+
     if (!hasModule('products')) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
@@ -114,15 +152,26 @@ const ProductsList = () => {
                     <h1 className="text-xl font-bold text-slate-900 dark:text-white">Products</h1>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Manage your product catalog</p>
                 </div>
-                <button
-                    onClick={() => { setEditProduct(null); setShowModal(true); }}
-                    className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add Product
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => { setShowBulkImport(true); setImportResults(null); }}
+                        className="btn-secondary flex items-center gap-2"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Bulk Import
+                    </button>
+                    <button
+                        onClick={() => { setEditProduct(null); setShowModal(true); }}
+                        className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Product
+                    </button>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -330,6 +379,17 @@ const ProductsList = () => {
                 cancelText="Cancel"
                 variant="danger"
             />
+
+            {/* Bulk Import Modal */}
+            {showBulkImport && (
+                <BulkImportModal
+                    onClose={() => setShowBulkImport(false)}
+                    onImport={handleBulkImport}
+                    onDownloadTemplate={downloadTemplate}
+                    importing={importing}
+                    results={importResults}
+                />
+            )}
         </div>
     );
 };
@@ -546,6 +606,212 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
                     </div>
                 </div>
             </form>
+        </Modal>
+    );
+};
+
+/**
+ * Bulk Import Modal
+ */
+const BulkImportModal = ({ onClose, onImport, onDownloadTemplate, importing, results }) => {
+    const [file, setFile] = useState(null);
+    const [duplicateAction, setDuplicateAction] = useState('update');
+    const fileInputRef = React.useRef(null);
+
+    const handleFileSelect = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            if (!selectedFile.name.endsWith('.csv')) {
+                toast.error('Please select a CSV file');
+                return;
+            }
+            setFile(selectedFile);
+        }
+    };
+
+    const handleImport = () => {
+        if (!file) {
+            toast.error('Please select a file');
+            return;
+        }
+        onImport(file, duplicateAction);
+    };
+
+    return (
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            title="Bulk Import Products"
+            footer={
+                <>
+                    <button type="button" onClick={onClose} className="btn-secondary">
+                        {results ? 'Close' : 'Cancel'}
+                    </button>
+                    {!results && (
+                        <button
+                            onClick={handleImport}
+                            className="btn-primary"
+                            disabled={importing || !file}
+                        >
+                            {importing ? 'Importing...' : 'Import Products'}
+                        </button>
+                    )}
+                </>
+            }
+        >
+            <div className="space-y-6">
+                {/* Download Template */}
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                        <svg className="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div className="flex-1">
+                            <h4 className="font-medium text-slate-900 dark:text-white">Download Template</h4>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                                Download the CSV template to see the required format
+                            </p>
+                        </div>
+                        <button onClick={onDownloadTemplate} className="btn-secondary btn-sm">
+                            Download
+                        </button>
+                    </div>
+                </div>
+
+                {/* File Upload */}
+                {!results && (
+                    <>
+                        <div>
+                            <label className="label">Select CSV File</label>
+                            <div
+                                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
+                                    ${file
+                                        ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
+                                        : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500'}`}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                {file ? (
+                                    <div className="flex items-center justify-center gap-3">
+                                        <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span className="font-medium text-slate-900 dark:text-white">{file.name}</span>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                                            className="text-red-500 hover:text-red-600"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <svg className="w-10 h-10 mx-auto text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                        </svg>
+                                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                                            Click to select or drag and drop a CSV file
+                                        </p>
+                                    </>
+                                )}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".csv"
+                                    className="hidden"
+                                    onChange={handleFileSelect}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Duplicate Handling */}
+                        <div>
+                            <label className="label">When SKU already exists</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors
+                                    ${duplicateAction === 'update'
+                                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                        : 'border-slate-200 dark:border-slate-700'}`}>
+                                    <input
+                                        type="radio"
+                                        name="duplicateAction"
+                                        value="update"
+                                        checked={duplicateAction === 'update'}
+                                        onChange={(e) => setDuplicateAction(e.target.value)}
+                                        className="accent-indigo-600"
+                                    />
+                                    <div>
+                                        <span className="font-medium text-slate-900 dark:text-white">Update</span>
+                                        <p className="text-xs text-slate-500">Replace existing product data</p>
+                                    </div>
+                                </label>
+                                <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors
+                                    ${duplicateAction === 'skip'
+                                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                        : 'border-slate-200 dark:border-slate-700'}`}>
+                                    <input
+                                        type="radio"
+                                        name="duplicateAction"
+                                        value="skip"
+                                        checked={duplicateAction === 'skip'}
+                                        onChange={(e) => setDuplicateAction(e.target.value)}
+                                        className="accent-indigo-600"
+                                    />
+                                    <div>
+                                        <span className="font-medium text-slate-900 dark:text-white">Skip</span>
+                                        <p className="text-xs text-slate-500">Keep existing product</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* Import Results */}
+                {results && (
+                    <div className="space-y-4">
+                        <h4 className="font-medium text-slate-900 dark:text-white">Import Results</h4>
+                        <div className="grid grid-cols-4 gap-3 text-center">
+                            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3">
+                                <p className="text-2xl font-bold text-emerald-600">{results.success}</p>
+                                <p className="text-xs text-slate-500">Created</p>
+                            </div>
+                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                                <p className="text-2xl font-bold text-blue-600">{results.updated}</p>
+                                <p className="text-xs text-slate-500">Updated</p>
+                            </div>
+                            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
+                                <p className="text-2xl font-bold text-amber-600">{results.skipped}</p>
+                                <p className="text-xs text-slate-500">Skipped</p>
+                            </div>
+                            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                                <p className="text-2xl font-bold text-red-600">{results.failed}</p>
+                                <p className="text-xs text-slate-500">Failed</p>
+                            </div>
+                        </div>
+
+                        {results.errors && results.errors.length > 0 && (
+                            <div className="mt-4">
+                                <h5 className="font-medium text-red-600 mb-2">Errors</h5>
+                                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 max-h-40 overflow-auto">
+                                    {results.errors.map((err, idx) => (
+                                        <p key={idx} className="text-sm text-red-600">
+                                            Row {err.row}: {err.error}
+                                        </p>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Importing Progress */}
+                {importing && (
+                    <div className="flex items-center justify-center gap-3 py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+                        <span className="text-slate-600 dark:text-slate-400">Importing products...</span>
+                    </div>
+                )}
+            </div>
         </Modal>
     );
 };
