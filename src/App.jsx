@@ -103,6 +103,9 @@ import Bookings from './pages/industry/salon/Bookings';
 import SalonServices from './pages/industry/salon/SalonServices';
 import Staff from './pages/industry/salon/Staff';
 
+// Settings
+import ThemeEditor from './pages/settings/ThemeEditor';
+
 // Admin
 import IndustryTest from './pages/admin/IndustryTest';
 
@@ -216,6 +219,11 @@ function AppRoutes() {
           <Route path="bookings" element={<Bookings />} />
           <Route path="salon-services" element={<SalonServices />} />
           <Route path="staff" element={<Staff />} />
+
+          {/* Settings - Admin Only */}
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route path="settings/theme-editor" element={<ThemeEditor />} />
+          </Route>
         </Route>
       </Route>
 
