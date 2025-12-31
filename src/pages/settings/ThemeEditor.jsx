@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import { FiSave, FiRefreshCw, FiImage, FiDroplet, FiType, FiExternalLink } from 'react-icons/fi';
+import { FiSave, FiRefreshCw, FiImage, FiDroplet, FiType, FiExternalLink, FiGlobe, FiDollarSign } from 'react-icons/fi';
 
 const ThemeEditor = () => {
     const [settings, setSettings] = useState({
@@ -12,7 +12,11 @@ const ThemeEditor = () => {
         hero_image: '',
         hero_title: '',
         hero_subtitle: '',
-        company_name: ''
+        company_name: '',
+        currency_symbol: '₹',
+        footer_text: '',
+        support_email: '',
+        support_phone: ''
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -72,22 +76,23 @@ const ThemeEditor = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
             </div>
         );
     }
 
     return (
-        <div className="max-w-4xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
+        <div className="max-w-5xl mx-auto p-6">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Theme Editor</h1>
-                    <p className="text-gray-600">Customize your storefront appearance</p>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Theme Editor</h1>
+                    <p className="text-slate-500 dark:text-slate-400">Customize your storefront appearance</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                     <button
                         onClick={loadSettings}
-                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                        className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center gap-2 transition-colors"
                     >
                         <FiRefreshCw size={18} />
                         Reset
@@ -95,7 +100,7 @@ const ThemeEditor = () => {
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
+                        className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50 transition-colors"
                     >
                         <FiSave size={18} />
                         {saving ? 'Saving...' : 'Save Changes'}
@@ -104,86 +109,86 @@ const ThemeEditor = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Branding */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <FiImage className="text-blue-500" />
+                {/* Branding Card */}
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-5 flex items-center gap-2">
+                        <FiImage className="text-indigo-500" />
                         Branding
                     </h2>
 
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Store Name</label>
                             <input
                                 type="text"
                                 value={settings.company_name}
                                 onChange={(e) => handleChange('company_name', e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                 placeholder="Your Store Name"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Logo URL</label>
                             <input
                                 type="url"
                                 value={settings.logo}
                                 onChange={(e) => handleChange('logo', e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                 placeholder="https://example.com/logo.png"
                             />
                             {settings.logo && (
-                                <div className="mt-2 p-4 bg-gray-100 rounded-lg">
+                                <div className="mt-3 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg">
                                     <img src={settings.logo} alt="Logo preview" className="h-12 object-contain" />
                                 </div>
                             )}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Hero Image URL</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Hero Image URL</label>
                             <input
                                 type="url"
                                 value={settings.hero_image}
                                 onChange={(e) => handleChange('hero_image', e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                 placeholder="https://example.com/hero.jpg"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Hero Title</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Hero Title</label>
                             <input
                                 type="text"
                                 value={settings.hero_title}
                                 onChange={(e) => handleChange('hero_title', e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                 placeholder="Welcome to Our Store"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Hero Subtitle</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Hero Subtitle</label>
                             <textarea
                                 value={settings.hero_subtitle}
                                 onChange={(e) => handleChange('hero_subtitle', e.target.value)}
                                 rows={2}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                                 placeholder="Shop the latest products with amazing deals"
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Colors */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <FiDroplet className="text-blue-500" />
+                {/* Colors Card */}
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-5 flex items-center gap-2">
+                        <FiDroplet className="text-indigo-500" />
                         Colors
                     </h2>
 
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Quick Presets</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Quick Presets</label>
                             <div className="flex flex-wrap gap-2">
                                 {colorPresets.map(preset => (
                                     <button
@@ -192,11 +197,10 @@ const ThemeEditor = () => {
                                             handleChange('primary_color', preset.primary);
                                             handleChange('secondary_color', preset.secondary);
                                         }}
-                                        className="px-3 py-1 rounded-full text-xs font-medium border hover:opacity-80 transition"
+                                        className="px-3 py-1.5 rounded-full text-xs font-medium hover:opacity-80 transition shadow-sm"
                                         style={{
                                             backgroundColor: preset.primary,
-                                            color: 'white',
-                                            borderColor: preset.primary
+                                            color: 'white'
                                         }}
                                     >
                                         {preset.name}
@@ -206,107 +210,163 @@ const ThemeEditor = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Primary Color</label>
                             <div className="flex items-center gap-3">
                                 <input
                                     type="color"
                                     value={settings.primary_color}
                                     onChange={(e) => handleChange('primary_color', e.target.value)}
-                                    className="w-12 h-10 rounded cursor-pointer border-0"
+                                    className="w-14 h-11 rounded-lg cursor-pointer border-2 border-slate-300 dark:border-slate-600"
                                 />
                                 <input
                                     type="text"
                                     value={settings.primary_color}
                                     onChange={(e) => handleChange('primary_color', e.target.value)}
-                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Secondary Color</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Secondary Color</label>
                             <div className="flex items-center gap-3">
                                 <input
                                     type="color"
                                     value={settings.secondary_color}
                                     onChange={(e) => handleChange('secondary_color', e.target.value)}
-                                    className="w-12 h-10 rounded cursor-pointer border-0"
+                                    className="w-14 h-11 rounded-lg cursor-pointer border-2 border-slate-300 dark:border-slate-600"
                                 />
                                 <input
                                     type="text"
                                     value={settings.secondary_color}
                                     onChange={(e) => handleChange('secondary_color', e.target.value)}
-                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Typography */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <FiType className="text-blue-500" />
-                        Typography
+                {/* Typography & Settings Card */}
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-5 flex items-center gap-2">
+                        <FiType className="text-indigo-500" />
+                        Typography & Settings
                     </h2>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Font Family</label>
-                        <select
-                            value={settings.font_family}
-                            onChange={(e) => handleChange('font_family', e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                            {fontOptions.map(font => (
-                                <option key={font} value={font}>{font}</option>
-                            ))}
-                        </select>
+                    <div className="space-y-5">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Font Family</label>
+                            <select
+                                value={settings.font_family}
+                                onChange={(e) => handleChange('font_family', e.target.value)}
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            >
+                                {fontOptions.map(font => (
+                                    <option key={font} value={font}>{font}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                <FiDollarSign className="inline mr-1" />
+                                Currency Symbol
+                            </label>
+                            <input
+                                type="text"
+                                value={settings.currency_symbol}
+                                onChange={(e) => handleChange('currency_symbol', e.target.value)}
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                placeholder="₹"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                <FiGlobe className="inline mr-1" />
+                                Footer Text
+                            </label>
+                            <input
+                                type="text"
+                                value={settings.footer_text}
+                                onChange={(e) => handleChange('footer_text', e.target.value)}
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                placeholder="© 2024 Your Company. All rights reserved."
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Support Email</label>
+                                <input
+                                    type="email"
+                                    value={settings.support_email}
+                                    onChange={(e) => handleChange('support_email', e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="support@store.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Support Phone</label>
+                                <input
+                                    type="tel"
+                                    value={settings.support_phone}
+                                    onChange={(e) => handleChange('support_phone', e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="+91 9876543210"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Preview */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <FiExternalLink className="text-blue-500" />
-                        Preview
+                {/* Preview Card */}
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-5 flex items-center gap-2">
+                        <FiExternalLink className="text-indigo-500" />
+                        Live Preview
                     </h2>
 
                     <div
-                        className="rounded-lg overflow-hidden border"
+                        className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-600"
                         style={{ fontFamily: settings.font_family }}
                     >
                         {/* Mini header preview */}
                         <div
-                            className="p-4 text-white"
+                            className="p-4 text-white flex items-center gap-3"
                             style={{ backgroundColor: settings.primary_color }}
                         >
-                            <div className="font-bold">{settings.company_name || 'Store Name'}</div>
+                            {settings.logo && (
+                                <img src={settings.logo} alt="Logo" className="h-8 w-auto" />
+                            )}
+                            <span className="font-bold">{settings.company_name || 'Store Name'}</span>
                         </div>
 
                         {/* Mini hero preview */}
                         <div
-                            className="p-6 text-center"
+                            className="p-8 text-center"
                             style={{
                                 background: settings.hero_image
                                     ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${settings.hero_image}) center/cover`
-                                    : `linear-gradient(to right, ${settings.primary_color}, ${settings.secondary_color})`,
+                                    : `linear-gradient(135deg, ${settings.primary_color}, ${settings.secondary_color})`,
                                 color: 'white'
                             }}
                         >
-                            <h3 className="text-lg font-bold">{settings.hero_title || 'Hero Title'}</h3>
-                            <p className="text-sm opacity-80">{settings.hero_subtitle || 'Hero subtitle text'}</p>
+                            <h3 className="text-xl font-bold mb-2">{settings.hero_title || 'Hero Title'}</h3>
+                            <p className="text-sm opacity-90">{settings.hero_subtitle || 'Hero subtitle text goes here'}</p>
                         </div>
 
                         {/* Mini button preview */}
-                        <div className="p-4 flex gap-2 justify-center">
+                        <div className="p-5 flex gap-3 justify-center bg-slate-50 dark:bg-slate-900">
                             <button
-                                className="px-4 py-2 rounded text-white text-sm"
+                                className="px-5 py-2 rounded-lg text-white text-sm font-medium shadow-sm"
                                 style={{ backgroundColor: settings.primary_color }}
                             >
                                 Primary Button
                             </button>
                             <button
-                                className="px-4 py-2 rounded text-white text-sm"
+                                className="px-5 py-2 rounded-lg text-white text-sm font-medium shadow-sm"
                                 style={{ backgroundColor: settings.secondary_color }}
                             >
                                 Secondary
