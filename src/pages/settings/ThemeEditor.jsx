@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import { FiSave, FiRefreshCw, FiImage, FiPalette, FiType, FiExternalLink } from 'react-icons/fi';
+import { FiSave, FiRefreshCw, FiImage, FiDroplet, FiType, FiExternalLink } from 'react-icons/fi';
 
 const ThemeEditor = () => {
     const [settings, setSettings] = useState({
@@ -177,7 +177,7 @@ const ThemeEditor = () => {
                 {/* Colors */}
                 <div className="bg-white rounded-xl shadow-sm p-6">
                     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <FiPalette className="text-blue-500" />
+                        <FiDroplet className="text-blue-500" />
                         Colors
                     </h2>
 
