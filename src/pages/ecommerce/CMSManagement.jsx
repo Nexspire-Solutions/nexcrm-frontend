@@ -8,8 +8,8 @@ import ConfirmModal from '../../components/common/ConfirmModal';
  * Enhanced CMS Management Page
  * Manages: Banners, Homepage Sections, Static Pages, Blog Posts
  */
-const CMSManagement = () => {
-    const [activeTab, setActiveTab] = useState('banners');
+const CMSManagement = ({ activeTab: routeTab }) => {
+    const [activeTab, setActiveTab] = useState(routeTab || 'banners');
     const [banners, setBanners] = useState([]);
     const [sections, setSections] = useState([]);
     const [pages, setPages] = useState([]);
@@ -31,6 +31,12 @@ const CMSManagement = () => {
         { id: 'theme', label: 'Theme Settings', icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01' },
         { id: 'seo', label: 'SEO Settings', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' }
     ];
+
+    useEffect(() => {
+        if (routeTab) {
+            setActiveTab(routeTab);
+        }
+    }, [routeTab]);
 
     useEffect(() => {
         fetchData();
