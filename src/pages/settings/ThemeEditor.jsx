@@ -16,7 +16,11 @@ const ThemeEditor = () => {
         currency_symbol: '₹',
         footer_text: '',
         support_email: '',
-        support_phone: ''
+        support_phone: '',
+        // E-commerce settings
+        tax_rate: '10',
+        shipping_fee: '5.99',
+        free_shipping_threshold: '50'
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -317,6 +321,65 @@ const ThemeEditor = () => {
                                     placeholder="+91 9876543210"
                                 />
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* E-commerce Settings Card */}
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-5 flex items-center gap-2">
+                        <FiDollarSign className="text-green-500" />
+                        E-commerce Settings
+                    </h2>
+
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Tax Rate (%)
+                            </label>
+                            <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="100"
+                                value={settings.tax_rate}
+                                onChange={(e) => handleChange('tax_rate', e.target.value)}
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                placeholder="10"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Applied to all orders</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Shipping Fee ({settings.currency_symbol})
+                            </label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={settings.shipping_fee}
+                                onChange={(e) => handleChange('shipping_fee', e.target.value)}
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                placeholder="5.99"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Standard shipping cost</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Free Shipping Above ({settings.currency_symbol})
+                            </label>
+                            <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                value={settings.free_shipping_threshold}
+                                onChange={(e) => handleChange('free_shipping_threshold', e.target.value)}
+                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                placeholder="50"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Free shipping threshold</p>
                         </div>
                     </div>
                 </div>
