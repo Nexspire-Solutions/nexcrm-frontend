@@ -33,8 +33,13 @@ const ThemeEditor = () => {
 
     const loadSettings = async () => {
         try {
-            const res = await api.get('/config/storefront');
-            setSettings(prev => ({ ...prev, ...res.data }));
+            const res = await api.get('/cms/layout/theme_config');
+            if (res.data.data && res.data.data.sections) {
+                const data = typeof res.data.data.sections === 'string'
+                    ? JSON.parse(res.data.data.sections)
+                    : res.data.data.sections;
+                setSettings(prev => ({ ...prev, ...data }));
+            }
         } catch (error) {
             console.error('Failed to load settings:', error);
         } finally {
@@ -49,7 +54,7 @@ const ThemeEditor = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await api.put('/config/storefront', settings);
+            await api.post('/cms/layout/theme_config', { sections: settings });
             toast.success('Theme settings saved!');
         } catch (error) {
             toast.error('Failed to save settings');
