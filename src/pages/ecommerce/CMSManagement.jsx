@@ -6,8 +6,8 @@ import Modal from '../../components/common/Modal';
 /**
  * CMS Management Page - Banners, Pages, Blog
  */
-const CMSManagement = () => {
-    const [activeTab, setActiveTab] = useState('banners');
+const CMSManagement = ({ activeTab: routeTab }) => {
+    const [activeTab, setActiveTab] = useState(routeTab || 'banners');
     const [banners, setBanners] = useState([]);
     const [pages, setPages] = useState([]);
     const [posts, setPosts] = useState([]);
@@ -15,6 +15,12 @@ const CMSManagement = () => {
     const [showBannerModal, setShowBannerModal] = useState(false);
     const [showPageModal, setShowPageModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+
+    useEffect(() => {
+        if (routeTab) {
+            setActiveTab(routeTab);
+        }
+    }, [routeTab]);
 
     useEffect(() => {
         fetchData();
