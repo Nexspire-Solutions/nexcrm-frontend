@@ -48,6 +48,7 @@ const nodeTypeConfig = {
     trigger_inquiry_received: { label: 'Inquiry Received', icon: 'trigger', gradient: 'from-violet-500 to-blue-500', category: 'trigger', description: 'When inquiry form is submitted' },
     trigger_manual: { label: 'Manual Trigger', icon: 'trigger', gradient: 'from-slate-500 to-slate-600', category: 'trigger', description: 'Triggered manually' },
     trigger_webhook: { label: 'Webhook', icon: 'trigger', gradient: 'from-purple-500 to-indigo-500', category: 'trigger', description: 'External HTTP trigger' },
+    trigger_schedule: { label: 'Schedule', icon: 'trigger', gradient: 'from-cyan-500 to-blue-500', category: 'trigger', description: 'Runs on schedule' },
     // Actions - Green gradient
     action_send_email: { label: 'Send Email', icon: 'email', gradient: 'from-emerald-500 to-green-600', category: 'action', description: 'Send an email' },
     action_create_task: { label: 'Create Task', icon: 'task', gradient: 'from-green-500 to-emerald-600', category: 'action', description: 'Create a task' },
@@ -151,10 +152,21 @@ export default function WorkflowBuilder() {
     const [zoom, setZoom] = useState(1);
     const [showLogs, setShowLogs] = useState(false);
     const [executions, setExecutions] = useState([]);
+    const [emailTemplates, setEmailTemplates] = useState([]);
 
     useEffect(() => {
         fetchWorkflow();
+        fetchTemplates();
     }, [id]);
+
+    const fetchTemplates = async () => {
+        try {
+            const res = await workflowAPI.getTemplates();
+            setEmailTemplates(res.data || []);
+        } catch (err) {
+            console.log('Templates not available');
+        }
+    };
 
     const fetchWorkflow = async () => {
         try {
@@ -492,6 +504,18 @@ export default function WorkflowBuilder() {
                             {/* Email Config */}
                             {selectedNode.type === 'action_send_email' && (
                                 <>
+                                    {emailTemplates.length > 0 && (
+                                        <div>
+                                            <label className="label">Email Template (Optional)</label>
+                                            <select className="select" value={selectedNode.data?.config?.template_id || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, template_id: e.target.value ? parseInt(e.target.value) : null })}>
+                                                <option value="">Custom Email</option>
+                                                {emailTemplates.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                ))}
+                                            </select>
+                                            <p className="text-xs text-slate-400 mt-1">Template overrides subject & body</p>
+                                        </div>
+                                    )}
                                     <div>
                                         <label className="label">Recipient</label>
                                         <input type="text" className="input" placeholder="{{trigger.email}}" value={selectedNode.data?.config?.recipientField || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, recipientField: e.target.value })} />
@@ -612,8 +636,66 @@ export default function WorkflowBuilder() {
                                 </>
                             )}
 
+                            {/* Schedule Trigger Config */}
+                            {selectedNode.type === 'trigger_schedule' && (
+                                <>
+                                    <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-3 text-sm text-cyan-700 dark:text-cyan-300">
+                                        <p className="font-medium mb-1">Scheduled Execution</p>
+                                        <p className="text-xs opacity-80">Run this workflow automatically on a schedule.</p>
+                                    </div>
+                                    <div>
+                                        <label className="label">Run Every</label>
+                                        <div className="flex gap-2">
+                                            <input type="number" className="input flex-1" placeholder="60" value={selectedNode.data?.config?.interval_minutes || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, interval_minutes: parseInt(e.target.value) || 60 })} />
+                                            <span className="flex items-center text-slate-500 text-sm">minutes</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-center text-slate-400 text-xs">— OR —</div>
+                                    <div>
+                                        <label className="label">Run at Specific Time</label>
+                                        <input type="time" className="input" value={selectedNode.data?.config?.run_time || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, run_time: e.target.value })} />
+                                        <p className="text-xs text-slate-400 mt-1">Daily at this time (server timezone)</p>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Webhook Trigger Config */}
+                            {selectedNode.type === 'trigger_webhook' && (
+                                <>
+                                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 text-sm text-purple-700 dark:text-purple-300">
+                                        <p className="font-medium mb-1">Webhook Trigger</p>
+                                        <p className="text-xs opacity-80">External systems can POST to your webhook URL to trigger this workflow.</p>
+                                    </div>
+                                    {workflow?.settings?.webhook_token ? (
+                                        <div>
+                                            <label className="label">Webhook URL</label>
+                                            <input type="text" className="input font-mono text-xs" readOnly value={`${window.location.origin.replace(':5173', ':3001')}/api/workflows/webhook/${workflow.settings.webhook_token}`} />
+                                            <p className="text-xs text-slate-400 mt-1">POST JSON data to this URL</p>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-4">
+                                            <p className="text-sm text-slate-500 mb-2">Generate a webhook URL to enable</p>
+                                            <button
+                                                className="btn-primary btn-sm"
+                                                onClick={async () => {
+                                                    try {
+                                                        await workflowAPI.generateWebhook(id);
+                                                        await fetchWorkflow();
+                                                        toast.success('Webhook URL generated!');
+                                                    } catch (err) {
+                                                        toast.error('Failed to generate webhook');
+                                                    }
+                                                }}
+                                            >
+                                                Generate Webhook
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
                             {/* Trigger info */}
-                            {selectedNode.type?.startsWith('trigger_') && (
+                            {selectedNode.type?.startsWith('trigger_') && selectedNode.type !== 'trigger_schedule' && selectedNode.type !== 'trigger_webhook' && (
                                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                                     <div className="flex items-start gap-3">
                                         <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -661,8 +743,8 @@ export default function WorkflowBuilder() {
                                     <div key={exec.id} className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
                                         <div className="flex items-center justify-between mb-1">
                                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${exec.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' :
-                                                    exec.status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' :
-                                                        'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400'
+                                                exec.status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' :
+                                                    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400'
                                                 }`}>{exec.status}</span>
                                             <span className="text-xs text-slate-400">{new Date(exec.started_at).toLocaleTimeString()}</span>
                                         </div>
