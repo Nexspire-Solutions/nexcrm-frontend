@@ -28,9 +28,11 @@ export default function Workflows() {
     const [workflows, setWorkflows] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [importData, setImportData] = useState('');
     const [formData, setFormData] = useState({ name: '', description: '', trigger_type: 'trigger_lead_created' });
 
     useEffect(() => {
@@ -109,6 +111,46 @@ export default function Workflows() {
         }
     };
 
+    const handleDuplicate = async (id) => {
+        try {
+            const res = await workflowAPI.duplicate(id);
+            toast.success('Workflow duplicated');
+            navigate(`/automation/workflows/${res.workflowId}`);
+        } catch (error) {
+            toast.error('Failed to duplicate workflow');
+        }
+    };
+
+    const handleExport = async (id) => {
+        try {
+            const res = await workflowAPI.export(id);
+            const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `workflow-${id}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success('Workflow exported');
+        } catch (error) {
+            toast.error('Failed to export workflow');
+        }
+    };
+
+    const handleImport = async () => {
+        try {
+            const parsed = JSON.parse(importData);
+            const workflow = parsed.workflow || parsed;
+            const res = await workflowAPI.import(workflow);
+            toast.success('Workflow imported');
+            setShowImportModal(false);
+            setImportData('');
+            navigate(`/automation/workflows/${res.workflowId}`);
+        } catch (error) {
+            toast.error('Invalid JSON or import failed');
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="space-y-6">
@@ -132,12 +174,20 @@ export default function Workflows() {
                         Build visual workflows to automate your CRM tasks
                     </p>
                 </div>
-                <button onClick={() => setShowModal(true)} className="btn-primary">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    New Workflow
-                </button>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => setShowImportModal(true)} className="btn-secondary">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Import
+                    </button>
+                    <button onClick={() => setShowModal(true)} className="btn-primary">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        New Workflow
+                    </button>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -267,9 +317,26 @@ export default function Workflows() {
                                     className="btn-secondary btn-sm"
                                     title="Run workflow"
                                 >
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={() => handleDuplicate(workflow.id)}
+                                    className="btn-ghost btn-sm"
+                                    title="Duplicate"
+                                >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={() => handleExport(workflow.id)}
+                                    className="btn-ghost btn-sm"
+                                    title="Export"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                     </svg>
                                 </button>
                                 <button
@@ -347,6 +414,30 @@ export default function Workflows() {
                 confirmText="Delete"
                 type="danger"
             />
+
+            {/* Import Modal */}
+            <Modal
+                isOpen={showImportModal}
+                onClose={() => setShowImportModal(false)}
+                title="Import Workflow"
+                footer={
+                    <>
+                        <button onClick={() => setShowImportModal(false)} className="btn-secondary">Cancel</button>
+                        <button onClick={handleImport} className="btn-primary">Import</button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-500">Paste the exported workflow JSON below:</p>
+                    <textarea
+                        className="input font-mono text-sm"
+                        rows={10}
+                        placeholder='{"version": "1.0", "workflow": {...}}'
+                        value={importData}
+                        onChange={(e) => setImportData(e.target.value)}
+                    />
+                </div>
+            </Modal>
         </div>
     );
 }

@@ -113,6 +113,7 @@ import IndustryTest from './pages/admin/IndustryTest';
 // Automation
 import Workflows from './pages/automation/Workflows';
 import WorkflowBuilder from './pages/automation/WorkflowBuilder';
+import ExecutionHistory from './pages/automation/ExecutionHistory';
 
 function AppRoutes() {
   return (
@@ -229,6 +230,7 @@ function AppRoutes() {
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="automation/workflows" element={<Workflows />} />
             <Route path="automation/workflows/:id" element={<WorkflowBuilder />} />
+            <Route path="automation/history" element={<ExecutionHistory />} />
           </Route>
 
           {/* Settings - Admin Only */}

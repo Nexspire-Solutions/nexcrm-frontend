@@ -497,4 +497,37 @@ export const workflowAPI = {
         const response = await apiClient.get('/workflows/meta/nodes');
         return response.data;
     },
+
+    // Nice-to-have features
+    duplicate: async (id) => {
+        const response = await apiClient.post(`/workflows/${id}/duplicate`);
+        return response.data;
+    },
+
+    export: async (id) => {
+        const response = await apiClient.get(`/workflows/${id}/export`);
+        return response.data;
+    },
+
+    import: async (workflowData, rename) => {
+        const response = await apiClient.post('/workflows/import', { workflow: workflowData, rename });
+        return response.data;
+    },
+
+    generateWebhook: async (id) => {
+        const response = await apiClient.post(`/workflows/${id}/generate-webhook`);
+        return response.data;
+    },
+
+    getAllExecutions: async (limit = 100, status) => {
+        const params = new URLSearchParams({ limit });
+        if (status) params.append('status', status);
+        const response = await apiClient.get(`/workflows/history/all?${params}`);
+        return response.data;
+    },
+
+    getTemplates: async () => {
+        const response = await apiClient.get('/workflows/meta/templates');
+        return response.data;
+    },
 };
