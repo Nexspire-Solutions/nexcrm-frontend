@@ -1,12 +1,15 @@
-```javascript
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import {
-    FiLayout, FiType, FiImage, FiMenu, FiSettings,
-    FiArrowLeft, FiMonitor, FiSmartphone, FiTablet,
-    FiGrid, FiFileText, FiEdit3, FiPenTool
+    FiHome, FiPieChart, // Dashboard
+    FiLayout, FiImage, FiMenu, FiEdit3, FiPenTool, // Design
+    FiFileText, FiMessageSquare, FiHelpCircle, // Content
+    FiShoppingBag, FiCalendar, FiBriefcase, // Business
+    FiUsers, FiTarget, FiMail, // CRM & Marketing
+    FiSettings, FiCreditCard, FiGlobe, // Settings
+    FiLogOut, FiChevronDown, FiChevronRight
 } from 'react-icons/fi';
 
 export default function CMSSidebar({ isOpen, setIsOpen }) {
@@ -14,99 +17,133 @@ export default function CMSSidebar({ isOpen, setIsOpen }) {
     const { isDark } = useTheme();
     const navigate = useNavigate();
 
-    const menuItems = [
+    const menuGroups = [
         {
-            title: 'Design System',
+            title: 'Dashboard',
             items: [
-                { name: 'Theme & Colors', path: '/cms/theme', icon: <FiSettings /> },
-                { name: 'Typography', path: '/cms/typography', icon: <FiType /> }, // Placeholder or combined
+                { name: 'Overview', path: '/cms/overview', icon: <FiHome /> },
+                { name: 'Analytics', path: '/cms/analytics', icon: <FiPieChart /> },
             ]
         },
         {
-            title: 'Layout & Navigation',
+            title: 'Design Studio',
             items: [
-                { name: 'Header & Menu', path: '/cms/header', icon: <FiMenu /> },
-                { name: 'Footer', path: '/cms/footer', icon: <FiLayout /> },
+                { name: 'Visual Builder', path: '/cms/builder', icon: <FiLayout /> },
+                { name: 'Themes & Styles', path: '/cms/theme', icon: <FiPenTool /> },
+                { name: 'Menus', path: '/cms/header', icon: <FiMenu /> },
+                { name: 'Media Library', path: '/cms/media', icon: <FiImage /> },
             ]
         },
         {
-            title: 'Pages & Content',
+            title: 'Content Manager',
             items: [
-                { name: 'Homepage Layout', path: '/cms/home', icon: <FiGrid /> },
-                { name: 'Banners', path: '/cms/banners', icon: <FiImage /> },
                 { name: 'Static Pages', path: '/cms/pages', icon: <FiFileText /> },
-                { name: 'Blog', path: '/cms/blog', icon: <FiEdit3 /> },
+                { name: 'Blog Engine', path: '/cms/blog', icon: <FiEdit3 /> },
+            ]
+        },
+        {
+            title: 'CRM & Growth',
+            items: [
+                { name: 'Contacts & Leads', path: '/cms/contacts', icon: <FiUsers /> },
+            ]
+        },
+        /* 
+        // Future Modules
+        {
+            title: 'Business Engine',
+            items: [
+                { name: 'Store & Products', path: '/cms/store', icon: <FiShoppingBag /> },
+            ]
+        },
+        {
+            title: 'Settings',
+            items: [
+                { name: 'Team Management', path: '/cms/team', icon: <FiSettings /> },
             ]
         }
+        */
     ];
 
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/login');
+        } catch (error) {
+            console.error('Failed to log out', error);
+        }
+    };
+
     return (
-        <aside className={`fixed lg:static inset - y - 0 left - 0 z - 50 w - 64 bg - slate - 900 border - r border - slate - 700 flex flex - col transition - transform duration - 300 ${ isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0' } `}>
+        <div className={`${isOpen ? 'translate-x-0' : '-translate-x-full'} transform fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-transform duration-300 ease-in-out md:relative md:translate-x-0`}>
             {/* Header */}
-            <div className="flex items-center justify-between h-16 px-4 border-b border-slate-700 bg-slate-900">
+            <div className="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold text-white">
-                        CMS
+                    <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+                        N
                     </div>
                     <div>
-                        <h1 className="text-lg font-bold text-white">Site Builder</h1>
+                        <h1 className="font-bold text-slate-900 dark:text-white leading-none">Nexspire</h1>
+                        <span className="text-[10px] items-center font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded mt-1 inline-block">
+                            BUSINESS OS
+                        </span>
                     </div>
                 </div>
             </div>
 
-            {/* Navigation */}
-            <nav className="flex-1 px-3 py-4 overflow-y-auto scrollbar-thin">
-                <div className="mb-6">
-                    <button
-                        onClick={() => navigate('/dashboard')}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all border border-slate-700"
-                    >
-                        <FiArrowLeft />
-                        <span className="font-bold">Exit to CRM</span>
-                    </button>
-                </div>
-
-                <div className="space-y-6">
-                    {menuItems.map((group, idx) => (
-                        <div key={idx}>
-                            <h3 className="px-3 mb-2 text-xs font-bold text-indigo-400 uppercase tracking-wider">
-                                {group.title}
-                            </h3>
-                            <div className="space-y-1">
-                                {group.items.map((item) => (
-                                    <NavLink
-                                        key={item.path}
-                                        to={item.path}
-                                        className={({ isActive }) => `
-                                            flex items - center gap - 3 px - 3 py - 2.5 rounded - lg text - sm font - medium transition - all
-                                            ${
-    isActive
-        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
-        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-}
-`}
-                                    >
-                                        <span className="text-lg">{item.icon}</span>
-                                        <span>{item.name}</span>
-                                    </NavLink>
-                                ))}
-                            </div>
+            {/* Scrollable Menu */}
+            <div className="overflow-y-auto h-[calc(100vh-4rem-4rem)] p-4 space-y-6">
+                {menuGroups.map((group, idx) => (
+                    <div key={idx}>
+                        <h3 className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            {group.title}
+                        </h3>
+                        <div className="space-y-0.5">
+                            {group.items.map((item, i) => (
+                                <NavLink
+                                    key={i}
+                                    to={item.path}
+                                    className={({ isActive }) =>
+                                        `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+                                            ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
+                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                        }`
+                                    }
+                                >
+                                    <span className="text-lg opacity-80">{item.icon}</span>
+                                    {item.name}
+                                </NavLink>
+                            ))}
                         </div>
-                    ))}
-                </div>
-            </nav>
-
-            {/* Footer / Device Preview Toggles (Visual only for now) */}
-            <div className="p-4 border-t border-slate-700 bg-slate-800/50">
-                <div className="flex justify-center gap-4 text-slate-400">
-                    <button title="Desktop View" className="hover:text-white"><FiMonitor /></button>
-                    <button title="Tablet View" className="hover:text-white"><FiTablet /></button>
-                    <button title="Mobile View" className="hover:text-white"><FiSmartphone /></button>
-                </div>
-                <div className="text-center mt-3 text-xs text-slate-500">
-                    Preview Mode
-                </div>
+                    </div>
+                ))}
             </div>
-        </aside>
+
+            {/* Footer / User Profile */}
+            <div className="absolute bottom-0 w-full p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+                <button
+                    onClick={() => navigate('/cms/overview')}
+                    className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700 justify-center"
+                >
+                    <FiHome className="text-lg" />
+                    Dashboard
+                </button>
+                <a
+                    href="http://localhost:5173" // Assuming Storefront port
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700 justify-center"
+                >
+                    <FiGlobe className="text-lg" />
+                    View Live Store
+                </a>
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                    <FiLogOut className="text-lg" />
+                    Sign Out
+                </button>
+            </div>
+        </div>
     );
 }
