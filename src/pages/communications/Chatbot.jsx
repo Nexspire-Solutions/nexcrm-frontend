@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
-import apiClient from '../../api/axios';
+import { chatbotAPI } from '../../api';
 
 export default function Chatbot() {
     const [responses, setResponses] = useState([]);
@@ -20,20 +20,34 @@ export default function Chatbot() {
     const [deleteTargetId, setDeleteTargetId] = useState(null);
 
     useEffect(() => {
-        fetchResponses();
+        fetchData();
     }, []);
 
-    const fetchResponses = async () => {
+    const fetchData = async () => {
         try {
-            const response = await apiClient.get('/chatbot/responses');
-            setResponses(response.data.data || []);
+            const [responsesRes, settingsRes] = await Promise.all([
+                chatbotAPI.getResponses().catch(() => ({ data: [] })),
+                chatbotAPI.getSettings().catch(() => ({ data: {} }))
+            ]);
+            setResponses(responsesRes.data || []);
+            if (settingsRes.data) {
+                setSettings(prev => ({
+                    ...prev,
+                    enabled: settingsRes.data.enabled ?? true,
+                    welcomeMessage: settingsRes.data.welcome_message || prev.welcomeMessage,
+                    fallbackMessage: settingsRes.data.fallback_message || prev.fallbackMessage,
+                    businessHoursOnly: settingsRes.data.business_hours_only ?? false,
+                    collectLeadInfo: settingsRes.data.collect_lead_info ?? true
+                }));
+            }
         } catch (error) {
-            console.error('Failed to fetch chatbot responses:', error);
-            setResponses([]);
+            console.error('Failed to fetch chatbot data:', error);
         } finally {
             setIsLoading(false);
         }
     };
+
+    const fetchResponses = () => fetchData();
 
     const handleDelete = (id) => {
         setDeleteTargetId(id);
@@ -43,15 +57,28 @@ export default function Chatbot() {
     const confirmDelete = async () => {
         if (deleteTargetId) {
             try {
-                await apiClient.delete(`/chatbot/responses/${deleteTargetId}`);
+                await chatbotAPI.deleteResponse(deleteTargetId);
                 toast.success('Response deleted');
                 fetchResponses();
             } catch (error) {
-                // Just remove from local state if API doesn't exist
-                setResponses(prev => prev.filter(r => r.id !== deleteTargetId));
-                toast.success('Response deleted');
+                toast.error('Failed to delete response');
             }
             setDeleteTargetId(null);
+        }
+    };
+
+    const handleSaveSettings = async () => {
+        try {
+            await chatbotAPI.updateSettings({
+                enabled: settings.enabled,
+                welcome_message: settings.welcomeMessage,
+                fallback_message: settings.fallbackMessage,
+                business_hours_only: settings.businessHoursOnly,
+                collect_lead_info: settings.collectLeadInfo
+            });
+            toast.success('Settings saved');
+        } catch (error) {
+            toast.error('Failed to save settings');
         }
     };
 
@@ -77,7 +104,7 @@ export default function Chatbot() {
                         Configure automated responses and chatbot settings
                     </p>
                 </div>
-                <button onClick={() => toast.success('Settings saved')} className="btn-primary">
+                <button onClick={handleSaveSettings} className="btn-primary">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>

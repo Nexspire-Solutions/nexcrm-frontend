@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
-import { leadsAPI, clientsAPI, templatesAPI } from '../../api';
+import { leadsAPI, clientsAPI, templatesAPI, campaignsAPI } from '../../api';
 
 export default function BulkMail() {
     const [step, setStep] = useState(1); // 1: Recipients, 2: Template, 3: Preview
@@ -83,21 +83,42 @@ export default function BulkMail() {
         }
 
         setSending(true);
-        setSendProgress(0);
+        setSendProgress(10);
 
-        // TODO: Implement actual email sending API
-        // For now, simulate sending emails
-        for (let i = 0; i <= 100; i += 10) {
-            await new Promise(resolve => setTimeout(resolve, 200));
-            setSendProgress(i);
+        try {
+            // Create a bulk mail campaign
+            const campaignData = {
+                name: `Bulk Mail - ${new Date().toLocaleDateString()}`,
+                template_id: selectedTemplate?.id || null,
+                subject: customSubject || selectedTemplate?.subject || 'Message from our team',
+                html_content: selectedTemplate?.html_content || `<p>${customMessage || 'Hello {{name}}, we wanted to reach out to you.'}</p>`,
+                recipients_type: 'manual',
+                status: 'draft'
+            };
+
+            setSendProgress(30);
+            const createRes = await campaignsAPI.create(campaignData);
+
+            if (createRes.success && createRes.campaignId) {
+                setSendProgress(50);
+                // Send the campaign
+                const sendRes = await campaignsAPI.send(createRes.campaignId);
+                setSendProgress(100);
+
+                toast.success(sendRes.message || `Campaign started! Sending to ${selectedRecipients.length} recipients.`);
+            } else {
+                throw new Error('Failed to create campaign');
+            }
+        } catch (error) {
+            console.error('Send error:', error);
+            toast.error(error.response?.data?.error || 'Failed to send emails');
+        } finally {
+            setSending(false);
+            setSendProgress(0);
+            setStep(1);
+            setSelectedRecipients([]);
+            setSelectedTemplate(null);
         }
-
-        toast.success(`Successfully sent ${selectedRecipients.length} emails!`);
-        setSending(false);
-        setSendProgress(0);
-        setStep(1);
-        setSelectedRecipients([]);
-        setSelectedTemplate(null);
     };
 
     if (isLoading) {
