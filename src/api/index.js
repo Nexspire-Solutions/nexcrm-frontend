@@ -531,3 +531,36 @@ export const workflowAPI = {
         return response.data;
     },
 };
+
+// Push Notifications API - for managing mobile push notifications
+export const notificationsAPI = {
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/notifications', { params });
+        return response.data;
+    },
+
+    send: async (data) => {
+        const response = await apiClient.post('/notifications/send', data);
+        return response.data;
+    },
+
+    getSettings: async () => {
+        const response = await apiClient.get('/notifications/settings');
+        return response.data;
+    },
+
+    updateSettings: async (data) => {
+        const response = await apiClient.put('/notifications/settings', data);
+        return response.data;
+    },
+
+    getDevices: async () => {
+        const response = await apiClient.get('/notifications/devices');
+        return response.data;
+    },
+
+    trackClick: async (id) => {
+        const response = await apiClient.post(`/notifications/${id}/click`);
+        return response.data;
+    },
+};
