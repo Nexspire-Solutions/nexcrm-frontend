@@ -1,4 +1,3 @@
-```javascript
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
@@ -20,7 +19,7 @@ export default function SectionBuilder() {
     const [loading, setLoading] = useState(true);
     const [pages, setPages] = useState(['home']);
     const [currentPage, setCurrentPage] = useState('home');
-    
+
     // Page Creation State
     const [isCreating, setIsCreating] = useState(false);
     const [newPageName, setNewPageName] = useState('');
@@ -54,7 +53,7 @@ export default function SectionBuilder() {
     const loadLayout = async (page) => {
         setLoading(true);
         try {
-            const res = await apiClient.get(`/ cms / layout / ${ page } `);
+            const res = await apiClient.get(`/cms/layout/${page}`);
             if (res.data.data && res.data.data.sections) {
                 const savedSections = typeof res.data.data.sections === 'string'
                     ? JSON.parse(res.data.data.sections)
@@ -66,11 +65,11 @@ export default function SectionBuilder() {
                         const saved = savedSections.find(s => s.id === def.id);
                         return saved ? { ...def, ...saved } : def;
                     });
-                     // Append any extra saved ones not in default
+                    // Append any extra saved ones not in default
                     const extras = savedSections.filter(s => !DEFAULT_SECTIONS.find(d => d.id === s.id));
                     setSections([...merged, ...extras]);
                 } else {
-                     setSections(savedSections.length ? savedSections : DEFAULT_SECTIONS);
+                    setSections(savedSections.length ? savedSections : DEFAULT_SECTIONS);
                 }
             } else {
                 setSections(DEFAULT_SECTIONS);
@@ -85,8 +84,8 @@ export default function SectionBuilder() {
 
     const handleSave = async () => {
         try {
-            await apiClient.post(`/ cms / layout / ${ currentPage } `, { sections });
-            toast.success(`Layout for ${ currentPage } saved`);
+            await apiClient.post(`/cms/layout/${currentPage}`, { sections });
+            toast.success(`Layout for ${currentPage} saved`);
             if (!pages.includes(currentPage)) {
                 fetchPages();
             }
@@ -98,7 +97,7 @@ export default function SectionBuilder() {
     const handleCreatePage = () => {
         if (!newPageName.trim()) return;
         const slug = newPageName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        
+
         if (pages.includes(slug)) {
             toast.error('Page already exists');
             return;
@@ -109,7 +108,7 @@ export default function SectionBuilder() {
         setIsCreating(false);
         setNewPageName('');
         setPages([...pages, slug]);
-        toast.success(`Created new page: ${ slug } `);
+        toast.success(`Created new page: ${slug}`);
     };
 
     // --- Section Editing ---
@@ -133,10 +132,10 @@ export default function SectionBuilder() {
     const saveEditor = () => {
         const newSections = [...sections];
         newSections[editingSectionIndex].props = editValues;
-        
+
         // Auto-update label if title changes (for better UX)
         if (editValues.title) {
-           // Optional: Update label? newSections[editingSectionIndex].label = editValues.title;
+            // Optional: Update label? newSections[editingSectionIndex].label = editValues.title;
         }
 
         setSections(newSections);
@@ -148,8 +147,8 @@ export default function SectionBuilder() {
     const handleAddSection = (type) => {
         const schema = SECTION_SCHEMAS[type];
         const newSection = {
-            id: `${ type }_${ Date.now() } `,
-            label: `New ${ schema.label } `,
+            id: `${type}_${Date.now()}`,
+            label: `New ${schema.label}`,
             type: type,
             visible: true,
             props: {} // Defaults will be filled on edit
@@ -215,11 +214,11 @@ export default function SectionBuilder() {
                                 </button>
                             </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
-                             <span className="text-xs font-bold uppercase text-slate-400 px-2">Page:</span>
-                             <select 
-                                value={currentPage} 
+                            <span className="text-xs font-bold uppercase text-slate-400 px-2">Page:</span>
+                            <select
+                                value={currentPage}
                                 onChange={(e) => setCurrentPage(e.target.value)}
                                 className="bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer flex-1"
                             >
@@ -243,7 +242,7 @@ export default function SectionBuilder() {
                             {sections.map((section, index) => (
                                 <div
                                     key={section.id}
-                                    className={`p - 3 flex items - center gap - 3 transition - colors group ${ section.visible ? 'bg-white dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-900/50 opacity-75' } `}
+                                    className={`p-3 flex items-center gap-3 transition-colors group ${section.visible ? 'bg-white dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-900/50 opacity-75'}`}
                                 >
                                     {/* Move Controls */}
                                     <div className="flex flex-col gap-0.5 text-slate-300">
@@ -289,136 +288,135 @@ export default function SectionBuilder() {
                     </div>
                 </div>
                 <div className="flex-1 w-full h-full p-4 overflow-hidden flex justify-center">
-                    <iframe 
+                    <iframe
                         id="preview-frame"
                         src={`http://localhost:3000/${currentPage}`} // Assuming Storefront port 3000
-className = "w-full h-full bg-white shadow-2xl rounded-lg border border-slate-300"
-title = "Live Preview"
-    />
-                </div >
-            </div >
-
-    {/* Property Editor Modal (Slide-over) */ }
-{
-    editingSectionIndex !== null && currentSchema && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setEditingSectionIndex(null)} />
-            <div className="relative w-full max-w-md bg-white dark:bg-slate-800 h-full shadow-2xl overflow-y-auto p-6 flex flex-col animate-slide-in-right">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold">Edit {currentSchema.label}</h3>
-                    <button onClick={() => setEditingSectionIndex(null)} className="btn-icon btn-ghost"><FiX size={24} /></button>
+                        className="w-full h-full bg-white shadow-2xl rounded-lg border border-slate-300"
+                        title="Live Preview"
+                    />
                 </div>
+            </div>
 
-                <div className="flex-1 space-y-6">
-                    {currentSchema.fields.map(field => (
-                        <div key={field.name}>
-                            <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">{field.label}</label>
+            {/* Property Editor Modal (Slide-over) */}
+            {
+                editingSectionIndex !== null && currentSchema && (
+                    <div className="fixed inset-0 z-50 flex justify-end">
+                        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setEditingSectionIndex(null)} />
+                        <div className="relative w-full max-w-md bg-white dark:bg-slate-800 h-full shadow-2xl overflow-y-auto p-6 flex flex-col animate-slide-in-right">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-bold">Edit {currentSchema.label}</h3>
+                                <button onClick={() => setEditingSectionIndex(null)} className="btn-icon btn-ghost"><FiX size={24} /></button>
+                            </div>
 
-                            {field.type === 'text' && (
-                                <input
-                                    type="text"
-                                    className="form-input w-full"
-                                    value={editValues[field.name] || ''}
-                                    onChange={e => handleEditChange(field.name, e.target.value)}
-                                />
-                            )}
+                            <div className="flex-1 space-y-6">
+                                {currentSchema.fields.map(field => (
+                                    <div key={field.name}>
+                                        <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">{field.label}</label>
 
-                            {field.type === 'textarea' && (
-                                <textarea
-                                    className="form-textarea w-full h-32"
-                                    value={editValues[field.name] || ''}
-                                    onChange={e => handleEditChange(field.name, e.target.value)}
-                                />
-                            )}
+                                        {field.type === 'text' && (
+                                            <input
+                                                type="text"
+                                                className="form-input w-full"
+                                                value={editValues[field.name] || ''}
+                                                onChange={e => handleEditChange(field.name, e.target.value)}
+                                            />
+                                        )}
 
-                            {field.type === 'number' && (
-                                <input
-                                    type="number"
-                                    className="form-input w-full"
-                                    value={editValues[field.name] || 0}
-                                    onChange={e => handleEditChange(field.name, e.target.value)}
-                                />
-                            )}
+                                        {field.type === 'textarea' && (
+                                            <textarea
+                                                className="form-textarea w-full h-32"
+                                                value={editValues[field.name] || ''}
+                                                onChange={e => handleEditChange(field.name, e.target.value)}
+                                            />
+                                        )}
 
-                            {field.type === 'select' && (
-                                <select
-                                    className="form-select w-full"
-                                    value={editValues[field.name] || field.default}
-                                    onChange={e => handleEditChange(field.name, e.target.value)}
-                                >
-                                    {field.options.map(opt => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                    ))}
-                                </select>
-                            )}
+                                        {field.type === 'number' && (
+                                            <input
+                                                type="number"
+                                                className="form-input w-full"
+                                                value={editValues[field.name] || 0}
+                                                onChange={e => handleEditChange(field.name, e.target.value)}
+                                            />
+                                        )}
 
-                            {field.type === 'image' && (
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        className="form-input flex-1"
-                                        placeholder="https://..."
-                                        value={editValues[field.name] || ''}
-                                        onChange={e => handleEditChange(field.name, e.target.value)}
-                                    />
-                                    {/* Future: Image Upload Button */}
-                                </div>
-                            )}
+                                        {field.type === 'select' && (
+                                            <select
+                                                className="form-select w-full"
+                                                value={editValues[field.name] || field.default}
+                                                onChange={e => handleEditChange(field.name, e.target.value)}
+                                            >
+                                                {field.options.map(opt => (
+                                                    <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                            </select>
+                                        )}
+
+                                        {field.type === 'image' && (
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    className="form-input flex-1"
+                                                    placeholder="https://..."
+                                                    value={editValues[field.name] || ''}
+                                                    onChange={e => handleEditChange(field.name, e.target.value)}
+                                                />
+                                                {/* Future: Image Upload Button */}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-700 flex gap-4">
+                                <button onClick={() => setEditingSectionIndex(null)} className="btn-ghost flex-1">Cancel</button>
+                                <button onClick={saveEditor} className="btn-primary flex-1">Apply Changes</button>
+                            </div>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                )
+            }
 
-                <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-700 flex gap-4">
-                    <button onClick={() => setEditingSectionIndex(null)} className="btn-ghost flex-1">Cancel</button>
-                    <button onClick={saveEditor} className="btn-primary flex-1">Apply Changes</button>
-                </div>
-            </div>
-        </div>
-    )
-}
+            {/* Create Page Modal */}
+            {
+                isCreating && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-md">
+                            <h3 className="text-xl font-bold mb-4">Create New Page</h3>
+                            <input type="text" className="w-full form-input mb-4" placeholder="Page Name" value={newPageName} onChange={e => setNewPageName(e.target.value)} autoFocus />
+                            <div className="flex justify-end gap-3">
+                                <button onClick={() => setIsCreating(false)} className="btn-ghost">Cancel</button>
+                                <button onClick={handleCreatePage} className="btn-primary">Create</button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
 
-{/* Create Page Modal */ }
-{
-    isCreating && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-md">
-                <h3 className="text-xl font-bold mb-4">Create New Page</h3>
-                <input type="text" className="w-full form-input mb-4" placeholder="Page Name" value={newPageName} onChange={e => setNewPageName(e.target.value)} autoFocus />
-                <div className="flex justify-end gap-3">
-                    <button onClick={() => setIsCreating(false)} className="btn-ghost">Cancel</button>
-                    <button onClick={handleCreatePage} className="btn-primary">Create</button>
-                </div>
-            </div>
+            {/* Add Section Modal */}
+            {
+                isAdding && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-2xl">
+                            <h3 className="text-xl font-bold mb-6">Add Section</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {Object.entries(SECTION_SCHEMAS).map(([type, schema]) => (
+                                    <button
+                                        key={type}
+                                        onClick={() => handleAddSection(type)}
+                                        className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary hover:bg-slate-50 dark:hover:bg-slate-700 text-left transition-all"
+                                    >
+                                        <span className="font-bold block mb-1">{schema.label}</span>
+                                        <span className="text-xs text-slate-500">Click to add</span>
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="mt-6 flex justify-end">
+                                <button onClick={() => setIsAdding(false)} className="btn-ghost">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </div>
-    )
-}
-
-{/* Add Section Modal */ }
-{
-    isAdding && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-2xl">
-                <h3 className="text-xl font-bold mb-6">Add Section</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {Object.entries(SECTION_SCHEMAS).map(([type, schema]) => (
-                        <button
-                            key={type}
-                            onClick={() => handleAddSection(type)}
-                            className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary hover:bg-slate-50 dark:hover:bg-slate-700 text-left transition-all"
-                        >
-                            <span className="font-bold block mb-1">{schema.label}</span>
-                            <span className="text-xs text-slate-500">Click to add</span>
-                        </button>
-                    ))}
-                </div>
-                <div className="mt-6 flex justify-end">
-                    <button onClick={() => setIsAdding(false)} className="btn-ghost">Cancel</button>
-                </div>
-            </div>
-        </div>
-    )
-}
-        </div >
     );
 }
-```

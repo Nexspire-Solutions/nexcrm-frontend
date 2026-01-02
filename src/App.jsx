@@ -104,8 +104,6 @@ import SalonServices from './pages/industry/salon/SalonServices';
 import Staff from './pages/industry/salon/Staff';
 
 // Settings
-import ThemeEditor from './pages/settings/ThemeEditor';
-
 // Admin
 import IndustryTest from './pages/admin/IndustryTest';
 // CMS Layout
@@ -116,6 +114,10 @@ import MenuBuilder from './pages/cms/MenuBuilder';
 import SectionBuilder from './pages/cms/SectionBuilder';
 import BlogBuilder from './pages/cms/BlogBuilder';
 import MediaLibrary from './pages/cms/MediaLibrary';
+import PageBuilder from './pages/cms/PageBuilder'; // Visual Builder
+import ThemeEditor from './pages/cms/ThemeEditor'; // Theme Editor
+import ContactManager from './pages/crm/ContactManager'; // CRM
+import PlaceholderPage from './pages/cms/PlaceholderPage'; // For new modules
 
 function AppRoutes() {
   return (
@@ -125,15 +127,30 @@ function AppRoutes() {
       {/* CMS Builder Routes (Dedicated Layout) */}
       <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
         <Route path="/cms" element={<CMSLayout />}>
-          <Route index element={<Navigate to="/cms/header" replace />} />
+          <Route index element={<Navigate to="/cms/overview" replace />} />
+
+          {/* Dashboard */}
+          <Route path="overview" element={<PlaceholderPage />} />
+          <Route path="analytics" element={<PlaceholderPage />} />
+
+          {/* Design Studio */}
+          <Route path="builder" element={<PageBuilder />} />
+          <Route path="theme" element={<ThemeEditor />} />
+          <Route path="menus" element={<Navigate to="header" replace />} />
           <Route path="header" element={<MenuBuilder mode="header" />} />
           <Route path="footer" element={<MenuBuilder mode="footer" />} />
-          <Route path="theme" element={<ThemeEditor />} />
+          <Route path="media" element={<MediaLibrary />} />
+
+          {/* Content Manager */}
+          <Route path="pages" element={<SectionBuilder />} />
+          <Route path="blog" element={<BlogBuilder />} />
+
+          {/* CRM & Marketing */}
+          <Route path="contacts" element={<ContactManager />} />
+
+          {/* Legacy / Fallbacks */}
           <Route path="home" element={<SectionBuilder />} />
           <Route path="banners" element={<CMSManagement activeTab="banners" />} />
-          <Route path="pages" element={<SectionBuilder />} /> {/* Re-use SectionBuilder for generic pages too */}
-          <Route path="blog" element={<BlogBuilder />} />
-          <Route path="media" element={<MediaLibrary />} />
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/cms/header" replace />} />
         </Route>
