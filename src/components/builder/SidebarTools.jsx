@@ -1,0 +1,50 @@
+import React from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { FiType, FiImage, FiBox, FiLayout, FiTrendingUp, FiMail } from 'react-icons/fi';
+
+const ToolItem = ({ type, label, icon }) => {
+    const { attributes, listeners, setNodeRef, transform } = useDraggable({
+        id: `tool-${type}`,
+        data: { type, isTool: true }
+    });
+
+    const style = transform ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        zIndex: 1000,
+        opacity: 0.8
+    } : undefined;
+
+    return (
+        <div
+            ref={setNodeRef}
+            {...listeners}
+            {...attributes}
+            style={style}
+            className="flex items-center gap-3 p-3 mb-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-grab hover:border-indigo-500 shadow-sm"
+        >
+            <span className="text-xl text-slate-500">{icon}</span>
+            <span className="font-medium text-sm text-slate-700 dark:text-slate-300">{label}</span>
+        </div>
+    );
+};
+
+const SidebarTools = () => {
+    return (
+        <div className="w-64 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 p-4 flex flex-col h-full overflow-y-auto">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Elements</h3>
+            <ToolItem type="text" label="Text Block" icon={<FiType />} />
+            <ToolItem type="image" label="Image" icon={<FiImage />} />
+            <ToolItem type="button" label="Button" icon={<FiBox />} />
+            <ToolItem type="container" label="Container" icon={<FiLayout />} />
+
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 mt-6">Smart Widgets</h3>
+            <ToolItem type="hero" label="Hero Banner" icon={<FiImage />} />
+            <ToolItem type="features" label="Features Grid" icon={<FiLayout />} />
+            <ToolItem type="pricing" label="Pricing Table" icon={<FiBox />} />
+            <ToolItem type="cta" label="Call to Action" icon={<FiTrendingUp />} />
+            <ToolItem type="form" label="Contact Form" icon={<FiMail />} />
+        </div>
+    );
+};
+
+export default SidebarTools;
