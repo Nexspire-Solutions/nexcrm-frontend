@@ -437,7 +437,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         icon: Icons.activity,
         roles: ['admin'],
         items: [
-            { name: 'Workflows', path: '/automation/workflows', icon: Icons.chart }
+            { name: 'Workflows', path: '/automation/workflows', icon: Icons.chart },
+            { name: 'Execution History', path: '/automation/history', icon: Icons.activity }
         ]
     };
 
