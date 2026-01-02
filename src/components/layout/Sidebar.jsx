@@ -426,7 +426,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             { name: 'Email Campaigns', path: '/communications/campaigns', icon: Icons.campaign },
             { name: 'Team Chat', path: '/communications/chat', icon: Icons.chat },
             { name: 'Chatbot', path: '/communications/chatbot', icon: Icons.chatbot },
-            { name: 'Push Notifications', path: '/communications/notifications', icon: Icons.notification }
+            { name: 'Push Notifications', path: '/communications/notifications', icon: Icons.notification },
+            { name: 'SMTP Settings', path: '/settings/smtp', icon: Icons.settings, roles: ['admin'] }
+        ]
+    };
+
+    // Automation group (admin only)
+    const automationGroup = {
+        name: 'Automation',
+        icon: Icons.activity,
+        roles: ['admin'],
+        items: [
+            { name: 'Workflows', path: '/automation/workflows', icon: Icons.chart }
         ]
     };
 
@@ -569,6 +580,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
                     {/* Communications Group */}
                     {canViewCommunications && <NavGroup group={communicationsGroup} />}
+
+                    {/* Automation Group */}
+                    {automationGroup.roles.includes(userRole) && <NavGroup group={automationGroup} />}
                 </nav>
 
                 {/* Footer */}

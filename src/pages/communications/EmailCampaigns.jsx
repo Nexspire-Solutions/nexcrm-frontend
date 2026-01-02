@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
-import { templatesAPI } from '../../api';
-
-// TODO: Add campaignsAPI when backend endpoints are ready
-// import { campaignsAPI } from '../../api';
+import { templatesAPI, campaignsAPI } from '../../api';
 
 const statusStyles = {
     active: 'badge-success',
     completed: 'badge-gray',
     scheduled: 'badge-primary',
-    draft: 'badge-warning'
+    draft: 'badge-warning',
+    paused: 'badge-warning',
+    failed: 'badge-error'
 };
 
 export default function EmailCampaigns() {
@@ -39,10 +38,9 @@ export default function EmailCampaigns() {
             const templatesRes = await templatesAPI.getAll().catch(() => ({ data: [] }));
             setTemplates(templatesRes.data || []);
 
-            // TODO: Replace with actual API call when backend is ready
-            // const campaignsRes = await campaignsAPI.getAll();
-            // setCampaigns(campaignsRes.data || []);
-            setCampaigns([]); // Empty until API is ready
+            // Fetch campaigns
+            const campaignsRes = await campaignsAPI.getAll().catch(() => ({ data: [] }));
+            setCampaigns(campaignsRes.data || []);
         } catch (error) {
             console.error('Failed to load data:', error);
         } finally {
@@ -53,10 +51,31 @@ export default function EmailCampaigns() {
     const stats = {
         total: campaigns.length,
         active: campaigns.filter(c => c.status === 'active').length,
-        totalSent: campaigns.reduce((sum, c) => sum + (c.sent || 0), 0),
-        avgOpenRate: campaigns.filter(c => c.sent > 0).length > 0
-            ? Math.round(campaigns.reduce((sum, c) => sum + (c.sent > 0 ? ((c.opened || 0) / c.sent * 100) : 0), 0) / campaigns.filter(c => c.sent > 0).length)
+        totalSent: campaigns.reduce((sum, c) => sum + (c.total_sent || 0), 0),
+        avgOpenRate: campaigns.filter(c => c.total_sent > 0).length > 0
+            ? Math.round(campaigns.reduce((sum, c) => sum + (c.total_sent > 0 ? ((c.total_opened || 0) / c.total_sent * 100) : 0), 0) / campaigns.filter(c => c.total_sent > 0).length)
             : 0
+    };
+
+    const handleSendCampaign = async (id) => {
+        try {
+            const res = await campaignsAPI.send(id);
+            toast.success(res.message || 'Campaign started!');
+            fetchData();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to send campaign');
+        }
+    };
+
+    const handleDeleteCampaign = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this campaign?')) return;
+        try {
+            await campaignsAPI.delete(id);
+            toast.success('Campaign deleted');
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to delete campaign');
+        }
     };
 
     const handleCreate = async () => {
@@ -66,8 +85,14 @@ export default function EmailCampaigns() {
         }
         setSaving(true);
         try {
-            // TODO: Replace with actual API call when backend is ready
-            // await campaignsAPI.create(formData);
+            await campaignsAPI.create({
+                name: formData.name,
+                template_id: formData.templateId || null,
+                status: formData.launchOption === 'now' ? 'active' : 'scheduled',
+                scheduled_at: formData.launchOption === 'schedule'
+                    ? `${formData.scheduleDate} ${formData.scheduleTime}:00`
+                    : null
+            });
             toast.success('Campaign created');
             setShowModal(false);
             setFormData({
@@ -200,22 +225,30 @@ export default function EmailCampaigns() {
                         </thead>
                         <tbody>
                             {campaigns.map((campaign) => {
-                                const openRate = campaign.sent > 0 ? Math.round((campaign.opened || 0) / campaign.sent * 100) : 0;
-                                const clickRate = campaign.sent > 0 ? Math.round((campaign.clicked || 0) / campaign.sent * 100) : 0;
+                                const openRate = campaign.total_sent > 0 ? Math.round((campaign.total_opened || 0) / campaign.total_sent * 100) : 0;
+                                const clickRate = campaign.total_sent > 0 ? Math.round((campaign.total_clicked || 0) / campaign.total_sent * 100) : 0;
 
                                 return (
                                     <tr key={campaign.id}>
                                         <td>
                                             <p className="font-medium text-slate-900 dark:text-white">{campaign.name}</p>
+                                            {campaign.template_name && (
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">Template: {campaign.template_name}</p>
+                                            )}
                                         </td>
                                         <td>
                                             <span className={statusStyles[campaign.status] || 'badge-gray'}>{campaign.status}</span>
                                         </td>
-                                        <td className="text-slate-600 dark:text-slate-400">{(campaign.sent || 0).toLocaleString()}</td>
+                                        <td className="text-slate-600 dark:text-slate-400">
+                                            {(campaign.total_sent || 0).toLocaleString()}
+                                            {campaign.total_recipients > 0 && campaign.total_sent !== campaign.total_recipients && (
+                                                <span className="text-xs text-slate-400"> / {campaign.total_recipients}</span>
+                                            )}
+                                        </td>
                                         <td>
                                             <div className="flex items-center gap-2">
                                                 <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full">
-                                                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${openRate}%` }}></div>
+                                                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(openRate, 100)}%` }}></div>
                                                 </div>
                                                 <span className="text-sm text-slate-600 dark:text-slate-400">{openRate}%</span>
                                             </div>
@@ -223,18 +256,37 @@ export default function EmailCampaigns() {
                                         <td>
                                             <div className="flex items-center gap-2">
                                                 <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full">
-                                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${clickRate}%` }}></div>
+                                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(clickRate, 100)}%` }}></div>
                                                 </div>
                                                 <span className="text-sm text-slate-600 dark:text-slate-400">{clickRate}%</span>
                                             </div>
                                         </td>
                                         <td className="text-sm text-slate-500 dark:text-slate-400">
-                                            {campaign.startDate ? `${campaign.startDate} - ${campaign.endDate || 'Ongoing'}` : '-'}
+                                            {campaign.sent_at ? new Date(campaign.sent_at).toLocaleDateString() : campaign.scheduled_at ? `Scheduled: ${new Date(campaign.scheduled_at).toLocaleDateString()}` : '-'}
                                         </td>
                                         <td>
-                                            <div className="flex items-center gap-2">
-                                                <button className="btn-ghost btn-sm">View</button>
-                                                <button className="btn-ghost btn-sm">Edit</button>
+                                            <div className="flex items-center gap-1">
+                                                {campaign.status === 'draft' && (
+                                                    <button
+                                                        onClick={() => handleSendCampaign(campaign.id)}
+                                                        className="btn-primary btn-sm"
+                                                        title="Send Campaign"
+                                                    >
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                                        </svg>
+                                                        Send
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => handleDeleteCampaign(campaign.id)}
+                                                    className="btn-ghost btn-sm text-red-500 hover:text-red-600"
+                                                    title="Delete Campaign"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

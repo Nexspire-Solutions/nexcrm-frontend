@@ -107,7 +107,12 @@ import Staff from './pages/industry/salon/Staff';
 import ThemeEditor from './pages/settings/ThemeEditor';
 
 // Admin
+import SmtpSettings from './pages/admin/SmtpSettings';
 import IndustryTest from './pages/admin/IndustryTest';
+
+// Automation
+import Workflows from './pages/automation/Workflows';
+import WorkflowBuilder from './pages/automation/WorkflowBuilder';
 
 function AppRoutes() {
   return (
@@ -220,9 +225,16 @@ function AppRoutes() {
           <Route path="salon-services" element={<SalonServices />} />
           <Route path="staff" element={<Staff />} />
 
+          {/* Automation - Admin Only */}
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route path="automation/workflows" element={<Workflows />} />
+            <Route path="automation/workflows/:id" element={<WorkflowBuilder />} />
+          </Route>
+
           {/* Settings - Admin Only */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="settings/theme-editor" element={<ThemeEditor />} />
+            <Route path="settings/smtp" element={<SmtpSettings />} />
           </Route>
         </Route>
       </Route>

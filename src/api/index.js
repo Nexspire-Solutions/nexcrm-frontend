@@ -347,3 +347,154 @@ export const emailTemplatesAPI = {
     },
 };
 
+// Campaigns API - for email marketing campaigns
+export const campaignsAPI = {
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/campaigns', { params });
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/campaigns/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/campaigns', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.put(`/campaigns/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/campaigns/${id}`);
+        return response.data;
+    },
+
+    send: async (id) => {
+        const response = await apiClient.post(`/campaigns/${id}/send`);
+        return response.data;
+    },
+
+    getAnalytics: async (id) => {
+        const response = await apiClient.get(`/campaigns/${id}/analytics`);
+        return response.data;
+    },
+};
+
+// Chatbot API - for chatbot responses and settings
+export const chatbotAPI = {
+    getResponses: async () => {
+        const response = await apiClient.get('/chatbot/responses');
+        return response.data;
+    },
+
+    createResponse: async (data) => {
+        const response = await apiClient.post('/chatbot/responses', data);
+        return response.data;
+    },
+
+    updateResponse: async (id, data) => {
+        const response = await apiClient.put(`/chatbot/responses/${id}`, data);
+        return response.data;
+    },
+
+    deleteResponse: async (id) => {
+        const response = await apiClient.delete(`/chatbot/responses/${id}`);
+        return response.data;
+    },
+
+    getSettings: async () => {
+        const response = await apiClient.get('/chatbot/settings');
+        return response.data;
+    },
+
+    updateSettings: async (data) => {
+        const response = await apiClient.put('/chatbot/settings', data);
+        return response.data;
+    },
+};
+
+// SMTP API - for tenant email configuration
+export const smtpAPI = {
+    getAll: async () => {
+        const response = await apiClient.get('/smtp');
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/smtp', data);
+        return response.data;
+    },
+
+    test: async (data) => {
+        const response = await apiClient.post('/smtp/test', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.put(`/smtp/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/smtp/${id}`);
+        return response.data;
+    },
+};
+
+// Workflow Automation API
+export const workflowAPI = {
+    getAll: async () => {
+        const response = await apiClient.get('/workflows');
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/workflows/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/workflows', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.put(`/workflows/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/workflows/${id}`);
+        return response.data;
+    },
+
+    toggle: async (id) => {
+        const response = await apiClient.post(`/workflows/${id}/toggle`);
+        return response.data;
+    },
+
+    run: async (id, testData) => {
+        const response = await apiClient.post(`/workflows/${id}/run`, { testData });
+        return response.data;
+    },
+
+    getExecutions: async (id, limit = 50) => {
+        const response = await apiClient.get(`/workflows/${id}/executions?limit=${limit}`);
+        return response.data;
+    },
+
+    getExecutionDetails: async (executionId) => {
+        const response = await apiClient.get(`/workflows/executions/${executionId}`);
+        return response.data;
+    },
+
+    getNodeTypes: async () => {
+        const response = await apiClient.get('/workflows/meta/nodes');
+        return response.data;
+    },
+};
