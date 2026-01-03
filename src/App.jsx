@@ -22,6 +22,9 @@ import EmployeeDetail from './pages/employees/EmployeeDetail';
 import UsersList from './pages/users/UsersList';
 import Permissions from './pages/users/Permissions';
 
+// Settings
+import Settings from './pages/admin/Settings';
+
 // Leads
 import LeadsList from './pages/leads/LeadsList';
 import LeadDetail from './pages/leads/LeadDetail';
@@ -125,6 +128,7 @@ function AppRoutes() {
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />
           <Route path="industry-test" element={<IndustryTest />} />
 
