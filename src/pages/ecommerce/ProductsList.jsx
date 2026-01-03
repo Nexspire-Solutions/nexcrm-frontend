@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTenantConfig } from '../../contexts/TenantConfigContext';
-import apiClient from '../../api/axios';
+import apiClient, { tenantUtils } from '../../api/axios';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -13,6 +13,7 @@ const ProductsList = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const mediaBaseUrl = tenantUtils.getMediaBaseUrl();
     const [category, setCategory] = useState('');
     const [status, setStatus] = useState('');
     const [categories, setCategories] = useState([]);
@@ -567,7 +568,7 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
                                 {form.images.map((img, idx) => (
                                     <div key={idx} className="relative group">
                                         <img
-                                            src={`http://localhost:3001${img}`}
+                                            src={`${mediaBaseUrl}${img}`}
                                             alt={`Product ${idx + 1}`}
                                             className="w-full h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
                                         />

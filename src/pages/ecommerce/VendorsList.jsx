@@ -179,7 +179,9 @@ const VendorsList = () => {
                                                 <div>
                                                     <span className="font-medium text-slate-900 dark:text-white">{vendor.company_name}</span>
                                                     {vendor.is_verified && (
-                                                        <span className="ml-2 text-emerald-500">✓</span>
+                                                        <svg className="w-4 h-4 ml-2 inline text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                        </svg>
                                                     )}
                                                     <p className="text-xs text-slate-500">{vendor.city}, {vendor.state}</p>
                                                 </div>
@@ -198,9 +200,9 @@ const VendorsList = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${vendor.status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                                    vendor.status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
-                                                        vendor.status === 'suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                                                            'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
+                                                vendor.status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                    vendor.status === 'suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                                        'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
                                                 }`}>
                                                 {vendor.status}
                                             </span>
