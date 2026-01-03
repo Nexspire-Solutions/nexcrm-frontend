@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import apiClient from '../../api/axios';
+import apiClient, { tenantUtils } from '../../api/axios';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 
@@ -11,6 +11,7 @@ const ReviewsList = () => {
     const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState('');
     const [stats, setStats] = useState({});
+    const mediaBaseUrl = tenantUtils.getMediaBaseUrl();
 
     useEffect(() => {
         fetchReviews();
@@ -132,7 +133,7 @@ const ReviewsList = () => {
                                         {/* Product Image */}
                                         <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-lg flex-shrink-0 overflow-hidden">
                                             {review.product_images?.[0] ? (
-                                                <img src={`http://localhost:3001${review.product_images[0]}`} alt="" className="w-full h-full object-cover" />
+                                                <img src={`${mediaBaseUrl}${review.product_images[0]}`} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -178,7 +179,12 @@ const ReviewsList = () => {
                                         <span className="mx-2">•</span>
                                         <span>{new Date(review.created_at).toLocaleDateString()}</span>
                                         {review.is_verified_purchase && (
-                                            <span className="ml-2 text-emerald-600">✓ Verified Purchase</span>
+                                            <span className="ml-2 text-emerald-600 inline-flex items-center gap-1">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                Verified Purchase
+                                            </span>
                                         )}
                                     </p>
                                     {review.title && (

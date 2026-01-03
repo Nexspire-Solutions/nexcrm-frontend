@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import apiClient from '../../api/axios';
+import apiClient, { tenantUtils } from '../../api/axios';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 
@@ -15,6 +15,7 @@ const CMSManagement = () => {
     const [showBannerModal, setShowBannerModal] = useState(false);
     const [showPageModal, setShowPageModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const mediaBaseUrl = tenantUtils.getMediaBaseUrl();
 
     useEffect(() => {
         fetchData();
@@ -110,7 +111,7 @@ const CMSManagement = () => {
                                     <div className="aspect-video bg-slate-100 dark:bg-slate-700 relative">
                                         {banner.image && (
                                             <img
-                                                src={banner.image.startsWith('http') ? banner.image : `http://localhost:3001${banner.image}`}
+                                                src={banner.image.startsWith('http') ? banner.image : `${mediaBaseUrl}${banner.image}`}
                                                 alt={banner.title}
                                                 className="w-full h-full object-cover"
                                             />
@@ -191,7 +192,7 @@ const CMSManagement = () => {
                                     <div className="aspect-video bg-slate-100 dark:bg-slate-700">
                                         {post.featured_image && (
                                             <img
-                                                src={post.featured_image.startsWith('http') ? post.featured_image : `http://localhost:3001${post.featured_image}`}
+                                                src={post.featured_image.startsWith('http') ? post.featured_image : `${mediaBaseUrl}${post.featured_image}`}
                                                 alt={post.title}
                                                 className="w-full h-full object-cover"
                                             />

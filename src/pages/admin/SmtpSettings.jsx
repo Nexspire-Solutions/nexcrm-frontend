@@ -246,7 +246,11 @@ export default function SmtpSettings() {
                                     </td>
                                     <td className="text-sm text-slate-600 dark:text-slate-400">
                                         {account.host}:{account.port}
-                                        {account.secure && <span className="ml-1 text-green-500" title="SSL/TLS">🔒</span>}
+                                        {account.secure && (
+                                            <svg className="w-4 h-4 inline ml-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="SSL/TLS">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                            </svg>
+                                        )}
                                     </td>
                                     <td className="text-slate-600 dark:text-slate-400">
                                         {account.daily_limit}/day

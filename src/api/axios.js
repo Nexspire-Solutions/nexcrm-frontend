@@ -119,6 +119,11 @@ apiClient.interceptors.response.use(
 export const tenantUtils = {
     getTenant,
     getApiUrl,
+    // Get base URL for media/images (without /api suffix)
+    getMediaBaseUrl: () => {
+        const apiUrl = getApiUrl();
+        return apiUrl.replace(/\/api\/?$/, '');
+    },
     setTenant: (tenant) => {
         localStorage.setItem('nexcrm_tenant', tenant);
     },
