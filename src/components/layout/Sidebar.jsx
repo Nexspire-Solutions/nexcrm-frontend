@@ -2,7 +2,8 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTenantConfig } from '../../contexts/TenantConfigContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import storageAPI from '../../api/storage';
 
 // Professional SVG Icons
 const Icons = {
@@ -221,6 +222,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     const { hasModule, loading: configLoading, getIndustry } = useTenantConfig();
     const navigate = useNavigate();
     const location = useLocation();
+    const [storageInfo, setStorageInfo] = useState(null);
+
+    // Fetch storage info on mount
+    useEffect(() => {
+        storageAPI.getStorageInfo()
+            .then(res => setStorageInfo(res.data))
+            .catch(err => console.error('Failed to load storage:', err));
+    }, []);
+
     const handleLogout = () => {
         logout();
         navigate('/login');
@@ -588,6 +598,34 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
                 {/* Footer */}
                 <div className="p-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                    {/* Storage Widget */}
+                    {storageInfo && !storageInfo.isUnlimited && (
+                        <div className="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                            <div className="flex justify-between items-center mb-1.5">
+                                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Storage</span>
+                                <span className={`text-xs font-bold ${storageInfo.percentUsed >= 90 ? 'text-red-500' :
+                                        storageInfo.percentUsed >= 75 ? 'text-amber-500' :
+                                            'text-slate-900 dark:text-slate-100'
+                                    }`}>
+                                    {storageInfo.percentUsed}%
+                                </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div
+                                    className={`h-full rounded-full transition-all duration-500 ${storageInfo.percentUsed >= 90 ? 'bg-red-500' :
+                                            storageInfo.percentUsed >= 75 ? 'bg-amber-500' :
+                                                'bg-brand-500'
+                                        }`}
+                                    style={{ width: `${Math.min(storageInfo.percentUsed, 100)}%` }}
+                                />
+                            </div>
+                            <div className="flex justify-between mt-1">
+                                <span className="text-[10px] text-slate-500">{storageInfo.used.value} {storageInfo.used.unit}</span>
+                                <span className="text-[10px] text-slate-500">{storageInfo.limit.value} {storageInfo.limit.unit}</span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Theme Toggle */}
                     <button
                         onClick={toggleTheme}
