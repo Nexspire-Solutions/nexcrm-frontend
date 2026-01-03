@@ -7,6 +7,40 @@ import { io } from 'socket.io-client';
 let socket = null;
 
 /**
+ * Get socket URL dynamically (same logic as axios.js)
+ */
+const getSocketUrl = () => {
+    // Development mode
+    if (import.meta.env.DEV) {
+        if (import.meta.env.VITE_API_URL) {
+            // Remove /api suffix for socket connection
+            return import.meta.env.VITE_API_URL.replace('/api', '');
+        }
+        return 'http://localhost:3001';
+    }
+
+    // Production - use tenant-specific API URL
+    const hostname = window.location.hostname;
+
+    // Match pattern: xxx-crm.nexspiresolutions.co.in -> xxx-crm-api.nexspiresolutions.co.in
+    const dashCrmMatch = hostname.match(/^([a-z0-9-]+)-crm\.nexspiresolutions\.co\.in$/);
+    if (dashCrmMatch) {
+        return `https://${dashCrmMatch[1]}-crm-api.nexspiresolutions.co.in`;
+    }
+
+    // Legacy pattern: tenant.crm.nexspiresolutions.co.in
+    if (hostname.includes('.crm.nexspiresolutions.co.in')) {
+        const subdomain = hostname.split('.')[0];
+        if (subdomain && subdomain !== 'crm' && subdomain !== 'app') {
+            return `https://${subdomain}-crm-api.nexspiresolutions.co.in`;
+        }
+    }
+
+    // Fallback
+    return import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
+};
+
+/**
  * Initialize socket connection with auth token
  */
 export const initSocket = (token) => {
@@ -14,9 +48,10 @@ export const initSocket = (token) => {
         return socket;
     }
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const SOCKET_URL = getSocketUrl();
+    console.log('[Socket] Connecting to:', SOCKET_URL);
 
-    socket = io(API_URL, {
+    socket = io(SOCKET_URL, {
         auth: { token },
         transports: ['websocket', 'polling'],
         reconnection: true,

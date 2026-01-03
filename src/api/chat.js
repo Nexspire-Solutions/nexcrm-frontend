@@ -33,9 +33,19 @@ export const chatAPI = {
     },
 
     /**
-     * Send a message to a channel
+     * Send a message to a channel (optionally with file attachment)
      */
-    sendMessage: async (channelId, message) => {
+    sendMessage: async (channelId, message, file = null) => {
+        if (file) {
+            // Use FormData for file upload
+            const formData = new FormData();
+            formData.append('message', message);
+            formData.append('file', file);
+            const response = await apiClient.post(`/chat/channels/${channelId}/messages`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            return response.data;
+        }
         const response = await apiClient.post(`/chat/channels/${channelId}/messages`, { message });
         return response.data;
     },
