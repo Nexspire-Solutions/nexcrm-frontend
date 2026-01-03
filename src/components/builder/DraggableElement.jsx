@@ -10,6 +10,9 @@ import AtomFeatures from './atoms/AtomFeatures';
 import AtomPricing from './atoms/AtomPricing';
 import AtomCallToAction from './atoms/AtomCallToAction';
 import AtomForm from './atoms/AtomForm';
+import AtomTestimonials from './atoms/AtomTestimonials';
+import AtomFAQ from './atoms/AtomFAQ';
+import AtomTeam from './atoms/AtomTeam';
 
 const COMPONENT_MAP = {
     text: AtomText,
@@ -20,7 +23,10 @@ const COMPONENT_MAP = {
     features: AtomFeatures,
     pricing: AtomPricing,
     cta: AtomCallToAction,
-    form: AtomForm
+    form: AtomForm,
+    testimonials: AtomTestimonials,
+    faq: AtomFAQ,
+    team: AtomTeam
 };
 
 const DraggableElement = ({ element, isSelected, onSelect }) => {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { SECTION_SCHEMAS } from '../../pages/cms/sectionSchemas';
 
 const InspectorPanel = ({ selectedElement, onUpdate }) => {
     if (!selectedElement) {
@@ -9,7 +10,7 @@ const InspectorPanel = ({ selectedElement, onUpdate }) => {
         );
     }
 
-    const { id, type, content, style } = selectedElement;
+    const { id, type, content, props, style } = selectedElement;
 
     const handleStyleChange = (key, value) => {
         onUpdate(id, {
@@ -17,143 +18,137 @@ const InspectorPanel = ({ selectedElement, onUpdate }) => {
         });
     };
 
-    const handleContentChange = (value) => {
-        onUpdate(id, { content: value });
+    const handleContentChange = (key, value) => {
+        // Handle both simple content (string) and object content
+        if (typeof content === 'object') {
+            onUpdate(id, { content: { ...content, [key]: value } });
+        } else {
+            // For simple text/button where content is string, we might need to adjust strategy
+            // But for sections using schemas, content/props are usually objects
+            onUpdate(id, { content: value });
+        }
     };
 
+    const handlePropChange = (key, value) => {
+        onUpdate(id, {
+            props: { ...props, [key]: value }
+        });
+    };
+
+    // Helper to render inputs based on schema
+    const renderSchemaFields = (schema) => {
+        return schema.fields.map((field) => (
+            <div key={field.name} className="mb-4">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">{field.label}</label>
+
+                {field.type === 'text' && (
+                    <input
+                        type="text"
+                        className="form-input w-full"
+                        value={props?.[field.name] || content?.[field.name] || ''}
+                        onChange={(e) => handlePropChange(field.name, e.target.value)}
+                    />
+                )}
+
+                {field.type === 'number' && (
+                    <input
+                        type="number"
+                        className="form-input w-full"
+                        value={props?.[field.name] || content?.[field.name] || 0}
+                        onChange={(e) => handlePropChange(field.name, e.target.value)}
+                    />
+                )}
+
+                {field.type === 'textarea' && (
+                    <textarea
+                        className="form-input w-full h-24"
+                        value={props?.[field.name] || content?.[field.name] || ''}
+                        onChange={(e) => handlePropChange(field.name, e.target.value)}
+                    />
+                )}
+
+                {field.type === 'select' && (
+                    <select
+                        className="form-select w-full"
+                        value={props?.[field.name] || content?.[field.name] || field.default}
+                        onChange={(e) => handlePropChange(field.name, e.target.value)}
+                    >
+                        {field.options.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                    </select>
+                )}
+            </div>
+        ));
+    };
+
+    const schema = SECTION_SCHEMAS[type];
+
     return (
-        <div className="w-72 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 flex flex-col h-full overflow-y-auto">
+        <div className="w-full bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 flex flex-col h-full overflow-y-auto">
             <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-                <h3 className="font-bold text-lg capitalize">{type} Properties</h3>
+                <h3 className="font-bold text-lg capitalize">{schema?.label || type} Properties</h3>
                 <span className="text-xs text-slate-400">ID: {id}</span>
             </div>
 
             <div className="p-4 space-y-6">
-                {/* Content Editor */}
-                {(type === 'text' || type === 'button') && (
+
+                {/* 1. Dynamic Fields from Schema (for complex sections) */}
+                {schema && (
+                    <div className="border-b pb-4 mb-4 border-slate-100">
+                        <h4 className="font-bold text-sm mb-3">Settings</h4>
+                        {renderSchemaFields(schema)}
+                    </div>
+                )}
+
+                {/* 2. Legacy/Simple Fields (if no schema matches) */}
+                {!schema && (type === 'text' || type === 'heading' || type === 'button') && (
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Content</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Text Content</label>
                         <textarea
                             className="form-input w-full"
-                            value={content || ''}
-                            onChange={(e) => handleContentChange(e.target.value)}
+                            value={props?.text || ''}
+                            onChange={(e) => handlePropChange('text', e.target.value)}
                         />
                     </div>
                 )}
 
-                {/* Hero Widget Editor */}
-                {type === 'hero' && (
-                    <div className="space-y-4">
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Hero Content</label>
-                        <div>
-                            <span className="text-xs">Title</span>
-                            <input
-                                type="text"
-                                className="form-input w-full"
-                                value={content?.title || ''}
-                                onChange={(e) => handleContentChange({ ...content, title: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <span className="text-xs">Subtitle</span>
-                            <textarea
-                                className="form-input w-full h-16"
-                                value={content?.subtitle || ''}
-                                onChange={(e) => handleContentChange({ ...content, subtitle: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <span className="text-xs">CTA Text</span>
-                            <input
-                                type="text"
-                                className="form-input w-full"
-                                value={content?.cta || ''}
-                                onChange={(e) => handleContentChange({ ...content, cta: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <span className="text-xs">Background Image URL</span>
-                            <input
-                                type="text"
-                                className="form-input w-full"
-                                value={content?.image || ''}
-                                onChange={(e) => handleContentChange({ ...content, image: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* Style Editors */}
+                {/* 3. Style Editors (Global for all) */}
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Typography</label>
-                    <div className="grid grid-cols-2 gap-2">
-                        <div>
-                            <span className="text-xs">Color</span>
-                            <input
-                                type="color"
-                                className="w-full h-8 cursor-pointer"
-                                value={style?.color || '#000000'}
-                                onChange={(e) => handleStyleChange('color', e.target.value)}
-                            />
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Appearance</label>
+                    <div className="space-y-3">
+                        {/* Common Styles */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <span className="text-xs text-slate-400">Text Color</span>
+                                <input
+                                    type="color"
+                                    className="w-full h-8 cursor-pointer border rounded"
+                                    value={style?.color || '#000000'}
+                                    onChange={(e) => handleStyleChange('color', e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <span className="text-xs text-slate-400">Bg Color</span>
+                                <input
+                                    type="color"
+                                    className="w-full h-8 cursor-pointer border rounded"
+                                    value={style?.backgroundColor || '#ffffff'}
+                                    onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <span className="text-xs">Size (px)</span>
-                            <input
-                                type="number"
-                                className="form-input w-full"
-                                value={parseInt(style?.fontSize) || 16}
-                                onChange={(e) => handleStyleChange('fontSize', `${e.target.value}px`)}
-                            />
-                        </div>
-                        <div>
-                            <span className="text-xs">Align</span>
-                            <select
-                                className="form-select w-full"
-                                value={style?.textAlign || 'left'}
-                                onChange={(e) => handleStyleChange('textAlign', e.target.value)}
-                            >
-                                <option value="left">Left</option>
-                                <option value="center">Center</option>
-                                <option value="right">Right</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
 
-                <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Spacing</label>
-                    <div className="grid grid-cols-2 gap-2">
                         <div>
-                            <span className="text-xs">Padding</span>
+                            <span className="text-xs text-slate-400">Padding (e.g. 20px)</span>
                             <input
                                 type="text"
                                 className="form-input w-full"
-                                placeholder="10px"
                                 value={style?.padding || ''}
                                 onChange={(e) => handleStyleChange('padding', e.target.value)}
                             />
                         </div>
-                        <div>
-                            <span className="text-xs">Margin</span>
-                            <input
-                                type="text"
-                                className="form-input w-full"
-                                placeholder="10px"
-                                value={style?.margin || ''}
-                                onChange={(e) => handleStyleChange('margin', e.target.value)}
-                            />
-                        </div>
                     </div>
-                </div>
-
-                <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Background</label>
-                    <input
-                        type="color"
-                        className="w-full h-8 cursor-pointer"
-                        value={style?.backgroundColor || '#ffffff'}
-                        onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
-                    />
                 </div>
             </div>
         </div>

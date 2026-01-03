@@ -110,18 +110,18 @@ import Staff from './pages/industry/salon/Staff';
 // Admin
 import SmtpSettings from './pages/admin/SmtpSettings';
 import IndustryTest from './pages/admin/IndustryTest';
+import ThemeEditor from './pages/settings/ThemeEditor';
 // CMS Layout
 import CMSLayout from './components/layout/CMSLayout';
 
 // CMS Pages
-import MenuBuilder from './pages/cms/MenuBuilder';
-import SectionBuilder from './pages/cms/SectionBuilder';
-import BlogBuilder from './pages/cms/BlogBuilder';
-import MediaLibrary from './pages/cms/MediaLibrary';
-import PageBuilder from './pages/cms/PageBuilder'; // Visual Builder
-import ThemeEditor from './pages/cms/ThemeEditor'; // Theme Editor
 import ContactManager from './pages/crm/ContactManager'; // CRM
 import PlaceholderPage from './pages/cms/PlaceholderPage'; // For new modules
+import PageBuilder from './pages/cms/PageBuilder';
+import TemplatesGallery from './pages/cms/TemplatesGallery';
+import BuilderLayout from './components/builder/dashboard/BuilderLayout';
+import DashboardBuilder from './pages/builder/Dashboard';
+import TemplateMarketplace from './pages/builder/TemplateMarketplace';
 
 // Automation
 import Workflows from './pages/automation/Workflows';
@@ -137,31 +137,38 @@ function AppRoutes() {
       <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
         <Route path="/cms" element={<CMSLayout />}>
           <Route index element={<Navigate to="/cms/overview" replace />} />
-
-          {/* Dashboard */}
           <Route path="overview" element={<PlaceholderPage />} />
-          <Route path="analytics" element={<PlaceholderPage />} />
-
-          {/* Design Studio */}
-          <Route path="builder" element={<PageBuilder />} />
-          <Route path="theme" element={<ThemeEditor />} />
-          <Route path="menus" element={<Navigate to="header" replace />} />
-          <Route path="header" element={<MenuBuilder mode="header" />} />
-          <Route path="footer" element={<MenuBuilder mode="footer" />} />
-          <Route path="media" element={<MediaLibrary />} />
-
-          {/* Content Manager */}
-          <Route path="pages" element={<SectionBuilder />} />
-          <Route path="blog" element={<BlogBuilder />} />
 
           {/* CRM & Marketing */}
           <Route path="contacts" element={<ContactManager />} />
 
-          {/* Legacy / Fallbacks */}
-          <Route path="home" element={<SectionBuilder />} />
+
+          {/* New Page Builder */}
+          <Route path="builder" element={<PageBuilder />} />
+          <Route path="builder/:slug" element={<PageBuilder />} />
+          <Route path="templates" element={<TemplatesGallery />} />
+
+          {/* CMS Management Routes */}
+
+          <Route path="settings" element={<CMSManagement activeTab="settings" />} />
+          <Route path="pages" element={<CMSManagement activeTab="pages" />} />
+          <Route path="menus" element={<CMSManagement activeTab="menus" />} />
           <Route path="banners" element={<CMSManagement activeTab="banners" />} />
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/cms/header" replace />} />
+          <Route path="*" element={<Navigate to="/cms/overview" replace />} />
+        </Route>
+      </Route>
+
+      {/* No-Code Builder Routes (Full Screen) */}
+      <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
+        <Route path="/builder" element={<BuilderLayout />}>
+          <Route index element={<Navigate to="/builder/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardBuilder />} />
+          <Route path="projects" element={<DashboardBuilder />} /> {/* Re-use for now */}
+          <Route path="templates" element={<TemplateMarketplace />} />
+          <Route path="domains" element={<PlaceholderPage />} />
+          <Route path="hosting" element={<PlaceholderPage />} />
+          <Route path="settings" element={<PlaceholderPage />} />
         </Route>
       </Route>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import apiClient, { tenantUtils } from '../../api/axios';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
+import MenuEditor from '../../components/cms/MenuEditor';
 
 /**
  * CMS Management Page - Banners, Pages, Blog
@@ -59,9 +60,10 @@ const CMSManagement = ({ activeTab: routeTab }) => {
     };
 
     const tabs = [
+        { id: 'pages', label: 'Pages' },
+        { id: 'menus', label: 'Menus' },
         { id: 'banners', label: 'Banners' },
-        { id: 'pages', label: 'Static Pages' },
-        { id: 'blog', label: 'Blog' }
+        { id: 'settings', label: 'Settings' }
     ];
 
     return (
@@ -83,7 +85,7 @@ const CMSManagement = ({ activeTab: routeTab }) => {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
-                    Add {activeTab === 'banners' ? 'Banner' : activeTab === 'pages' ? 'Page' : 'Post'}
+                    Add {activeTab === 'banners' ? 'Banner' : activeTab === 'pages' ? 'Page' : activeTab === 'menus' ? 'Menu' : activeTab === 'blog' ? 'Post' : 'Item'}
                 </button>
             </div>
 
@@ -232,6 +234,61 @@ const CMSManagement = ({ activeTab: routeTab }) => {
                                     No blog posts yet
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Menus Tab */}
+                    {activeTab === 'menus' && (
+                        <MenuEditor />
+                    )}
+
+                    {/* Media Tab */}
+                    {activeTab === 'media' && (
+                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8">
+                            <div className="text-center mb-8">
+                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Media Library</h3>
+                                <p className="text-slate-500">Manage all your images and documents.</p>
+                            </div>
+                            {/* Re-using the logic from MediaLibraryModal would be ideal, but for now a simple placeholder with the button to open the existing modal logic if we refactored, or just a simple 'Coming Soon' gallery view since the Modal handles the actual upload/viewing nicely. Check MediaLibraryModal usage... */}
+                            <div className="text-center p-12 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                                <p className="text-slate-500 mb-4">You can access the Media Library directly from the Page Builder to insert images.</p>
+                                <button className="btn-primary">Upload New Media</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Comments Tab */}
+                    {activeTab === 'comments' && (
+                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
+                            <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                                <span className="text-2xl">💬</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No Comments Yet</h3>
+                            <p className="text-slate-500">Comments on your blog posts will appear here.</p>
+                        </div>
+                    )}
+
+                    {/* Settings Tab */}
+                    {activeTab === 'settings' && (
+                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 max-w-2xl mx-auto">
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 border-b pb-4">General Settings</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="label">Site Title</label>
+                                    <input type="text" className="input" defaultValue="Nexspire Business" />
+                                </div>
+                                <div>
+                                    <label className="label">Tagline</label>
+                                    <input type="text" className="input" defaultValue="Just another Nexspire site" />
+                                </div>
+                                <div>
+                                    <label className="label">Admin Email</label>
+                                    <input type="email" className="input" defaultValue="admin@nexspire.com" />
+                                </div>
+                                <div className="pt-4">
+                                    <button className="btn-primary">Save Changes</button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </>
@@ -389,7 +446,16 @@ const PageModal = ({ page, onClose, onSave }) => {
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="label">Title *</label>
-                        <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="input" />
+                        <input
+                            type="text"
+                            value={form.title}
+                            onChange={(e) => {
+                                const title = e.target.value;
+                                const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                                setForm({ ...form, title, slug });
+                            }}
+                            className="input"
+                        />
                     </div>
                     <div>
                         <label className="label">Slug *</label>
