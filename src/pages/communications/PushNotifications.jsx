@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
-
-// TODO: Add notificationsAPI when backend endpoints are ready
-// import { notificationsAPI } from '../../api';
+import { notificationsAPI } from '../../api';
 
 export default function PushNotifications() {
     const [notifications, setNotifications] = useState([]);
@@ -23,30 +21,34 @@ export default function PushNotifications() {
         taskReminders: true,
         teamMessages: false
     });
+    const [stats, setStats] = useState({
+        total: 0,
+        totalDelivered: 0,
+        avgClickRate: 0
+    });
 
     useEffect(() => {
-        fetchNotifications();
+        fetchData();
     }, []);
 
-    const fetchNotifications = async () => {
+    const fetchData = async () => {
         try {
-            // TODO: Replace with actual API call when backend is ready
-            // const response = await notificationsAPI.getAll();
-            // setNotifications(response.data || []);
-            setNotifications([]); // Empty until API is ready
+            // Fetch notifications list
+            const notifResponse = await notificationsAPI.getAll();
+            setNotifications(notifResponse.notifications || []);
+            setStats(notifResponse.stats || { total: 0, totalDelivered: 0, avgClickRate: 0 });
+
+            // Fetch settings
+            const settingsResponse = await notificationsAPI.getSettings();
+            if (settingsResponse) {
+                setSettings(settingsResponse);
+            }
         } catch (error) {
             console.error('Failed to load notifications:', error);
+            toast.error('Failed to load notifications data');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const stats = {
-        total: notifications.length,
-        totalSent: notifications.reduce((sum, n) => sum + (n.recipients || 0), 0),
-        avgClickRate: notifications.length > 0
-            ? Math.round(notifications.reduce((sum, n) => sum + ((n.clicked || 0) / (n.recipients || 1) * 100), 0) / notifications.length)
-            : 0
     };
 
     const handleSend = async () => {
@@ -56,16 +58,39 @@ export default function PushNotifications() {
         }
         setSaving(true);
         try {
-            // TODO: Replace with actual API call when backend is ready
-            // await notificationsAPI.send(formData);
-            toast.success('Notification scheduled');
-            setShowModal(false);
-            setFormData({ title: '', message: '', audience: 'all', link: '' });
-            fetchNotifications();
+            const result = await notificationsAPI.send({
+                title: formData.title,
+                message: formData.message,
+                audience: formData.audience,
+                link: formData.link || undefined
+            });
+
+            if (result.success) {
+                toast.success(`Notification sent to ${result.sentCount || 0} devices`);
+                setShowModal(false);
+                setFormData({ title: '', message: '', audience: 'all', link: '' });
+                fetchData();
+            } else {
+                toast.error(result.error || 'Failed to send notification');
+            }
         } catch (error) {
             toast.error('Failed to send notification');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleSettingToggle = async (key) => {
+        const newSettings = { ...settings, [key]: !settings[key] };
+        setSettings(newSettings);
+
+        try {
+            await notificationsAPI.updateSettings(newSettings);
+        } catch (error) {
+            console.error('Failed to update setting:', error);
+            // Revert on error
+            setSettings(settings);
+            toast.error('Failed to update setting');
         }
     };
 
@@ -123,7 +148,7 @@ export default function PushNotifications() {
                             </svg>
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalSent.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalDelivered.toLocaleString()}</p>
                             <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Total Delivered</p>
                         </div>
                     </div>
@@ -159,7 +184,7 @@ export default function PushNotifications() {
                             <div key={key} className="flex items-center justify-between py-2">
                                 <span className="text-sm text-slate-700 dark:text-slate-300">{label}</span>
                                 <button
-                                    onClick={() => setSettings(prev => ({ ...prev, [key]: !prev[key] }))}
+                                    onClick={() => handleSettingToggle(key)}
                                     className={`relative w-10 h-5 rounded-full transition-colors ${settings[key] ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'}`}
                                 >
                                     <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${settings[key] ? 'left-5' : 'left-0.5'}`}></span>
@@ -199,14 +224,19 @@ export default function PushNotifications() {
                                             <p className="font-medium text-slate-900 dark:text-white">{notification.title}</p>
                                             <p className="text-sm text-slate-500 dark:text-slate-400 truncate max-w-xs">{notification.message}</p>
                                         </td>
-                                        <td className="text-sm text-slate-500 dark:text-slate-400">{notification.sentAt}</td>
-                                        <td>{(notification.recipients || 0).toLocaleString()}</td>
+                                        <td className="text-sm text-slate-500 dark:text-slate-400">
+                                            {notification.sent_at ? new Date(notification.sent_at).toLocaleDateString() : 'Pending'}
+                                        </td>
+                                        <td>{(notification.delivered_count || 0).toLocaleString()}</td>
                                         <td>
                                             <div className="flex items-center gap-2">
                                                 <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full">
-                                                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.round((notification.clicked || 0) / (notification.recipients || 1) * 100)}%` }}></div>
+                                                    <div
+                                                        className="h-full bg-indigo-500 rounded-full"
+                                                        style={{ width: `${Math.round((notification.clicked_count || 0) / (notification.delivered_count || 1) * 100)}%` }}
+                                                    ></div>
                                                 </div>
-                                                <span className="text-sm">{Math.round((notification.clicked || 0) / (notification.recipients || 1) * 100)}%</span>
+                                                <span className="text-sm">{Math.round((notification.clicked_count || 0) / (notification.delivered_count || 1) * 100)}%</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -269,7 +299,7 @@ export default function PushNotifications() {
                         <input
                             type="url"
                             className="input"
-                            placeholder="https://"
+                            placeholder="https:// or /internal-route"
                             value={formData.link}
                             onChange={(e) => setFormData(prev => ({ ...prev, link: e.target.value }))}
                         />

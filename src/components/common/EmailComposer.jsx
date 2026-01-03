@@ -290,7 +290,12 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                             <div className="border-r border-slate-200 dark:border-slate-700 p-6 space-y-6 bg-slate-50 dark:bg-slate-900">
                                 {/* Email Templates */}
                                 <div>
-                                    <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3">📧 Email Templates</h4>
+                                    <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                        Email Templates
+                                    </h4>
                                     <div className="space-y-2 max-h-48 overflow-y-auto">
                                         <button
                                             onClick={() => handleEmailTemplateSelect(null)}
@@ -299,7 +304,10 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                                                 : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 hover:border-brand-300 dark:hover:border-brand-500 text-slate-700 dark:text-slate-300'
                                                 }`}
                                         >
-                                            ✏️ Compose from scratch
+                                            <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            Compose from scratch
                                         </button>
                                         {emailTemplates.map(t => (
                                             <button
@@ -321,7 +329,12 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
 
                                 {/* Document Attachments */}
                                 <div>
-                                    <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3">📎 Attach Documents</h4>
+                                    <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                        </svg>
+                                        Attach Documents
+                                    </h4>
                                     <div className="space-y-2 max-h-48 overflow-y-auto">
                                         {documentTemplates.map(d => (
                                             <label
@@ -354,7 +367,12 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                                 {/* Variables */}
                                 {Object.keys(variables).length > 0 && (
                                     <div>
-                                        <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3">🔤 Variables</h4>
+                                        <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                                            </svg>
+                                            Variables
+                                        </h4>
                                         <div className="space-y-2 max-h-48 overflow-y-auto">
                                             {Object.keys(variables).map(key => (
                                                 <div key={key}>
@@ -457,6 +475,6 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

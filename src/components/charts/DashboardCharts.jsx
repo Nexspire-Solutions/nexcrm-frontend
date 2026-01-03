@@ -159,19 +159,18 @@ export function ConversionRateCard({ inquiryStats, leadStats }) {
 
 // Revenue Trend Line Chart
 export function RevenueTrendChart({ data }) {
-    // Mock data if not provided
-    const chartData = data || [
-        { month: 'Jan', revenue: 4000 },
-        { month: 'Feb', revenue: 3000 },
-        { month: 'Mar', revenue: 5000 },
-        { month: 'Apr', revenue: 4500 },
-        { month: 'May', revenue: 6000 },
-        { month: 'Jun', revenue: 5500 },
-    ];
+    // Show empty state if no data provided
+    if (!data || data.length === 0) {
+        return (
+            <div className="h-64 flex items-center justify-center text-slate-400">
+                No revenue data available
+            </div>
+        );
+    }
 
     return (
         <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+            <LineChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                 <XAxis
                     dataKey="month"
                     tick={{ fontSize: 12, fill: '#64748b' }}

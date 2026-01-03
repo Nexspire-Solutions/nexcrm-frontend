@@ -22,6 +22,9 @@ import EmployeeDetail from './pages/employees/EmployeeDetail';
 import UsersList from './pages/users/UsersList';
 import Permissions from './pages/users/Permissions';
 
+// Settings
+import Settings from './pages/admin/Settings';
+
 // Leads
 import LeadsList from './pages/leads/LeadsList';
 import LeadDetail from './pages/leads/LeadDetail';
@@ -105,6 +108,7 @@ import Staff from './pages/industry/salon/Staff';
 
 // Settings
 // Admin
+import SmtpSettings from './pages/admin/SmtpSettings';
 import IndustryTest from './pages/admin/IndustryTest';
 // CMS Layout
 import CMSLayout from './components/layout/CMSLayout';
@@ -118,6 +122,11 @@ import PageBuilder from './pages/cms/PageBuilder'; // Visual Builder
 import ThemeEditor from './pages/cms/ThemeEditor'; // Theme Editor
 import ContactManager from './pages/crm/ContactManager'; // CRM
 import PlaceholderPage from './pages/cms/PlaceholderPage'; // For new modules
+
+// Automation
+import Workflows from './pages/automation/Workflows';
+import WorkflowBuilder from './pages/automation/WorkflowBuilder';
+import ExecutionHistory from './pages/automation/ExecutionHistory';
 
 function AppRoutes() {
   return (
@@ -161,6 +170,7 @@ function AppRoutes() {
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />
           <Route path="industry-test" element={<IndustryTest />} />
 
@@ -262,9 +272,17 @@ function AppRoutes() {
           <Route path="salon-services" element={<SalonServices />} />
           <Route path="staff" element={<Staff />} />
 
+          {/* Automation - Admin Only */}
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route path="automation/workflows" element={<Workflows />} />
+            <Route path="automation/workflows/:id" element={<WorkflowBuilder />} />
+            <Route path="automation/history" element={<ExecutionHistory />} />
+          </Route>
+
           {/* Settings - Admin Only */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="settings/theme-editor" element={<ThemeEditor />} />
+            <Route path="settings/smtp" element={<SmtpSettings />} />
           </Route>
         </Route>
       </Route>

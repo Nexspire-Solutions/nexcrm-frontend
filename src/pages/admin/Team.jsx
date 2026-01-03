@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import apiClient from '../../api/axios';
 
 export default function Team() {
     const { user } = useAuth();
@@ -29,10 +27,7 @@ export default function Team() {
 
     const fetchMembers = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/teams`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get(`/teams`);
             if (response.data.success) {
                 setMembers(response.data.data);
                 // Extract unique departments from data to update list dynamically
@@ -64,10 +59,7 @@ export default function Team() {
     const handleInvite = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.post(`${API_URL}/teams`, formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.post(`/teams`, formData);
 
             // Success handling - email is now sent with credentials
             setCreatedUser({
@@ -91,10 +83,7 @@ export default function Team() {
     const handleDelete = async (id) => {
         if (confirm('Are you sure you want to remove this team member?')) {
             try {
-                const token = localStorage.getItem('token');
-                await axios.delete(`${API_URL}/teams/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await apiClient.delete(`/teams/${id}`);
                 setMembers(members.filter(m => m.id !== id));
                 toast.success('Member removed');
             } catch (error) {
@@ -308,8 +297,11 @@ export default function Team() {
                                 </div>
 
                                 <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-lg p-3 mb-6 text-left">
-                                    <p className="text-xs text-blue-700 dark:text-blue-400">
-                                        <strong>📧 Email includes:</strong> Login credentials, password, and a link to the admin dashboard.
+                                    <p className="text-xs text-blue-700 dark:text-blue-400 flex items-start gap-1">
+                                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                        <span><strong>Email includes:</strong> Login credentials, password, and a link to the admin dashboard.</span>
                                     </p>
                                 </div>
                             </>

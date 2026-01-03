@@ -1,17 +1,42 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-// Activity type configurations
+// Activity type configurations with SVG paths
 const ACTIVITY_TYPES = {
-    note: { label: 'Note', icon: '📝', color: 'bg-blue-400' },
-    call: { label: 'Call', icon: '📞', color: 'bg-emerald-400' },
-    email: { label: 'Email', icon: '✉️', color: 'bg-purple-400' },
-    meeting: { label: 'Meeting', icon: '👥', color: 'bg-amber-400' },
-    status_change: { label: 'Status Change', icon: '🔄', color: 'bg-slate-400' },
+    note: {
+        label: 'Note',
+        icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
+        color: 'bg-blue-400'
+    },
+    call: {
+        label: 'Call',
+        icon: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z',
+        color: 'bg-emerald-400'
+    },
+    email: {
+        label: 'Email',
+        icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+        color: 'bg-purple-400'
+    },
+    meeting: {
+        label: 'Meeting',
+        icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
+        color: 'bg-amber-400'
+    },
+    status_change: {
+        label: 'Status Change',
+        icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
+        color: 'bg-slate-400'
+    },
 };
+
+// SVG Icon component
+const ActivityIcon = ({ path, className = "w-4 h-4" }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={path} />
+    </svg>
+);
 
 // Relative time formatter
 const getRelativeTime = (dateString) => {
@@ -47,10 +72,7 @@ export default function DetailSidebar({ isOpen, onClose, entityType, entityId, t
     const fetchActivities = async () => {
         setLoadingActivities(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/activities/${entityType}/${entityId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/activities/${entityType}/${entityId}`);
             if (res.data.success) {
                 setActivities(res.data.data);
             }
@@ -67,15 +89,12 @@ export default function DetailSidebar({ isOpen, onClose, entityType, entityId, t
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post(`${API_URL}/activities`, {
+            const res = await apiClient.post(`/activities`, {
                 entityType,
                 entityId,
                 type: activityType,
                 summary: `${ACTIVITY_TYPES[activityType].label} logged`,
                 details: newNote
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
 
             if (res.data.success) {
@@ -197,11 +216,11 @@ export default function DetailSidebar({ isOpen, onClose, entityType, entityId, t
                                             key={type}
                                             onClick={() => setActivityType(type)}
                                             className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${activityType === type
-                                                    ? 'bg-brand-600 text-white shadow-sm'
-                                                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                                ? 'bg-brand-600 text-white shadow-sm'
+                                                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                                                 }`}
                                         >
-                                            <span>{ACTIVITY_TYPES[type].icon}</span>
+                                            <ActivityIcon path={ACTIVITY_TYPES[type].icon} className="w-3 h-3" />
                                             <span className="hidden sm:inline">{ACTIVITY_TYPES[type].label}</span>
                                         </button>
                                     ))}
@@ -259,12 +278,12 @@ export default function DetailSidebar({ isOpen, onClose, entityType, entityId, t
                                                     </div>
 
                                                     <div className={`p-3 rounded-lg border transition-colors ${isStatusChange
-                                                            ? 'bg-gradient-to-r from-slate-50 to-white border-slate-200'
-                                                            : 'bg-white border-slate-100 hover:border-slate-200'
+                                                        ? 'bg-gradient-to-r from-slate-50 to-white border-slate-200'
+                                                        : 'bg-white border-slate-100 hover:border-slate-200'
                                                         }`}>
                                                         <div className="flex items-start justify-between mb-1">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-sm">{typeConfig.icon}</span>
+                                                                <ActivityIcon path={typeConfig.icon} className="w-4 h-4" />
                                                                 <span className="text-xs font-semibold text-slate-600 capitalize">
                                                                     {isStatusChange ? activity.summary : typeConfig.label}
                                                                 </span>

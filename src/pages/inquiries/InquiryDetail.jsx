@@ -1,19 +1,44 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
 import EmailComposer from '../../components/common/EmailComposer';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-// Activity type configurations
+// Activity type configurations with SVG paths
 const ACTIVITY_TYPES = {
-    note: { label: 'Note', icon: '📝', color: 'bg-blue-500' },
-    call: { label: 'Call', icon: '📞', color: 'bg-emerald-500' },
-    email: { label: 'Email', icon: '✉️', color: 'bg-purple-500' },
-    meeting: { label: 'Meeting', icon: '👥', color: 'bg-amber-500' },
-    status_change: { label: 'Status Change', icon: '🔄', color: 'bg-slate-500' },
+    note: {
+        label: 'Note',
+        icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
+        color: 'bg-blue-500'
+    },
+    call: {
+        label: 'Call',
+        icon: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z',
+        color: 'bg-emerald-500'
+    },
+    email: {
+        label: 'Email',
+        icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+        color: 'bg-purple-500'
+    },
+    meeting: {
+        label: 'Meeting',
+        icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
+        color: 'bg-amber-500'
+    },
+    status_change: {
+        label: 'Status Change',
+        icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
+        color: 'bg-slate-500'
+    },
 };
+
+// SVG Icon component
+const ActivityIcon = ({ path, className = "w-4 h-4" }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={path} />
+    </svg>
+);
 
 const STATUS_COLORS = {
     new: 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400',
@@ -65,10 +90,7 @@ export default function InquiryDetail() {
 
     const fetchInquiry = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/inquiries/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/inquiries/${id}`);
             setInquiry(res.data.data || res.data);
         } catch (error) {
             console.error('Failed to fetch inquiry:', error);
@@ -81,10 +103,7 @@ export default function InquiryDetail() {
 
     const fetchActivities = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/activities/inquiry/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/activities/inquiry/${id}`);
             if (res.data.success) {
                 setActivities(res.data.data || []);
             }
@@ -99,15 +118,12 @@ export default function InquiryDetail() {
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${API_URL}/activities`, {
+            await apiClient.post(`/activities`, {
                 entityType: 'inquiry',
                 entityId: id,
                 type: activityType,
                 summary: `${ACTIVITY_TYPES[activityType].label} logged`,
                 details: newNote
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
 
             toast.success('Activity added');
@@ -122,10 +138,7 @@ export default function InquiryDetail() {
 
     const handleStatusChange = async (newStatus) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.patch(`${API_URL}/inquiries/${id}/status`, { status: newStatus }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.patch(`/inquiries/${id}/status`, { status: newStatus });
             toast.success('Status updated');
             fetchInquiry();
             fetchActivities();
@@ -138,10 +151,7 @@ export default function InquiryDetail() {
         if (!confirm('Convert this inquiry to a lead?')) return;
 
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post(`${API_URL}/inquiries/${id}/convert-to-lead`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.post(`/inquiries/${id}/convert-to-lead`);
             toast.success('Converted to lead!');
             navigate(`/leads/${res.data.lead?.id || ''}`);
         } catch (error) {
@@ -220,13 +230,17 @@ export default function InquiryDetail() {
                         <div className="space-y-3">
                             {inquiry.email && (
                                 <div className="flex items-center gap-3">
-                                    <span className="text-slate-400">✉️</span>
+                                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
                                     <a href={`mailto:${inquiry.email}`} className="text-brand-600 hover:underline">{inquiry.email}</a>
                                 </div>
                             )}
                             {inquiry.phone && (
                                 <div className="flex items-center gap-3">
-                                    <span className="text-slate-400">📞</span>
+                                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                    </svg>
                                     <a href={`tel:${inquiry.phone}`} className="text-brand-600 hover:underline">{inquiry.phone}</a>
                                 </div>
                             )}
@@ -327,7 +341,7 @@ export default function InquiryDetail() {
                                                     : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                                                     }`}
                                             >
-                                                {val.icon} {val.label}
+                                                <ActivityIcon path={val.icon} className="w-4 h-4 inline mr-1" /> {val.label}
                                             </button>
                                         ))}
                                     </div>
@@ -351,7 +365,11 @@ export default function InquiryDetail() {
                                 <div className="space-y-0">
                                     {activities.length === 0 ? (
                                         <div className="text-center py-12">
-                                            <div className="text-4xl mb-3">📭</div>
+                                            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                                </svg>
+                                            </div>
                                             <p className="text-slate-500 dark:text-slate-400">No activities yet</p>
                                             <button
                                                 onClick={() => setActiveTab('add')}

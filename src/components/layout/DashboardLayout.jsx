@@ -1,19 +1,12 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import NotificationBell from '../common/NotificationBell';
 import NotificationSidebar from '../common/NotificationSidebar';
 import FloatingChatWidget from '../common/FloatingChatWidget';
 import { getSocket } from '../../utils/socket';
-
-// Mock notifications
-const mockNotifications = [
-    { id: 1, type: 'lead', title: 'New Lead Added', message: 'John Smith from TechCorp submitted a contact form', time: '2 min ago', read: false },
-    { id: 2, type: 'message', title: 'New Message', message: 'Sarah sent you a message in #General', time: '15 min ago', read: false },
-    { id: 3, type: 'task', title: 'Task Completed', message: 'Follow-up call with DataFlow Inc marked as done', time: '1 hour ago', read: true },
-    { id: 4, type: 'system', title: 'System Update', message: 'New features are now available', time: '3 hours ago', read: true },
-];
+import { notificationsAPI } from '../../api';
 
 export default function DashboardLayout() {
     const location = useLocation();
@@ -22,14 +15,67 @@ export default function DashboardLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notificationOpen, setNotificationOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const [notifications, setNotifications] = useState(mockNotifications);
+    const [notifications, setNotifications] = useState([]);
+    const [loadingNotifications, setLoadingNotifications] = useState(true);
+
+    // Fetch notifications from API
+    const fetchNotifications = useCallback(async () => {
+        try {
+            const response = await notificationsAPI.getAll({ limit: 20 });
+            // Transform API response to match expected format
+            const transformed = (response.notifications || []).map(n => ({
+                id: n.id,
+                type: n.audience === 'all' ? 'system' : n.audience,
+                title: n.title,
+                message: n.message,
+                time: formatTimeAgo(n.created_at),
+                read: n.status === 'read',
+                link: n.link
+            }));
+            setNotifications(transformed);
+        } catch (error) {
+            console.error('Failed to fetch notifications:', error);
+            // Keep empty array if fetch fails
+        } finally {
+            setLoadingNotifications(false);
+        }
+    }, []);
+
+    // Format time ago helper
+    const formatTimeAgo = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} min ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    };
+
+    // Fetch notifications on mount
+    useEffect(() => {
+        fetchNotifications();
+    }, [fetchNotifications]);
 
     // Listen for real-time notifications
     useEffect(() => {
         const socket = getSocket();
         if (socket) {
             socket.on('notification', (notification) => {
-                setNotifications(prev => [notification, ...prev]);
+                setNotifications(prev => [{
+                    id: notification.id || Date.now(),
+                    type: notification.type || 'system',
+                    title: notification.title,
+                    message: notification.message,
+                    time: 'Just now',
+                    read: false,
+                    link: notification.link
+                }, ...prev]);
             });
         }
     }, []);
