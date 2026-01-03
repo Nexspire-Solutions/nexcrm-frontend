@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
-// import { authAPI } from '../../api'; // Configure later
+import storageAPI from '../../api/storage';
 
 export default function Settings() {
     const { user, updateUser } = useAuth(); // Assuming updateUser updates the context
@@ -22,6 +22,21 @@ export default function Settings() {
         newPassword: '',
         confirmPassword: ''
     });
+
+    // Storage State
+    const [storageInfo, setStorageInfo] = useState(null);
+    const [storageLoading, setStorageLoading] = useState(false);
+
+    // Fetch storage info when storage tab is active
+    useEffect(() => {
+        if (activeTab === 'storage') {
+            setStorageLoading(true);
+            storageAPI.getStorageInfo()
+                .then(res => setStorageInfo(res.data))
+                .catch(err => console.error('Failed to load storage info:', err))
+                .finally(() => setStorageLoading(false));
+        }
+    }, [activeTab]);
 
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
@@ -69,6 +84,7 @@ export default function Settings() {
                             { id: 'profile', label: 'My Profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
                             { id: 'security', label: 'Security', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
                             { id: 'notifications', label: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
+                            { id: 'storage', label: 'Storage', icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4' },
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -213,6 +229,88 @@ export default function Settings() {
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'storage' && (
+                        <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">Storage Usage</h2>
+
+                            {storageLoading ? (
+                                <div className="text-slate-500 dark:text-slate-400">Loading storage info...</div>
+                            ) : storageInfo ? (
+                                <div className="space-y-6">
+                                    {/* Storage Usage Bar */}
+                                    <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                                                {storageInfo.used.value} {storageInfo.used.unit} used
+                                            </span>
+                                            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                                                {storageInfo.isUnlimited ? 'Unlimited' : `${storageInfo.limit.value} ${storageInfo.limit.unit}`}
+                                            </span>
+                                        </div>
+
+                                        {/* Progress Bar */}
+                                        <div className="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full transition-all duration-500 ${storageInfo.percentUsed >= 90 ? 'bg-red-500' :
+                                                        storageInfo.percentUsed >= 75 ? 'bg-amber-500' :
+                                                            'bg-brand-500'
+                                                    }`}
+                                                style={{ width: `${Math.min(storageInfo.percentUsed, 100)}%` }}
+                                            />
+                                        </div>
+
+                                        {!storageInfo.isUnlimited && (
+                                            <div className="mt-3 text-center">
+                                                <span className={`text-2xl font-bold ${storageInfo.percentUsed >= 90 ? 'text-red-500' :
+                                                        storageInfo.percentUsed >= 75 ? 'text-amber-500' :
+                                                            'text-brand-600 dark:text-brand-400'
+                                                    }`}>
+                                                    {storageInfo.percentUsed}%
+                                                </span>
+                                                <span className="text-slate-500 dark:text-slate-400 ml-2">used</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Storage Warning */}
+                                    {storageInfo.percentUsed >= 80 && !storageInfo.isUnlimited && (
+                                        <div className={`p-4 rounded-xl flex items-center gap-3 ${storageInfo.percentUsed >= 90
+                                                ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                                                : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
+                                            }`}>
+                                            <svg className={`w-5 h-5 ${storageInfo.percentUsed >= 90 ? 'text-red-500' : 'text-amber-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                            <span className={`font-medium ${storageInfo.percentUsed >= 90 ? 'text-red-700 dark:text-red-300' : 'text-amber-700 dark:text-amber-300'}`}>
+                                                {storageInfo.percentUsed >= 90
+                                                    ? 'Storage almost full! Consider upgrading your plan.'
+                                                    : 'Storage usage is getting high. Consider upgrading soon.'}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Storage Details */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                            <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">Files & Documents</div>
+                                            <div className="text-lg font-semibold text-slate-800 dark:text-white">
+                                                {storageInfo.used.value} {storageInfo.used.unit}
+                                            </div>
+                                        </div>
+                                        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                            <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">Plan Limit</div>
+                                            <div className="text-lg font-semibold text-slate-800 dark:text-white">
+                                                {storageInfo.isUnlimited ? 'Unlimited' : `${storageInfo.limit.value} ${storageInfo.limit.unit}`}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-slate-500 dark:text-slate-400">Failed to load storage info</div>
+                            )}
                         </div>
                     )}
                 </div>

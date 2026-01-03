@@ -15,9 +15,12 @@ export default function TeamChat() {
     const [sending, setSending] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState(new Set());
     const [typingUsers, setTypingUsers] = useState(new Map());
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
     const messagesEndRef = useRef(null);
     const typingTimeoutRef = useRef(null);
     const activeChannelRef = useRef(null); // Track active channel for socket listeners
+    const fileInputRef = useRef(null);
 
     // Initialize socket connection
     useEffect(() => {
@@ -143,15 +146,33 @@ export default function TeamChat() {
 
     // Handle sending message
     const handleSend = async () => {
-        if (!message.trim() || !activeChannel || sending) return;
+        if ((!message.trim() && !selectedFile) || !activeChannel || sending) return;
+
+        const messageText = message.trim() || (selectedFile ? `📎 ${selectedFile.name}` : '');
+        const fileToSend = selectedFile;
 
         setSending(true);
+        setMessage(''); // Clear input immediately for better UX
+        setSelectedFile(null); // Clear file selection
+
         try {
-            await chatAPI.sendMessage(activeChannel.id, message.trim());
-            setMessage('');
+            const response = await chatAPI.sendMessage(activeChannel.id, messageText, fileToSend);
+
+            // If socket isn't connected or message wasn't received via socket, add it directly
+            // This ensures the message appears even if WebSocket is failing
+            if (response.data) {
+                setMessages(prev => {
+                    // Check if message already exists (from socket broadcast)
+                    if (prev.some(m => m.id === response.data.id)) return prev;
+                    return [...prev, response.data];
+                });
+            }
         } catch (error) {
             console.error('Failed to send message:', error);
             toast.error('Failed to send message');
+            // Restore message and file on failure
+            setMessage(messageText);
+            setSelectedFile(fileToSend);
         } finally {
             setSending(false);
         }
@@ -303,13 +324,53 @@ export default function TeamChat() {
 
                 {/* Input */}
                 <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+                    {/* Selected File Preview */}
+                    {selectedFile && (
+                        <div className="mb-3 p-2 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm">
+                                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                <span className="text-slate-700 dark:text-slate-300 truncate max-w-[200px]">{selectedFile.name}</span>
+                                <span className="text-slate-500 text-xs">({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+                            </div>
+                            <button
+                                onClick={() => setSelectedFile(null)}
+                                className="p-1 text-slate-400 hover:text-red-500 rounded"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
                     <div className="flex items-center gap-2">
+                        {/* Hidden File Input */}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                    const file = e.target.files[0];
+                                    // Check file size (max 5MB)
+                                    if (file.size > 5 * 1024 * 1024) {
+                                        toast.error('File size must be less than 5MB');
+                                        return;
+                                    }
+                                    setSelectedFile(file);
+                                }
+                            }}
+                            accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx"
+                        />
                         {/* Attachment Button */}
                         <button
                             type="button"
-                            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                            title="Attach file (Coming soon)"
-                            onClick={() => toast('File sharing coming soon!')}
+                            className={`p-2 rounded-lg transition-colors ${selectedFile
+                                ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                            title="Attach file"
+                            onClick={() => fileInputRef.current?.click()}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -317,16 +378,56 @@ export default function TeamChat() {
                         </button>
 
                         {/* Emoji Button */}
-                        <button
-                            type="button"
-                            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                            title="Add emoji"
-                            onClick={() => toast('Emoji picker coming soon!')}
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </button>
+                        <div className="relative">
+                            <button
+                                type="button"
+                                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                title="Add emoji"
+                                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </button>
+
+                            {/* Emoji Picker Dropdown */}
+                            {showEmojiPicker && (
+                                <div className="absolute bottom-full mb-2 left-0 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-3 z-50 w-72">
+                                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Frequently Used</div>
+                                    <div className="grid grid-cols-8 gap-1">
+                                        {['😀', '😂', '😍', '🥰', '😊', '🤔', '😅', '😎', '👍', '👏', '🎉', '❤️', '🔥', '✨', '💯', '🙏', '👋', '🤝', '💪', '🚀', '⭐', '✅', '👀', '💡'].map((emoji) => (
+                                            <button
+                                                key={emoji}
+                                                type="button"
+                                                className="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-xl transition-colors"
+                                                onClick={() => {
+                                                    setMessage(prev => prev + emoji);
+                                                    setShowEmojiPicker(false);
+                                                }}
+                                            >
+                                                {emoji}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-3 mb-2">Smileys</div>
+                                    <div className="grid grid-cols-8 gap-1">
+                                        {['😀', '😃', '😄', '😁', '😆', '😂', '🤣', '😊', '😇', '🙂', '😉', '😌', '😍', '🥰', '😘', '😋'].map((emoji) => (
+                                            <button
+                                                key={emoji + '_smileys'}
+                                                type="button"
+                                                className="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-xl transition-colors"
+                                                onClick={() => {
+                                                    setMessage(prev => prev + emoji);
+                                                    setShowEmojiPicker(false);
+                                                }}
+                                            >
+                                                {emoji}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Message Input */}
                         <input
