@@ -53,5 +53,14 @@ export const SECTION_SCHEMAS = {
         fields: [
             { name: 'content', label: 'Content', type: 'textarea', default: 'Enter your text here...' }
         ]
+    },
+    'dynamic_list': {
+        label: 'Dynamic Data List',
+        fields: [
+            { name: 'title', label: 'Section Title', type: 'text', default: 'Featured Items' },
+            { name: 'dataSource', label: 'Data Source', type: 'select', options: ['products', 'categories'], default: 'products' },
+            { name: 'layout', label: 'Layout Information', type: 'select', options: ['grid', 'list'], default: 'grid' },
+            { name: 'limit', label: 'Item Limit', type: 'number', default: 4 }
+        ]
     }
 };

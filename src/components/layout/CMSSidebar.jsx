@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import {
     FiHome, FiPieChart, // Dashboard
-    FiLayout, FiImage, FiMenu, FiEdit3, FiPenTool, // Design
+    FiLayout, FiImage, FiMenu, FiEdit3, FiPenTool, FiLayers, // Design
     FiFileText, FiMessageSquare, FiHelpCircle, // Content
     FiShoppingBag, FiCalendar, FiBriefcase, // Business
     FiUsers, FiTarget, FiMail, // CRM & Marketing
@@ -21,47 +21,29 @@ export default function CMSSidebar({ isOpen, setIsOpen }) {
         {
             title: 'Dashboard',
             items: [
-                { name: 'Overview', path: '/cms/overview', icon: <FiHome /> },
-                { name: 'Analytics', path: '/cms/analytics', icon: <FiPieChart /> },
+                { name: 'Home', path: '/cms/overview', icon: <FiHome /> },
             ]
         },
         {
-            title: 'Design Studio',
+            title: 'Content',
             items: [
-                { name: 'Visual Builder', path: '/cms/builder', icon: <FiLayout /> },
-                { name: 'Themes & Styles', path: '/cms/theme', icon: <FiPenTool /> },
-                { name: 'Menus', path: '/cms/header', icon: <FiMenu /> },
-                { name: 'Media Library', path: '/cms/media', icon: <FiImage /> },
+                { name: 'Pages', path: '/cms/pages', icon: <FiLayout /> },
             ]
         },
         {
-            title: 'Content Manager',
+            title: 'Appearance',
             items: [
-                { name: 'Static Pages', path: '/cms/pages', icon: <FiFileText /> },
-                { name: 'Blog Engine', path: '/cms/blog', icon: <FiEdit3 /> },
+                { name: 'Themes', path: '/cms/templates', icon: <FiLayers /> },
+                { name: 'Menus', path: '/cms/menus', icon: <FiMenu /> },
+                { name: 'Website Builder', path: '/builder', icon: <FiPenTool /> },
             ]
         },
         {
-            title: 'CRM & Growth',
+            title: 'System',
             items: [
-                { name: 'Contacts & Leads', path: '/cms/contacts', icon: <FiUsers /> },
-            ]
-        },
-        /* 
-        // Future Modules
-        {
-            title: 'Business Engine',
-            items: [
-                { name: 'Store & Products', path: '/cms/store', icon: <FiShoppingBag /> },
-            ]
-        },
-        {
-            title: 'Settings',
-            items: [
-                { name: 'Team Management', path: '/cms/team', icon: <FiSettings /> },
+                { name: 'Settings', path: '/cms/settings', icon: <FiSettings /> },
             ]
         }
-        */
     ];
 
     const handleLogout = async () => {
