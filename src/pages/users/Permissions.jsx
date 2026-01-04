@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { useTenantConfig } from '../../contexts/TenantConfigContext';
+import { usePermissions } from '../../contexts/PermissionsContext';
 
 const roles = [
     { id: 'admin', name: 'Admin', description: 'Full system access' },
@@ -9,13 +10,73 @@ const roles = [
     { id: 'user', name: 'User', description: 'Basic read access' }
 ];
 
-const modules = [
-    { id: 'dashboard', name: 'Dashboard' },
-    { id: 'employees', name: 'Employees' },
-    { id: 'users', name: 'Users & Permissions' },
-    { id: 'inquiries', name: 'Inquiries' },
-    { id: 'leads', name: 'Leads' },
-    { id: 'communications', name: 'Communications' },
+// Define modules with their associated industries
+// 'all' means available to everyone (Core modules)
+// specific strings match the industry keys
+const allModules = [
+    // Core Modules
+    { id: 'dashboard', name: 'Dashboard', industries: ['all'] },
+    { id: 'employees', name: 'Employees', industries: ['all'] },
+    { id: 'users', name: 'Roles & Permissions', industries: ['all'] },
+    { id: 'inquiries', name: 'Inquiries', industries: ['all'] },
+    { id: 'leads', name: 'Leads', industries: ['all'] },
+    { id: 'communications', name: 'Communications', industries: ['all'] },
+    { id: 'automation', name: 'Automation', industries: ['all'] },
+
+    // Commerce & Inventory
+    { id: 'products', name: 'Products', industries: ['ecommerce', 'retail'] },
+    { id: 'orders', name: 'Orders', industries: ['ecommerce', 'retail', 'manufacturing'] },
+    { id: 'inventory', name: 'Inventory', industries: ['ecommerce', 'retail', 'manufacturing', 'logistics'] },
+    { id: 'returns', name: 'Returns', industries: ['ecommerce', 'retail'] },
+    { id: 'shipping', name: 'Shipping', industries: ['ecommerce', 'logistics'] },
+    { id: 'vendors', name: 'Vendors', industries: ['ecommerce', 'retail', 'manufacturing'] },
+    { id: 'coupons', name: 'Coupons', industries: ['ecommerce'] },
+    { id: 'reviews', name: 'Reviews', industries: ['ecommerce'] },
+    { id: 'cms', name: 'CMS', industries: ['ecommerce'] },
+
+    // Real Estate
+    { id: 'properties', name: 'Properties', industries: ['realestate'] },
+    { id: 'viewings', name: 'Viewings', industries: ['realestate'] },
+    { id: 'listings', name: 'Listings', industries: ['realestate'] },
+
+    // Services & Booking
+    { id: 'appointments', name: 'Appointments', industries: ['healthcare', 'salon', 'services', 'consulting'] },
+    { id: 'services', name: 'Services', industries: ['salon', 'services', 'consulting'] },
+    { id: 'patients', name: 'Patients', industries: ['healthcare'] },
+    { id: 'prescriptions', name: 'Prescriptions', industries: ['healthcare'] },
+    { id: 'bookings', name: 'Bookings', industries: ['salon'] },
+    { id: 'clients', name: 'Clients', industries: ['services', 'consulting', 'legal'] },
+
+    // Education
+    { id: 'courses', name: 'Courses', industries: ['education'] },
+    { id: 'students', name: 'Students', industries: ['education'] },
+    { id: 'enrollments', name: 'Enrollments', industries: ['education'] },
+
+    // Hospitality
+    { id: 'rooms', name: 'Rooms', industries: ['hospitality'] },
+    { id: 'reservations', name: 'Reservations', industries: ['hospitality'] },
+    { id: 'housekeeping', name: 'Housekeeping', industries: ['hospitality'] },
+
+    // Fitness
+    { id: 'members', name: 'Members', industries: ['fitness'] },
+    { id: 'classes', name: 'Classes', industries: ['fitness'] },
+
+    // Legal & Finance
+    { id: 'cases', name: 'Cases', industries: ['legal'] },
+    { id: 'documents', name: 'Documents', industries: ['legal', 'services'] },
+    { id: 'billing', name: 'Billing', industries: ['legal', 'services'] },
+
+    // Operations
+    { id: 'production', name: 'Production', industries: ['manufacturing'] },
+    { id: 'work_orders', name: 'Work Orders', industries: ['manufacturing'] },
+    { id: 'vehicles', name: 'Vehicles', industries: ['logistics'] },
+    { id: 'tracking', name: 'Tracking', industries: ['logistics'] },
+    { id: 'shipments', name: 'Shipments', industries: ['logistics'] },
+
+    // Restaurant
+    { id: 'menu', name: 'Menu', industries: ['restaurant'] },
+    { id: 'tables', name: 'Tables', industries: ['restaurant'] },
+    { id: 'kitchen', name: 'Kitchen Orders', industries: ['restaurant'] }
 ];
 
 const defaultPermissions = {
@@ -26,14 +87,33 @@ const defaultPermissions = {
 };
 
 export default function Permissions() {
-    const [permissions, setPermissions] = useState(defaultPermissions);
+    const { getIndustry } = useTenantConfig();
+    const { permissions, updatePermissions } = usePermissions();
+    const currentIndustry = getIndustry();
+
+    // Local state for editing before saving (optional, but let's sync directly for simplicity or keep local?)
+    // User expects to click "Save Changes". So we should keep local state and then commit.
+    // However, to make sure it loads correctly, we initialize from context.
+    const [localPermissions, setLocalPermissions] = useState(permissions);
     const [selectedRole, setSelectedRole] = useState('admin');
+
+    // Sync local state when permissions change externally (e.g. reload)
+    useEffect(() => {
+        setLocalPermissions(permissions);
+    }, [permissions]);
+
+    // Filter modules based on current industry
+    const modules = allModules.filter(m =>
+        m.industries.includes('all') ||
+        m.industries.includes(currentIndustry) ||
+        (currentIndustry === 'general' && m.industries.includes('services')) // Fallback for general
+    );
 
     const actions = ['create', 'read', 'update', 'delete'];
 
     const togglePermission = (module, action) => {
-        setPermissions(prev => {
-            const rolePerms = prev[selectedRole];
+        setLocalPermissions(prev => {
+            const rolePerms = prev[selectedRole] || {};
             const modulePerms = rolePerms[module] || [];
 
             const newModulePerms = modulePerms.includes(action)
@@ -51,10 +131,11 @@ export default function Permissions() {
     };
 
     const hasPermission = (module, action) => {
-        return permissions[selectedRole]?.[module]?.includes(action) || false;
+        return localPermissions[selectedRole]?.[module]?.includes(action) || false;
     };
 
     const handleSave = () => {
+        updatePermissions(localPermissions);
         toast.success('Permissions saved successfully');
     };
 
@@ -63,11 +144,7 @@ export default function Permissions() {
             {/* Header */}
             <div className="page-header">
                 <div className="flex items-center gap-4">
-                    <Link to="/users" className="btn-ghost p-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </Link>
+
                     <div>
                         <h1 className="page-title">Role Permissions</h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -91,8 +168,8 @@ export default function Permissions() {
                             key={role.id}
                             onClick={() => setSelectedRole(role.id)}
                             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedRole === role.id
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                                 }`}
                         >
                             {role.name}
@@ -124,8 +201,8 @@ export default function Permissions() {
                                         <button
                                             onClick={() => togglePermission(module.id, action)}
                                             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${hasPermission(module.id, action)
-                                                    ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400'
-                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
+                                                ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400'
+                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
                                                 }`}
                                         >
                                             {hasPermission(module.id, action) ? (
