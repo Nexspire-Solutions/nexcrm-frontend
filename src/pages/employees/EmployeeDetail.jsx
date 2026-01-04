@@ -15,18 +15,14 @@ export default function EmployeeDetail() {
     const fetchEmployee = async () => {
         try {
             const [userResponse, activitiesResponse] = await Promise.all([
-                usersAPI.getAll(),
-                activitiesAPI.getAll().catch(() => ({ data: [] }))
+                usersAPI.getById(id),
+                activitiesAPI.getByEntity('user', id).catch(() => ({ data: [] }))
             ]);
 
-            const users = userResponse.data || [];
-            const user = users.find(u => u.id === parseInt(id));
-            setEmployee(user || null);
+            setEmployee(userResponse.data || null);
 
             // Filter activities for this user
-            const userActivities = (activitiesResponse.data || [])
-                .filter(a => a.userId === parseInt(id))
-                .slice(0, 5);
+            const userActivities = (activitiesResponse.data || []).slice(0, 5);
             setActivities(userActivities);
         } catch (error) {
             console.error('Failed to fetch employee:', error);
