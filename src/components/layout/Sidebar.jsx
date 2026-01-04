@@ -2,6 +2,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTenantConfig } from '../../contexts/TenantConfigContext';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import { useState, useEffect } from 'react';
 import storageAPI from '../../api/storage';
 
@@ -220,6 +221,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     const { user, logout } = useAuth();
     const { toggleTheme, isDark } = useTheme();
     const { hasModule, loading: configLoading, getIndustry } = useTenantConfig();
+    const { hasPermission } = usePermissions();
     const navigate = useNavigate();
     const location = useLocation();
     const [storageInfo, setStorageInfo] = useState(null);
@@ -243,39 +245,39 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     // Get current industry
     const currentIndustry = getIndustry();
 
-    // Main navigation items (always visible based on role)
+    // Main navigation items
     const mainNavItems = [
         {
             name: 'Dashboard',
             path: '/dashboard',
             icon: Icons.dashboard,
-            roles: ['admin', 'manager', 'sales_operator', 'user']
+            visible: hasPermission('dashboard', 'read')
         },
         {
             name: 'Employees',
             path: '/employees',
             icon: Icons.employees,
-            roles: ['admin', 'manager']
+            visible: hasPermission('employees', 'read')
         },
         {
-            name: 'Users & Permissions',
-            path: '/users',
+            name: 'Roles & Permissions',
+            path: '/users/permissions',
             icon: Icons.users,
-            roles: ['admin']
+            visible: hasPermission('users', 'read')
         },
         {
             name: 'Inquiries',
             path: '/inquiries',
             icon: Icons.inquiries,
-            roles: ['admin', 'manager', 'sales_operator']
+            visible: hasPermission('inquiries', 'read')
         }
     ];
 
-    // Sales & CRM group (available for all industries)
+    // Sales & CRM group
     const salesGroup = {
         name: 'Sales & CRM',
         icon: Icons.leads,
-        roles: ['admin', 'manager', 'sales_operator'],
+        visible: hasPermission('leads', 'read'),
         items: [
             { name: 'All Leads', path: '/leads', icon: Icons.leads, end: true },
             { name: 'Customers', path: '/leads/customers', icon: Icons.customers },
@@ -285,11 +287,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     };
 
     // Industry-Specific Menu Groups
+    // Note: We check if the user has permission for at least one core module of that industry?
+    // Or we assume if they are in that industry, they see it, but individual items are protected?
+    // Let's protect the group visibility based on the first item's permission or a general industry permission?
+    // For now, let's use the first item in the list as a proxy for the group, or just check 'read' on the industry key if we mapped it.
+    // The previous implementation used roles. Now we use Permissions.
+    // We added modules like 'products', 'properties' etc.
+
     const industryMenus = {
         ecommerce: {
             name: 'Store',
             icon: Icons.store,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasPermission('products', 'read') || hasPermission('orders', 'read'),
             items: [
                 { name: 'Products', path: '/products', icon: Icons.products },
                 { name: 'Inventory', path: '/inventory', icon: Icons.inventory },
@@ -307,7 +316,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         realestate: {
             name: 'Properties',
             icon: Icons.property,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasPermission('properties', 'read'),
             items: [
                 { name: 'All Properties', path: '/properties', icon: Icons.property },
                 { name: 'Viewings', path: '/viewings', icon: Icons.calendar },
@@ -317,7 +326,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         healthcare: {
             name: 'Clinic',
             icon: Icons.medical,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasPermission('patients', 'read'),
             items: [
                 { name: 'Patients', path: '/patients', icon: Icons.users },
                 { name: 'Appointments', path: '/appointments', icon: Icons.calendar },
@@ -327,7 +336,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         hospitality: {
             name: 'Hotel',
             icon: Icons.hotel,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasPermission('rooms', 'read'),
             items: [
                 { name: 'Rooms', path: '/rooms', icon: Icons.hotel },
                 { name: 'Reservations', path: '/reservations', icon: Icons.calendar },
@@ -337,7 +346,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         education: {
             name: 'Academy',
             icon: Icons.book,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasPermission('courses', 'read'),
             items: [
                 { name: 'Courses', path: '/courses', icon: Icons.book },
                 { name: 'Students', path: '/students', icon: Icons.users },
@@ -347,7 +356,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         fitness: {
             name: 'Gym',
             icon: Icons.fitness,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasPermission('members', 'read'),
             items: [
                 { name: 'Members', path: '/members', icon: Icons.users },
                 { name: 'Classes', path: '/classes', icon: Icons.calendar },
@@ -357,7 +366,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         legal: {
             name: 'Law Firm',
             icon: Icons.legal,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasPermission('cases', 'read'),
             items: [
                 { name: 'Cases', path: '/cases', icon: Icons.legal },
                 { name: 'Documents', path: '/documents', icon: Icons.orders },
@@ -429,7 +438,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     const communicationsGroup = {
         name: 'Communications',
         icon: Icons.email,
-        roles: ['admin', 'manager'],
+        visible: hasPermission('communications', 'read'),
         items: [
             { name: 'Email Templates', path: '/communications/templates', icon: Icons.email },
             { name: 'Bulk Mailing', path: '/communications/bulk-mail', icon: Icons.bulkMail },
@@ -437,15 +446,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             { name: 'Team Chat', path: '/communications/chat', icon: Icons.chat },
             { name: 'Chatbot', path: '/communications/chatbot', icon: Icons.chatbot },
             { name: 'Push Notifications', path: '/communications/notifications', icon: Icons.notification },
-            { name: 'SMTP Settings', path: '/settings/smtp', icon: Icons.settings, roles: ['admin'] }
+            { name: 'SMTP Settings', path: '/settings/smtp', icon: Icons.settings, visible: user?.role === 'admin' } // Keep admin check for SMTP for now or add specific permission
         ]
     };
 
-    // Automation group (admin only)
+    // Automation group
     const automationGroup = {
         name: 'Automation',
         icon: Icons.activity,
-        roles: ['admin'],
+        visible: hasPermission('automation', 'read'),
         items: [
             { name: 'Workflows', path: '/automation/workflows', icon: Icons.chart },
             { name: 'Execution History', path: '/automation/history', icon: Icons.activity }
@@ -454,18 +463,17 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
     const userRole = user?.role || 'user';
 
-    // Filter main nav by role
-    const filteredMainNav = mainNavItems.filter(item =>
-        item.roles.includes(userRole)
-    );
-
-    // Check permissions
-    const canViewSales = salesGroup.roles.includes(userRole);
-    const canViewCommunications = communicationsGroup.roles.includes(userRole);
+    // Filter main nav by permission
+    const filteredMainNav = mainNavItems.filter(item => item.visible);
 
     // Get current industry menu group
     const industryGroup = industryMenus[currentIndustry] || industryMenus.general;
-    const canViewIndustry = industryGroup && industryGroup.roles.includes(userRole);
+    const canViewIndustry = industryGroup && industryGroup.visible;
+
+    // Check other groups
+    const canViewSales = salesGroup.visible;
+    const canViewCommunications = communicationsGroup.visible;
+    const canViewAutomation = automationGroup.visible;
 
     const NavItem = ({ item, isSubItem = false }) => (
         <NavLink
@@ -486,7 +494,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     );
 
     const NavGroup = ({ group }) => {
-        const isActive = isGroupActive(group.items.map(i => i.path));
+        const activeItems = group.items.filter(i => i.visible !== false);
+        const isActive = isGroupActive(activeItems.map(i => i.path));
+
+        if (activeItems.length === 0) return null;
 
         return (
             <div className="space-y-1 mb-6">
@@ -498,7 +509,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 </div>
 
                 <div className="space-y-0.5 border-l-2 border-slate-100 dark:border-slate-800 ml-4 pl-0">
-                    {group.items.map((item) => (
+                    {activeItems.map((item) => (
                         <NavLink
                             key={item.path}
                             to={item.path}
@@ -593,7 +604,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                     {canViewCommunications && <NavGroup group={communicationsGroup} />}
 
                     {/* Automation Group */}
-                    {automationGroup.roles.includes(userRole) && <NavGroup group={automationGroup} />}
+                    {canViewAutomation && <NavGroup group={automationGroup} />}
                 </nav>
 
                 {/* Footer */}
@@ -604,8 +615,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                             <div className="flex justify-between items-center mb-1.5">
                                 <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Storage</span>
                                 <span className={`text-xs font-bold ${storageInfo.percentUsed >= 90 ? 'text-red-500' :
-                                        storageInfo.percentUsed >= 75 ? 'text-amber-500' :
-                                            'text-slate-900 dark:text-slate-100'
+                                    storageInfo.percentUsed >= 75 ? 'text-amber-500' :
+                                        'text-slate-900 dark:text-slate-100'
                                     }`}>
                                     {storageInfo.percentUsed}%
                                 </span>
@@ -613,8 +624,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                             <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                 <div
                                     className={`h-full rounded-full transition-all duration-500 ${storageInfo.percentUsed >= 90 ? 'bg-red-500' :
-                                            storageInfo.percentUsed >= 75 ? 'bg-amber-500' :
-                                                'bg-brand-500'
+                                        storageInfo.percentUsed >= 75 ? 'bg-amber-500' :
+                                            'bg-brand-500'
                                         }`}
                                     style={{ width: `${Math.min(storageInfo.percentUsed, 100)}%` }}
                                 />
