@@ -14,10 +14,50 @@ export default function EmployeesList() {
     const [editingEmployee, setEditingEmployee] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Form state
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        department: 'Sales',
+        position: '',
+        status: 'active',
+        password: ''
+    });
 
     useEffect(() => {
         fetchEmployees();
     }, []);
+
+    // Reset form when modal opens/closes or editing employee changes
+    useEffect(() => {
+        if (editingEmployee) {
+            setFormData({
+                firstName: editingEmployee.firstName || editingEmployee.name?.split(' ')[0] || '',
+                lastName: editingEmployee.lastName || editingEmployee.name?.split(' ')[1] || '',
+                email: editingEmployee.email || '',
+                phone: editingEmployee.phone || '',
+                department: editingEmployee.department || 'Sales',
+                position: editingEmployee.position || editingEmployee.role || '',
+                status: editingEmployee.status || 'active',
+                password: '' // Don't populate password for security
+            });
+        } else {
+            setFormData({
+                firstName: '',
+                lastName: '',
+                email: '',
+                phone: '',
+                department: 'Sales',
+                position: '',
+                status: 'active',
+                password: ''
+            });
+        }
+    }, [editingEmployee, showModal]);
 
     const fetchEmployees = async () => {
         try {
@@ -64,9 +104,67 @@ export default function EmployeesList() {
                 toast.success('Employee deleted successfully');
                 fetchEmployees();
             } catch (error) {
-                toast.error('Failed to delete employee');
+                toast.error(error.response?.data?.error || 'Failed to delete employee');
             }
             setDeleteTargetId(null);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async () => {
+        // Validation
+        if (!formData.email) {
+            toast.error('Email is required');
+            return;
+        }
+        if (!editingEmployee && !formData.password) {
+            toast.error('Password is required for new employees');
+            return;
+        }
+        if (!formData.firstName) {
+            toast.error('First name is required');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            if (editingEmployee) {
+                // Update existing employee
+                await usersAPI.update(editingEmployee.id, {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    phone: formData.phone,
+                    department: formData.department,
+                    position: formData.position,
+                    status: formData.status,
+                    role: editingEmployee.role // Keep existing role
+                });
+                toast.success('Employee updated successfully');
+            } else {
+                // Create new employee
+                await usersAPI.create({
+                    email: formData.email,
+                    password: formData.password,
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    phone: formData.phone,
+                    department: formData.department,
+                    position: formData.position,
+                    status: formData.status,
+                    role: 'user' // Default role for new employees
+                });
+                toast.success('Employee created successfully');
+            }
+            setShowModal(false);
+            fetchEmployees();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to save employee');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -212,11 +310,11 @@ export default function EmployeesList() {
                 title={editingEmployee ? 'Edit Employee' : 'Add New Employee'}
                 footer={
                     <>
-                        <button onClick={() => setShowModal(false)} className="btn-secondary">
+                        <button onClick={() => setShowModal(false)} className="btn-secondary" disabled={isSaving}>
                             Cancel
                         </button>
-                        <button onClick={() => { setShowModal(false); toast.success('Employee saved'); fetchEmployees(); }} className="btn-primary">
-                            {editingEmployee ? 'Update' : 'Create'}
+                        <button onClick={handleSubmit} className="btn-primary" disabled={isSaving}>
+                            {isSaving ? 'Saving...' : (editingEmployee ? 'Update' : 'Create')}
                         </button>
                     </>
                 }
@@ -224,40 +322,108 @@ export default function EmployeesList() {
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="label">First Name</label>
-                            <input type="text" className="input" defaultValue={editingEmployee?.firstName || editingEmployee?.name?.split(' ')[0]} />
+                            <label className="label">First Name *</label>
+                            <input
+                                type="text"
+                                name="firstName"
+                                className="input"
+                                value={formData.firstName}
+                                onChange={handleInputChange}
+                                placeholder="John"
+                            />
                         </div>
                         <div>
                             <label className="label">Last Name</label>
-                            <input type="text" className="input" defaultValue={editingEmployee?.lastName || editingEmployee?.name?.split(' ')[1]} />
+                            <input
+                                type="text"
+                                name="lastName"
+                                className="input"
+                                value={formData.lastName}
+                                onChange={handleInputChange}
+                                placeholder="Doe"
+                            />
                         </div>
                     </div>
                     <div>
-                        <label className="label">Email</label>
-                        <input type="email" className="input" defaultValue={editingEmployee?.email} />
+                        <label className="label">Email *</label>
+                        <input
+                            type="email"
+                            name="email"
+                            className="input"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            disabled={!!editingEmployee}
+                            placeholder="john.doe@company.com"
+                        />
+                        {editingEmployee && (
+                            <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
+                        )}
                     </div>
+                    {!editingEmployee && (
+                        <div>
+                            <label className="label">Password *</label>
+                            <input
+                                type="password"
+                                name="password"
+                                className="input"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                placeholder="••••••••"
+                            />
+                        </div>
+                    )}
                     <div>
                         <label className="label">Phone</label>
-                        <input type="tel" className="input" defaultValue={editingEmployee?.phone} />
+                        <input
+                            type="tel"
+                            name="phone"
+                            className="input"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="+1 (555) 123-4567"
+                        />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="label">Department</label>
-                            <select className="select" defaultValue={editingEmployee?.department}>
+                            <select
+                                name="department"
+                                className="select"
+                                value={formData.department}
+                                onChange={handleInputChange}
+                            >
                                 <option value="Sales">Sales</option>
                                 <option value="Marketing">Marketing</option>
                                 <option value="Support">Support</option>
                                 <option value="Development">Development</option>
+                                <option value="HR">HR</option>
+                                <option value="Finance">Finance</option>
                             </select>
                         </div>
                         <div>
-                            <label className="label">Status</label>
-                            <select className="select" defaultValue={editingEmployee?.status || 'active'}>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="on_leave">On Leave</option>
-                            </select>
+                            <label className="label">Position</label>
+                            <input
+                                type="text"
+                                name="position"
+                                className="input"
+                                value={formData.position}
+                                onChange={handleInputChange}
+                                placeholder="Sales Manager"
+                            />
                         </div>
+                    </div>
+                    <div>
+                        <label className="label">Status</label>
+                        <select
+                            name="status"
+                            className="select"
+                            value={formData.status}
+                            onChange={handleInputChange}
+                        >
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="on_leave">On Leave</option>
+                        </select>
                     </div>
                 </div>
             </Modal>
@@ -276,3 +442,4 @@ export default function EmployeesList() {
         </div>
     );
 }
+
