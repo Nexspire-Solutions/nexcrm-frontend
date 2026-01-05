@@ -15,6 +15,8 @@ export default function EmployeesList() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+    const [newEmployeeCredentials, setNewEmployeeCredentials] = useState(null);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -149,7 +151,19 @@ export default function EmployeesList() {
                     status: formData.status,
                     role: 'user' // Default role for new employees
                 });
-                toast.success(response.message || 'Employee created successfully');
+
+                // Show credentials modal with the generated password
+                if (response.credentials) {
+                    setNewEmployeeCredentials({
+                        name: `${formData.firstName} ${formData.lastName}`.trim(),
+                        email: response.credentials.email,
+                        password: response.credentials.password,
+                        emailSent: response.emailSent
+                    });
+                    setShowCredentialsModal(true);
+                } else {
+                    toast.success(response.message || 'Employee created successfully');
+                }
             }
             setShowModal(false);
             fetchEmployees();
@@ -430,6 +444,103 @@ export default function EmployeesList() {
                 cancelText="Cancel"
                 variant="danger"
             />
+
+            {/* Credentials Modal - Shows after creating new employee */}
+            <Modal
+                isOpen={showCredentialsModal}
+                onClose={() => {
+                    setShowCredentialsModal(false);
+                    setNewEmployeeCredentials(null);
+                }}
+                title="Employee Created Successfully"
+                footer={
+                    <button
+                        onClick={() => {
+                            setShowCredentialsModal(false);
+                            setNewEmployeeCredentials(null);
+                        }}
+                        className="btn-primary"
+                    >
+                        Done
+                    </button>
+                }
+            >
+                {newEmployeeCredentials && (
+                    <div className="space-y-4">
+                        {newEmployeeCredentials.emailSent ? (
+                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                                <div className="flex items-start gap-2">
+                                    <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p className="text-sm text-green-700 dark:text-green-300">
+                                        Login credentials have been sent to <strong>{newEmployeeCredentials.email}</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                                <div className="flex items-start gap-2">
+                                    <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                                        Email service unavailable. Please share these credentials manually with the employee.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg space-y-3">
+                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                {newEmployeeCredentials.name}'s Login Credentials
+                            </h4>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded border">
+                                    <div>
+                                        <p className="text-xs text-slate-500">Email</p>
+                                        <p className="text-sm font-medium text-slate-900 dark:text-white">{newEmployeeCredentials.email}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(newEmployeeCredentials.email);
+                                            toast.success('Email copied!');
+                                        }}
+                                        className="btn-ghost text-sm px-2 py-1"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded border">
+                                    <div>
+                                        <p className="text-xs text-slate-500">Password</p>
+                                        <p className="text-sm font-mono font-medium text-slate-900 dark:text-white">{newEmployeeCredentials.password}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(newEmployeeCredentials.password);
+                                            toast.success('Password copied!');
+                                        }}
+                                        className="btn-ghost text-sm px-2 py-1"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            The employee should change their password after first login.
+                        </p>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }
