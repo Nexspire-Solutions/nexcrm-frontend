@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TenantConfigProvider } from './contexts/TenantConfigContext';
 import { DashboardRefreshProvider } from './contexts/DashboardRefreshContext';
+import { PermissionsProvider } from './contexts/PermissionsContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/Login';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -41,7 +42,6 @@ import Chatbot from './pages/communications/Chatbot';
 import PushNotifications from './pages/communications/PushNotifications';
 
 // E-Commerce (loaded based on tenant config)
-// E-Commerce
 import ProductsList from './pages/ecommerce/ProductsList';
 import OrdersList from './pages/industry/ecommerce/Orders';
 import Analytics from './pages/industry/ecommerce/Analytics';
@@ -132,29 +132,35 @@ function AppRoutes() {
           <Route path="profile" element={<Profile />} />
           <Route path="industry-test" element={<IndustryTest />} />
 
-          {/* Employees - Admin & Manager */}
-          <Route path="employees" element={<EmployeesList />} />
-          <Route path="employees/:id" element={<EmployeeDetail />} />
+          {/* Employees - Permission Guarded */}
+          <Route element={<ProtectedRoute requiredPermission={['employees', 'read']} />}>
+            <Route path="employees" element={<EmployeesList />} />
+            <Route path="employees/:id" element={<EmployeeDetail />} />
+          </Route>
 
-          {/* Users & Permissions - Admin Only */}
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          {/* Users & Permissions - Admin & Permission Guarded */}
+          <Route element={<ProtectedRoute allowedRoles={['admin']} requiredPermission={['users', 'read']} />}>
             <Route path="users" element={<UsersList />} />
             <Route path="users/permissions" element={<Permissions />} />
           </Route>
 
           {/* Inquiries */}
-          <Route path="inquiries" element={<Inquiries />} />
-          <Route path="inquiries/:id" element={<InquiryDetail />} />
+          <Route element={<ProtectedRoute requiredPermission={['inquiries', 'read']} />}>
+            <Route path="inquiries" element={<Inquiries />} />
+            <Route path="inquiries/:id" element={<InquiryDetail />} />
+          </Route>
 
           {/* Leads */}
-          <Route path="leads" element={<LeadsList />} />
-          <Route path="leads/:id" element={<LeadDetail />} />
-          <Route path="leads/activity" element={<LeadActivity />} />
-          <Route path="leads/customers" element={<Customers />} />
-          <Route path="leads/settings" element={<LeadSettings />} />
+          <Route element={<ProtectedRoute requiredPermission={['leads', 'read']} />}>
+            <Route path="leads" element={<LeadsList />} />
+            <Route path="leads/:id" element={<LeadDetail />} />
+            <Route path="leads/activity" element={<LeadActivity />} />
+            <Route path="leads/customers" element={<Customers />} />
+            <Route path="leads/settings" element={<LeadSettings />} />
+          </Route>
 
-          {/* Communications - Admin & Manager */}
-          <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
+          {/* Communications */}
+          <Route element={<ProtectedRoute requiredPermission={['communications', 'read']} />}>
             <Route path="communications/templates" element={<EmailTemplates />} />
             <Route path="communications/bulk-mail" element={<BulkMailing />} />
             <Route path="communications/campaigns" element={<EmailCampaigns />} />
@@ -163,9 +169,14 @@ function AppRoutes() {
             <Route path="communications/notifications" element={<PushNotifications />} />
           </Route>
 
-          {/* E-Commerce - Dynamic based on industry */}
-          <Route path="products" element={<ProductsList />} />
-          <Route path="orders" element={<OrdersList />} />
+          {/* E-Commerce - Permission Guarded */}
+          <Route element={<ProtectedRoute requiredPermission={['products', 'read']} />}>
+            <Route path="products" element={<ProductsList />} />
+          </Route>
+          <Route element={<ProtectedRoute requiredPermission={['orders', 'read']} />}>
+            <Route path="orders" element={<OrdersList />} />
+          </Route>
+
           <Route path="analytics" element={<Analytics />} />
           <Route path="inventory" element={<InventoryList />} />
           <Route path="returns" element={<ReturnsList />} />
@@ -230,8 +241,8 @@ function AppRoutes() {
           <Route path="salon-services" element={<SalonServices />} />
           <Route path="staff" element={<Staff />} />
 
-          {/* Automation - Admin Only */}
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          {/* Automation - Permission Guarded */}
+          <Route element={<ProtectedRoute requiredPermission={['automation', 'read']} />}>
             <Route path="automation/workflows" element={<Workflows />} />
             <Route path="automation/workflows/:id" element={<WorkflowBuilder />} />
             <Route path="automation/history" element={<ExecutionHistory />} />
@@ -256,43 +267,45 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <TenantConfigProvider>
-            <DashboardRefreshProvider>
-              <AppRoutes />
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: '#1e293b',
-                    color: '#f8fafc',
-                    borderRadius: '8px',
-                    padding: '12px 16px',
-                    fontSize: '14px',
-                  },
-                  success: {
+          <PermissionsProvider>
+            <TenantConfigProvider>
+              <DashboardRefreshProvider>
+                <AppRoutes />
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    duration: 4000,
                     style: {
-                      background: '#059669',
+                      background: '#1e293b',
+                      color: '#f8fafc',
+                      borderRadius: '8px',
+                      padding: '12px 16px',
+                      fontSize: '14px',
                     },
-                    iconTheme: {
-                      primary: '#ffffff',
-                      secondary: '#059669',
+                    success: {
+                      style: {
+                        background: '#059669',
+                      },
+                      iconTheme: {
+                        primary: '#ffffff',
+                        secondary: '#059669',
+                      },
                     },
-                  },
-                  error: {
-                    style: {
-                      background: '#dc2626',
+                    error: {
+                      style: {
+                        background: '#dc2626',
+                      },
+                      iconTheme: {
+                        primary: '#ffffff',
+                        secondary: '#dc2626',
+                      },
+                      duration: 5000,
                     },
-                    iconTheme: {
-                      primary: '#ffffff',
-                      secondary: '#dc2626',
-                    },
-                    duration: 5000,
-                  },
-                }}
-              />
-            </DashboardRefreshProvider>
-          </TenantConfigProvider>
+                  }}
+                />
+              </DashboardRefreshProvider>
+            </TenantConfigProvider>
+          </PermissionsProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter >

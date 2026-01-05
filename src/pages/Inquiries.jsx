@@ -58,6 +58,8 @@ export default function Inquiries() {
     };
 
     const handleConvertToLead = async (inquiry) => {
+        if (!window.confirm(`Are you sure you want to convert "${inquiry.name}" to a lead?`)) return;
+
         console.log('[Convert to Lead] Converting:', inquiry.name);
 
         try {
