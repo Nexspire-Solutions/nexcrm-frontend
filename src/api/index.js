@@ -154,6 +154,11 @@ export const usersAPI = {
         const response = await apiClient.delete(`/users/${id}`);
         return response.data;
     },
+
+    resetPassword: async (id) => {
+        const response = await apiClient.post(`/users/${id}/reset-password`);
+        return response.data;
+    },
 };
 
 export const inquiriesAPI = {
