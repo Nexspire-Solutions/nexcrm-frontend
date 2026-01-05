@@ -1,16 +1,49 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import Modal from '../../components/common/Modal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { usersAPI, activitiesAPI } from '../../api';
 
 export default function EmployeeDetail() {
     const { id } = useParams();
+    const navigate = useNavigate();
     const [employee, setEmployee] = useState(null);
     const [activities, setActivities] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
+
+    // Form state for editing
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        department: '',
+        position: '',
+        status: 'active',
+        bio: ''
+    });
 
     useEffect(() => {
         fetchEmployee();
     }, [id]);
+
+    useEffect(() => {
+        if (employee) {
+            setFormData({
+                firstName: employee.firstName || '',
+                lastName: employee.lastName || '',
+                phone: employee.phone || '',
+                department: employee.department || '',
+                position: employee.position || '',
+                status: employee.status || 'active',
+                bio: employee.bio || ''
+            });
+        }
+    }, [employee]);
 
     const fetchEmployee = async () => {
         try {
@@ -20,8 +53,6 @@ export default function EmployeeDetail() {
             ]);
 
             setEmployee(userResponse.data || null);
-
-            // Filter activities for this user
             const userActivities = (activitiesResponse.data || []).slice(0, 5);
             setActivities(userActivities);
         } catch (error) {
@@ -29,6 +60,58 @@ export default function EmployeeDetail() {
             setEmployee(null);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSaveEmployee = async () => {
+        if (!formData.firstName) {
+            toast.error('First name is required');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            await usersAPI.update(id, {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone,
+                department: formData.department,
+                position: formData.position,
+                status: formData.status,
+                bio: formData.bio,
+                role: employee.role
+            });
+            toast.success('Employee updated successfully');
+            setShowEditModal(false);
+            fetchEmployee();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to update employee');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleResetPassword = async () => {
+        setIsResetting(true);
+        try {
+            // Create a new password by calling the create endpoint with special flag
+            const response = await usersAPI.resetPassword(id);
+            toast.success(response.message || 'New password sent to employee email');
+            setShowResetPasswordModal(false);
+        } catch (error) {
+            // Fallback: If resetPassword API doesn't exist, show manual instruction
+            if (error.response?.status === 404) {
+                toast.error('Password reset not available. Please update password manually in database.');
+            } else {
+                toast.error(error.response?.data?.error || 'Failed to reset password');
+            }
+        } finally {
+            setIsResetting(false);
         }
     };
 
@@ -59,8 +142,8 @@ export default function EmployeeDetail() {
         return <span className={styles[status] || 'badge-gray'}>{labels[status] || status || 'Active'}</span>;
     };
 
-    const displayName = employee.firstName ? `${employee.firstName} ${employee.lastName}` : employee.name || 'Unknown';
-    const initials = displayName.split(' ').map(n => n[0]).join('').slice(0, 2);
+    const displayName = employee.firstName ? `${employee.firstName} ${employee.lastName || ''}`.trim() : employee.name || 'Unknown';
+    const initials = displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
     return (
         <div className="space-y-6">
@@ -75,7 +158,26 @@ export default function EmployeeDetail() {
                     <h1 className="page-title">{displayName}</h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400">{employee.position || employee.role || '-'}</p>
                 </div>
-                <button className="btn-secondary">Edit Profile</button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowResetPasswordModal(true)}
+                        className="btn-ghost text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                    >
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                        Reset Password
+                    </button>
+                    <button
+                        onClick={() => setShowEditModal(true)}
+                        className="btn-primary"
+                    >
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit Profile
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -159,6 +261,133 @@ export default function EmployeeDetail() {
                     </div>
                 </div>
             </div>
+
+            {/* Edit Modal */}
+            <Modal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                title="Edit Employee"
+                footer={
+                    <>
+                        <button onClick={() => setShowEditModal(false)} className="btn-secondary" disabled={isSaving}>
+                            Cancel
+                        </button>
+                        <button onClick={handleSaveEmployee} className="btn-primary" disabled={isSaving}>
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">First Name *</label>
+                            <input
+                                type="text"
+                                name="firstName"
+                                className="input"
+                                value={formData.firstName}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                        <div>
+                            <label className="label">Last Name</label>
+                            <input
+                                type="text"
+                                name="lastName"
+                                className="input"
+                                value={formData.lastName}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="label">Email</label>
+                        <input
+                            type="email"
+                            className="input bg-slate-100 dark:bg-slate-800"
+                            value={employee.email}
+                            disabled
+                        />
+                        <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
+                    </div>
+                    <div>
+                        <label className="label">Phone</label>
+                        <input
+                            type="tel"
+                            name="phone"
+                            className="input"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">Department</label>
+                            <select
+                                name="department"
+                                className="select"
+                                value={formData.department}
+                                onChange={handleInputChange}
+                            >
+                                <option value="">Select Department</option>
+                                <option value="Sales">Sales</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Support">Support</option>
+                                <option value="Development">Development</option>
+                                <option value="HR">HR</option>
+                                <option value="Finance">Finance</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="label">Position</label>
+                            <input
+                                type="text"
+                                name="position"
+                                className="input"
+                                value={formData.position}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="label">Status</label>
+                        <select
+                            name="status"
+                            className="select"
+                            value={formData.status}
+                            onChange={handleInputChange}
+                        >
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="on_leave">On Leave</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="label">Bio</label>
+                        <textarea
+                            name="bio"
+                            className="input min-h-[80px]"
+                            value={formData.bio}
+                            onChange={handleInputChange}
+                            placeholder="Brief description about the employee..."
+                        />
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Reset Password Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showResetPasswordModal}
+                onClose={() => setShowResetPasswordModal(false)}
+                onConfirm={handleResetPassword}
+                title="Reset Password"
+                message={`Are you sure you want to reset the password for ${displayName}? A new password will be generated and sent to their email address (${employee.email}).`}
+                confirmText={isResetting ? 'Resetting...' : 'Reset Password'}
+                cancelText="Cancel"
+                variant="warning"
+            />
         </div>
     );
 }
+
