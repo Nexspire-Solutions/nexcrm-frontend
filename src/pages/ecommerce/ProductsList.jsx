@@ -121,11 +121,23 @@ const ProductsList = () => {
         }
     };
 
-    const downloadTemplate = () => {
-        const link = document.createElement('a');
-        link.href = `${import.meta.env.VITE_API_URL}/products/bulk-import/template`;
-        link.download = 'product_import_template.csv';
-        link.click();
+    const downloadTemplate = async () => {
+        try {
+            const response = await apiClient.get('/products/bulk-import/template', {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'product_import_template.csv');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Download template failed:', error);
+            toast.error('Failed to download template');
+        }
     };
 
     if (!hasModule('products')) {
@@ -399,6 +411,7 @@ const ProductsList = () => {
  * Product Add/Edit Modal
  */
 const ProductModal = ({ product, categories, onClose, onSave }) => {
+    const mediaBaseUrl = tenantUtils.getMediaBaseUrl();
     const [form, setForm] = useState({
         name: product?.name || '',
         sku: product?.sku || '',
@@ -416,6 +429,12 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
     const handleImageUpload = async (e) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
+
+        // Check file count limit (10 max)
+        if (files.length > 10) {
+            toast.error('Maximum 10 images allowed at once');
+            return;
+        }
 
         setUploading(true);
         try {
@@ -435,9 +454,12 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
             }
         } catch (error) {
             console.error('Upload failed:', error);
-            toast.error('Failed to upload images');
+            const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Failed to upload images';
+            toast.error(errorMsg);
         } finally {
             setUploading(false);
+            // Reset file input
+            e.target.value = '';
         }
     };
 
@@ -456,9 +478,11 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
                 await apiClient.post('/products', form);
             }
             onSave();
+            toast.error('Failed to save product');
         } catch (error) {
             console.error('Save failed:', error);
-            toast.error('Failed to save product');
+            const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Failed to save product';
+            toast.error(errorMsg);
         } finally {
             setSaving(false);
         }

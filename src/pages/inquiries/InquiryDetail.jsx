@@ -388,13 +388,13 @@ export default function InquiryDetail() {
                                                 return (
                                                     <div key={activity.id} className="relative pl-14 pb-6">
                                                         {/* Timeline dot */}
-                                                        <div className={`absolute left-3 w-5 h-5 rounded-full ${config.color} flex items-center justify-center text-white text-xs`}>
-                                                            {config.icon}
+                                                        <div className={`absolute left-3 w-8 h-8 rounded-full ${config.color} flex items-center justify-center text-white ring-4 ring-white dark:ring-slate-800`}>
+                                                            <ActivityIcon path={config.icon} className="w-4 h-4" />
                                                         </div>
 
                                                         <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
                                                             <div className="flex items-start justify-between mb-2">
-                                                                <span className="font-medium text-slate-900 dark:text-white">{activity.summary}</span>
+                                                                <span className="font-medium text-slate-900 dark:text-white">{activity.description || activity.summary}</span>
                                                                 <span className="text-xs text-slate-400">{getRelativeTime(activity.createdAt)}</span>
                                                             </div>
                                                             {activity.details && (

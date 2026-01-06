@@ -67,6 +67,21 @@ export default function LeadsList() {
             toast.error('Contact name is required');
             return;
         }
+
+        if (!formData.email && !formData.phone) {
+            toast.error('Please provide either an email or phone number');
+            return;
+        }
+
+        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            toast.error('Please enter a valid email address');
+            return;
+        }
+
+        if (formData.estimatedValue && parseFloat(formData.estimatedValue) < 0) {
+            toast.error('Estimated value cannot be negative');
+            return;
+        }
         setSaving(true);
         try {
             if (editingLead) {
@@ -137,7 +152,7 @@ export default function LeadsList() {
         new: leads.filter(l => l.status === 'new').length,
         qualified: leads.filter(l => l.status === 'qualified').length,
         won: leads.filter(l => l.status === 'won').length,
-        totalValue: leads.reduce((sum, l) => sum + (l.estimatedValue || 0), 0)
+        totalValue: leads.reduce((sum, l) => sum + (parseFloat(l.estimatedValue) || 0), 0)
     };
 
     const handleDelete = (id) => {
@@ -161,15 +176,20 @@ export default function LeadsList() {
     };
 
     const handleUpdateStatus = async (leadId, newStatus) => {
+        // Optimistic update
+        const previousLeads = [...leads];
+        setLeads(prev => prev.map(l =>
+            l.id === leadId ? { ...l, status: newStatus } : l
+        ));
+
         try {
             await leadsAPI.update(leadId, { status: newStatus });
-            setLeads(prev => prev.map(l =>
-                l.id === leadId ? { ...l, status: newStatus } : l
-            ));
+            // triggerRefresh('leads'); // Optional: notify other components
         } catch (error) {
-            setLeads(prev => prev.map(l =>
-                l.id === leadId ? { ...l, status: newStatus } : l
-            ));
+            console.error('Failed to update status:', error);
+            // Revert on error
+            setLeads(previousLeads);
+            toast.error('Failed to update status');
         }
     };
 

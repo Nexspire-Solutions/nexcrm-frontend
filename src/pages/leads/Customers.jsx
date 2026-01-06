@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { clientsAPI } from '../../api';
 
@@ -13,6 +14,8 @@ export default function Customers() {
     const [showModal, setShowModal] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [openDropdownId, setOpenDropdownId] = useState(null);
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchCustomers();
@@ -50,9 +53,7 @@ export default function Customers() {
     };
 
     const handleViewCustomer = (customer) => {
-        // TODO: Replace with actual navigation to customer detail page
-        // For now, show customer info in toast
-        toast.success(`Viewing: ${customer.name || customer.contactName} - ${customer.company}`);
+        navigate(`/leads/customers/${customer.id}`);
     };
 
     const handleEditCustomer = (customer) => {
@@ -348,11 +349,31 @@ export default function Customers() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <button
-                                                onClick={() => toast.info(`Actions for ${customer.contactName}: View, Edit, or Delete`)}
-                                                className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                                                onClick={() => handleViewCustomer(customer)}
+                                                className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mr-2"
+                                                title="View"
                                             >
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => handleEditCustomer(customer)}
+                                                className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mr-2"
+                                                title="Edit"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteCustomer(customer)}
+                                                className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                                title="Delete"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
                                             </button>
                                         </td>
@@ -385,52 +406,73 @@ export default function Customers() {
                                 {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
                             </h2>
                         </div>
-                        <div className="p-6 space-y-4">
-                            <div>
-                                <label className="label">Customer Name</label>
-                                <input type="text" className="input" placeholder="John Doe" defaultValue={editingCustomer?.name || editingCustomer?.contactName} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.target);
+                            const customerData = {
+                                name: formData.get('name'),
+                                email: formData.get('email'),
+                                phone: formData.get('phone'),
+                                company: formData.get('company'),
+                                industry: formData.get('industry'),
+                                status: formData.get('status')
+                            };
+
+                            try {
+                                if (editingCustomer) {
+                                    await clientsAPI.update(editingCustomer.id, customerData);
+                                    toast.success('Customer updated successfully');
+                                } else {
+                                    await clientsAPI.create(customerData);
+                                    toast.success('Customer created successfully');
+                                }
+                                setShowModal(false);
+                                fetchCustomers();
+                            } catch (error) {
+                                console.error(error);
+                                toast.error('Failed to save customer');
+                            }
+                        }}>
+                            <div className="p-6 space-y-4">
                                 <div>
-                                    <label className="label">Email</label>
-                                    <input type="email" className="input" placeholder="john@example.com" defaultValue={editingCustomer?.email} />
+                                    <label className="label">Customer Name</label>
+                                    <input name="name" type="text" className="input" placeholder="John Doe" defaultValue={editingCustomer?.name || editingCustomer?.contactName} required />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="label">Email</label>
+                                        <input name="email" type="email" className="input" placeholder="john@example.com" defaultValue={editingCustomer?.email} required />
+                                    </div>
+                                    <div>
+                                        <label className="label">Phone</label>
+                                        <input name="phone" type="tel" className="input" placeholder="+1 234 567 890" defaultValue={editingCustomer?.phone} />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="label">Company</label>
+                                        <input name="company" type="text" className="input" placeholder="Acme Corp" defaultValue={editingCustomer?.company} />
+                                    </div>
+                                    <div>
+                                        <label className="label">Industry</label>
+                                        <input name="industry" type="text" className="input" placeholder="Technology" defaultValue={editingCustomer?.industry} />
+                                    </div>
                                 </div>
                                 <div>
-                                    <label className="label">Phone</label>
-                                    <input type="tel" className="input" placeholder="+1 234 567 890" defaultValue={editingCustomer?.phone} />
+                                    <label className="label">Status</label>
+                                    <select name="status" className="select" defaultValue={editingCustomer?.status || 'active'}>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="label">Company</label>
-                                    <input type="text" className="input" placeholder="Acme Corp" defaultValue={editingCustomer?.company} />
-                                </div>
-                                <div>
-                                    <label className="label">Industry</label>
-                                    <input type="text" className="input" placeholder="Technology" defaultValue={editingCustomer?.industry} />
-                                </div>
+                            <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
+                                <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
+                                <button type="submit" className="btn-primary">
+                                    {editingCustomer ? 'Update' : 'Create'}
+                                </button>
                             </div>
-                            <div>
-                                <label className="label">Status</label>
-                                <select className="select" defaultValue={editingCustomer?.status || 'active'}>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
-                            <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                            <button
-                                onClick={() => {
-                                    toast.success(editingCustomer ? 'Customer updated successfully!' : 'Customer added successfully!');
-                                    setShowModal(false);
-                                    fetchCustomers();
-                                }}
-                                className="btn-primary"
-                            >
-                                {editingCustomer ? 'Update' : 'Create'}
-                            </button>
-                        </div>
+                        </form>
                     </div>
                 </div>
             )}
