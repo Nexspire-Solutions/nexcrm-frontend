@@ -310,7 +310,7 @@ const ProductsList = () => {
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
                                                     {product.images?.[0] ? (
-                                                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                                                        <img src={`${mediaBaseUrl}${product.images[0]}`} alt={product.name} className="w-full h-full object-cover" />
                                                     ) : (
                                                         <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -378,6 +378,7 @@ const ProductsList = () => {
                     categories={categories}
                     onClose={() => setShowModal(false)}
                     onSave={handleSave}
+                    onCategoryAdd={fetchCategories}
                 />
             )}
 
@@ -410,7 +411,7 @@ const ProductsList = () => {
 /**
  * Product Add/Edit Modal
  */
-const ProductModal = ({ product, categories, onClose, onSave }) => {
+const ProductModal = ({ product, categories, onClose, onSave, onCategoryAdd }) => {
     const mediaBaseUrl = tenantUtils.getMediaBaseUrl();
     const [form, setForm] = useState({
         name: product?.name || '',
@@ -425,6 +426,27 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
     });
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
+
+    // New Category State
+    const [showAddCategory, setShowAddCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+
+    const handleAddCategory = async () => {
+        try {
+            const response = await apiClient.post('/products/categories', { name: newCategoryName });
+            if (response.data.success) {
+                toast.success('Category created');
+                if (onCategoryAdd) onCategoryAdd();
+                setNewCategoryName('');
+                setShowAddCategory(false);
+                // Auto-select the new category
+                setForm(prev => ({ ...prev, category: response.data.data.slug }));
+            }
+        } catch (error) {
+            console.error('Create category failed:', error);
+            toast.error(error.response?.data?.error || 'Failed to create category');
+        }
+    };
 
     const handleImageUpload = async (e) => {
         const files = e.target.files;
@@ -525,12 +547,43 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
                     </div>
                     <div>
                         <label className="label">Category</label>
-                        <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="select">
-                            <option value="">Select category</option>
-                            {categories.map(cat => (
-                                <option key={cat.id} value={cat.slug}>{cat.name}</option>
-                            ))}
-                        </select>
+                        <div className="flex gap-2">
+                            <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="select flex-1">
+                                <option value="">Select category</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                                ))}
+                            </select>
+                            <button
+                                type="button"
+                                onClick={() => setShowAddCategory(!showAddCategory)}
+                                className="btn-secondary px-3"
+                                title="Add New Category"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                            </button>
+                        </div>
+                        {showAddCategory && (
+                            <div className="mt-2 flex gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="New category name"
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    className="input flex-1"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleAddCategory}
+                                    className="btn-primary px-3"
+                                    disabled={!newCategoryName.trim()}
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
