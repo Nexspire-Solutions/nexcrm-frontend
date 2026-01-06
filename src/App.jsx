@@ -31,6 +31,7 @@ import LeadsList from './pages/leads/LeadsList';
 import LeadDetail from './pages/leads/LeadDetail';
 import LeadActivity from './pages/leads/LeadActivity';
 import Customers from './pages/leads/Customers';
+import CustomerDetail from './pages/leads/CustomerDetail';
 import LeadSettings from './pages/leads/LeadSettings';
 
 // Communications
@@ -156,6 +157,7 @@ function AppRoutes() {
             <Route path="leads/:id" element={<LeadDetail />} />
             <Route path="leads/activity" element={<LeadActivity />} />
             <Route path="leads/customers" element={<Customers />} />
+            <Route path="leads/customers/:id" element={<CustomerDetail />} />
             <Route path="leads/settings" element={<LeadSettings />} />
           </Route>
 
@@ -273,6 +275,9 @@ export default function App() {
                 <AppRoutes />
                 <Toaster
                   position="top-right"
+                  containerStyle={{
+                    zIndex: 99999,
+                  }}
                   toastOptions={{
                     duration: 4000,
                     style: {

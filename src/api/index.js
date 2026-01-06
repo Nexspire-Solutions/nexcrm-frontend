@@ -126,6 +126,11 @@ export const leadsAPI = {
         const response = await apiClient.get('/leads/assignable-users');
         return response.data;
     },
+
+    convertToClient: async (id) => {
+        const response = await apiClient.post(`/leads/${id}/convert-to-client`);
+        return response.data;
+    },
 };
 
 // Users API
@@ -232,6 +237,11 @@ export const templatesAPI = {
 
 // Activities API - for tracking notes, calls, status changes etc.
 export const activitiesAPI = {
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/activities', { params });
+        return response.data;
+    },
+
     getByEntity: async (entityType, entityId) => {
         const response = await apiClient.get(`/activities/${entityType}/${entityId}`);
         return response.data;

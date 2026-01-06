@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { leadsAPI, activitiesAPI } from '../../api';
+import { clientsAPI, activitiesAPI } from '../../api';
 
 const activityIcons = {
     call: (
@@ -31,9 +31,9 @@ const activityIcons = {
     )
 };
 
-export default function LeadDetail() {
+export default function CustomerDetail() {
     const { id } = useParams();
-    const [lead, setLead] = useState(null);
+    const [customer, setCustomer] = useState(null);
     const [activities, setActivities] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
@@ -46,13 +46,13 @@ export default function LeadDetail() {
     const [quickActionNote, setQuickActionNote] = useState('');
 
     const handleEdit = () => {
-        setEditForm({ ...lead });
+        setEditForm({ ...customer });
         setShowEditModal(true);
     };
 
     const handleSaveEdit = async () => {
-        if (!editForm.contactName || !editForm.contactName.trim()) {
-            toast.error('Contact name is required');
+        if (!editForm.name || !editForm.name.trim()) {
+            toast.error('Customer name is required');
             return;
         }
 
@@ -61,35 +61,13 @@ export default function LeadDetail() {
             return;
         }
 
-        if (editForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.email)) {
-            toast.error('Please enter a valid email address');
-            return;
-        }
-
-        if (editForm.estimatedValue && parseFloat(editForm.estimatedValue) < 0) {
-            toast.error('Estimated value cannot be negative');
-            return;
-        }
-
         try {
-            await leadsAPI.update(id, editForm);
-            toast.success('Lead updated');
+            await clientsAPI.update(id, editForm);
+            toast.success('Customer updated');
             setShowEditModal(false);
-            fetchLead();
+            fetchCustomer();
         } catch (error) {
-            toast.error('Failed to update lead');
-        }
-    };
-
-    const handleConvert = async () => {
-        if (!window.confirm(`Are you sure you want to convert "${lead.contactName}" to a Client? This will mark the lead as Won.`)) return;
-        try {
-            await leadsAPI.convertToClient(id);
-            toast.success('Converted to Client successfully');
-            fetchLead();
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to convert lead');
+            toast.error('Failed to update customer');
         }
     };
 
@@ -107,7 +85,7 @@ export default function LeadDetail() {
 
         try {
             await activitiesAPI.create({
-                entityType: 'lead',
+                entityType: 'customer',
                 entityId: id,
                 type: quickActionType,
                 summary: `${quickActionType.charAt(0).toUpperCase() + quickActionType.slice(1)} logged`,
@@ -115,27 +93,27 @@ export default function LeadDetail() {
             });
             toast.success('Activity logged');
             setShowQuickActionModal(false);
-            fetchLead();
+            fetchCustomer();
         } catch (error) {
             toast.error('Failed to log activity');
         }
     };
 
     useEffect(() => {
-        fetchLead();
+        fetchCustomer();
     }, [id]);
 
-    const fetchLead = async () => {
+    const fetchCustomer = async () => {
         try {
-            const [leadRes, activitiesRes] = await Promise.all([
-                leadsAPI.getById(id),
-                activitiesAPI.getByEntity('lead', id).catch(() => ({ data: [] }))
+            const [customerRes, activitiesRes] = await Promise.all([
+                clientsAPI.getById(id),
+                activitiesAPI.getByEntity('customer', id).catch(() => ({ data: [] }))
             ]);
-            setLead(leadRes.lead || leadRes.data || leadRes);
+            setCustomer(customerRes.data || customerRes); // Adjust based on API structure
             setActivities(activitiesRes.data || []);
         } catch (error) {
-            console.error('Failed to load lead:', error);
-            toast.error('Failed to load lead details');
+            console.error('Failed to load customer:', error);
+            toast.error('Failed to load customer details');
         } finally {
             setIsLoading(false);
         }
@@ -149,12 +127,12 @@ export default function LeadDetail() {
                 type: 'note',
                 summary: 'Note added',
                 details: newNote.trim(),
-                entityType: 'lead',
+                entityType: 'customer',
                 entityId: id
             });
             toast.success('Note added');
             setNewNote('');
-            fetchLead(); // Refresh activities
+            fetchCustomer(); // Refresh activities
         } catch (error) {
             toast.error('Failed to add note');
         } finally {
@@ -174,42 +152,37 @@ export default function LeadDetail() {
         );
     }
 
-    if (!lead) {
+    if (!customer) {
         return (
             <div className="empty-state">
-                <h3 className="empty-state-title">Lead not found</h3>
-                <Link to="/leads" className="btn-primary mt-4">Back to Leads</Link>
+                <h3 className="empty-state-title">Customer not found</h3>
+                <Link to="/leads/customers" className="btn-primary mt-4">Back to Customers</Link>
             </div>
         );
     }
-
-    const statusColors = {
-        new: 'badge-primary',
-        contacted: 'badge-warning',
-        qualified: 'badge-success',
-        negotiation: 'badge-warning',
-        won: 'bg-emerald-600 text-white badge',
-        lost: 'badge-danger'
-    };
 
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <Link to="/leads" className="btn-ghost p-2">
+                <Link to="/leads/customers" className="btn-ghost p-2">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                 </Link>
                 <div className="flex-1">
                     <div className="flex items-center gap-3">
-                        <h1 className="page-title">{lead.contactName}</h1>
-                        <span className={statusColors[lead.status] || 'badge-gray'}>{lead.status}</span>
+                        <h1 className="page-title">{customer.name || customer.contactName}</h1>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${customer.status === 'active'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
+                            : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600'
+                            }`}>
+                            {customer.status}
+                        </span>
                     </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{lead.company}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{customer.company}</p>
                 </div>
-                <button onClick={handleEdit} className="btn-secondary">Edit Lead</button>
-                <button onClick={handleConvert} className="btn-primary">Convert to Client</button>
+                <button onClick={handleEdit} className="btn-secondary">Edit Customer</button>
             </div>
 
             {/* Tabs */}
@@ -227,19 +200,16 @@ export default function LeadDetail() {
                             {/* Info Cards */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="stat-card">
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Estimated Value</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Total Value</p>
                                     <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                                        Rs.{(lead.estimatedValue || 0).toLocaleString()}
+                                        Rs.{(customer.totalValue || 0).toLocaleString()}
                                     </p>
                                 </div>
                                 <div className="stat-card">
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Lead Score</p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <p className="text-2xl font-bold text-slate-900 dark:text-white">{lead.score || 0}</p>
-                                        <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full">
-                                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${lead.score || 0}%` }}></div>
-                                        </div>
-                                    </div>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Projects Count</p>
+                                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                                        {customer.projectsCount || customer.projects_count || 0}
+                                    </p>
                                 </div>
                             </div>
 
@@ -283,7 +253,6 @@ export default function LeadDetail() {
                                                 <div className="absolute left-3 top-6 bottom-0 w-px bg-slate-200 dark:bg-slate-700"></div>
                                             )}
                                             <div className="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0 relative z-10 mt-0.5">
-                                                {/* Scale down imported icons */}
                                                 <div className="transform scale-75">
                                                     {activityIcons[activity.type] || activityIcons.note}
                                                 </div>
@@ -351,25 +320,25 @@ export default function LeadDetail() {
                                 <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
-                                <span className="text-sm text-slate-700 dark:text-slate-300">{lead.email || '-'}</span>
+                                <span className="text-sm text-slate-700 dark:text-slate-300">{customer.email || '-'}</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                 </svg>
-                                <span className="text-sm text-slate-700 dark:text-slate-300">{lead.phone || '-'}</span>
+                                <span className="text-sm text-slate-700 dark:text-slate-300">{customer.phone || '-'}</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
                                 </svg>
-                                <span className="text-sm text-slate-700 dark:text-slate-300">{lead.company || '-'}</span>
+                                <span className="text-sm text-slate-700 dark:text-slate-300">{customer.company || '-'}</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                 </svg>
-                                <span className="text-sm text-slate-700 dark:text-slate-300">{lead.leadSource || lead.source || '-'}</span>
+                                <span className="text-sm text-slate-700 dark:text-slate-300">{customer.industry || '-'}</span>
                             </div>
                         </div>
                     </div>
@@ -403,15 +372,15 @@ export default function LeadDetail() {
             {showEditModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                     <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full p-6 shadow-xl">
-                        <h3 className="text-lg font-bold mb-4">Edit Lead</h3>
+                        <h3 className="text-lg font-bold mb-4">Edit Customer</h3>
                         <div className="space-y-4">
                             <div>
-                                <label className="label">Contact Name</label>
+                                <label className="label">Customer Name</label>
                                 <input
                                     type="text"
                                     className="input"
-                                    value={editForm.contactName || ''}
-                                    onChange={e => setEditForm({ ...editForm, contactName: e.target.value })}
+                                    value={editForm.name || editForm.contactName || ''}
+                                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
                                 />
                             </div>
                             <div>
@@ -448,35 +417,22 @@ export default function LeadDetail() {
                                     <label className="label">Status</label>
                                     <select
                                         className="input"
-                                        value={editForm.status || 'new'}
+                                        value={editForm.status || 'active'}
                                         onChange={e => setEditForm({ ...editForm, status: e.target.value })}
                                     >
-                                        <option value="new">New</option>
-                                        <option value="contacted">Contacted</option>
-                                        <option value="qualified">Qualified</option>
-                                        <option value="negotiation">Negotiation</option>
-                                        <option value="won">Won</option>
-                                        <option value="lost">Lost</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="label">Estimated Value</label>
+                                    <label className="label">Industry</label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         className="input"
-                                        value={editForm.estimatedValue || ''}
-                                        onChange={e => setEditForm({ ...editForm, estimatedValue: e.target.value })}
+                                        value={editForm.industry || ''}
+                                        onChange={e => setEditForm({ ...editForm, industry: e.target.value })}
                                     />
                                 </div>
-                            </div>
-                            <div>
-                                <label className="label">Lead Source</label>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    value={editForm.leadSource || ''}
-                                    onChange={e => setEditForm({ ...editForm, leadSource: e.target.value })}
-                                />
                             </div>
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
