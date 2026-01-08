@@ -6,7 +6,7 @@ import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
 /**
- * Products List Page - E-Commerce Module
+ * Products List Page - E-Commerce Module (with Inventory Management)
  */
 const ProductsList = () => {
     const { hasModule } = useTenantConfig();
@@ -26,6 +26,12 @@ const ProductsList = () => {
     const [showBulkImport, setShowBulkImport] = useState(false);
     const [importing, setImporting] = useState(false);
     const [importResults, setImportResults] = useState(null);
+    // Tab and Inventory state
+    const [activeTab, setActiveTab] = useState('products');
+    const [showStockAdjust, setShowStockAdjust] = useState(false);
+    const [adjustProduct, setAdjustProduct] = useState(null);
+    const [adjustForm, setAdjustForm] = useState({ type: 'add', quantity: '', reason: '' });
+    const [adjusting, setAdjusting] = useState(false);
 
     useEffect(() => {
         fetchProducts();
@@ -140,6 +146,51 @@ const ProductsList = () => {
         }
     };
 
+    // Stock adjustment handler
+    const handleStockAdjust = async () => {
+        if (!adjustProduct || !adjustForm.quantity) {
+            toast.error('Please enter a quantity');
+            return;
+        }
+
+        setAdjusting(true);
+        try {
+            const quantity = parseInt(adjustForm.quantity);
+            let newStock = adjustProduct.stock || 0;
+
+            if (adjustForm.type === 'add') {
+                newStock += quantity;
+            } else if (adjustForm.type === 'remove') {
+                newStock = Math.max(0, newStock - quantity);
+            } else if (adjustForm.type === 'set') {
+                newStock = quantity;
+            }
+
+            await apiClient.put(`/products/${adjustProduct.id}`, {
+                ...adjustProduct,
+                stock: newStock
+            });
+
+            toast.success('Stock adjusted successfully');
+            setShowStockAdjust(false);
+            setAdjustProduct(null);
+            setAdjustForm({ type: 'add', quantity: '', reason: '' });
+            fetchProducts();
+            fetchStats();
+        } catch (error) {
+            console.error('Stock adjustment failed:', error);
+            toast.error('Failed to adjust stock');
+        } finally {
+            setAdjusting(false);
+        }
+    };
+
+    const openStockAdjust = (product) => {
+        setAdjustProduct(product);
+        setAdjustForm({ type: 'add', quantity: '', reason: '' });
+        setShowStockAdjust(true);
+    };
+
     if (!hasModule('products')) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
@@ -160,31 +211,69 @@ const ProductsList = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6  rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6 rounded-xl">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-white">Products</h1>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Manage your product catalog</p>
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-white">Products & Inventory</h1>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                        {activeTab === 'products' ? 'Manage your product catalog' : 'Track and adjust stock levels'}
+                    </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => { setShowBulkImport(true); setImportResults(null); }}
-                        className="btn-secondary flex items-center gap-2"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                        Bulk Import
-                    </button>
-                    <button
-                        onClick={() => { setEditProduct(null); setShowModal(true); }}
-                        className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Add Product
-                    </button>
+                    {activeTab === 'products' && (
+                        <>
+                            <button
+                                onClick={() => { setShowBulkImport(true); setImportResults(null); }}
+                                className="btn-secondary flex items-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                Bulk Import
+                            </button>
+                            <button
+                                onClick={() => { setEditProduct(null); setShowModal(true); }}
+                                className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add Product
+                            </button>
+                        </>
+                    )}
                 </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg w-fit">
+                <button
+                    onClick={() => setActiveTab('products')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'products'
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                >
+                    <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        Products
+                    </div>
+                </button>
+                <button
+                    onClick={() => setActiveTab('inventory')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'inventory'
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                >
+                    <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        </svg>
+                        Inventory
+                    </div>
+                </button>
             </div>
 
             {/* Stats Cards */}
@@ -272,103 +361,198 @@ const ProductsList = () => {
             </div>
 
             {/* Products Table */}
-            {loading ? (
-                <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-                </div>
-            ) : (
-                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-700">
-                            <tr>
-                                <th className="px-6 py-4">Product</th>
-                                <th className="px-6 py-4">SKU</th>
-                                <th className="px-6 py-4">Category</th>
-                                <th className="px-6 py-4">Price</th>
-                                <th className="px-6 py-4">Stock</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                            {products.length === 0 ? (
+            {activeTab === 'products' && (
+                loading ? (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                    </div>
+                ) : (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-700">
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-12">
-                                        <div className="empty-state">
-                                            <svg className="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                            </svg>
-                                            <h3 className="empty-state-title">No products found</h3>
-                                            <p className="empty-state-text">Add your first product to get started</p>
-                                        </div>
-                                    </td>
+                                    <th className="px-6 py-4">Product</th>
+                                    <th className="px-6 py-4">SKU</th>
+                                    <th className="px-6 py-4">Category</th>
+                                    <th className="px-6 py-4">Price</th>
+                                    <th className="px-6 py-4">Stock</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
-                            ) : (
-                                products.map(product => (
-                                    <tr key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
-                                                    {product.images?.[0] ? (
-                                                        <img src={`${mediaBaseUrl}${product.images[0]}`} alt={product.name} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                                        </svg>
-                                                    )}
-                                                </div>
-                                                <span className="font-medium text-slate-900 dark:text-white">{product.name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <code className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-400">
-                                                {product.sku || '-'}
-                                            </code>
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{product.category || '-'}</td>
-                                        <td className="px-6 py-4 font-semibold text-indigo-600 dark:text-indigo-400">
-                                            ₹{product.price?.toLocaleString()}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.stock <= 0 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                                                product.stock <= 10 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
-                                                    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                }`}>
-                                                {product.stock}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.status === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                                product.status === 'draft' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
-                                                    'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
-                                                }`}>
-                                                {product.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={() => { setEditProduct(product); setShowModal(true); }}
-                                                    className="btn-ghost btn-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(product.id)}
-                                                    className="btn-ghost btn-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                </button>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                {products.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="7" className="px-6 py-12">
+                                            <div className="empty-state">
+                                                <svg className="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                </svg>
+                                                <h3 className="empty-state-title">No products found</h3>
+                                                <p className="empty-state-text">Add your first product to get started</p>
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                ) : (
+                                    products.map(product => (
+                                        <tr key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
+                                                        {product.images?.[0] ? (
+                                                            <img src={`${mediaBaseUrl}${product.images[0]}`} alt={product.name} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    <span className="font-medium text-slate-900 dark:text-white">{product.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <code className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-400">
+                                                    {product.sku || '-'}
+                                                </code>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{product.category || '-'}</td>
+                                            <td className="px-6 py-4 font-semibold text-indigo-600 dark:text-indigo-400">
+                                                ₹{product.price?.toLocaleString()}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.stock <= 0 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                                    product.stock <= 10 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                        'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                    }`}>
+                                                    {product.stock}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.status === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                                    product.status === 'draft' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                        'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
+                                                    }`}>
+                                                    {product.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => { setEditProduct(product); setShowModal(true); }}
+                                                        className="btn-ghost btn-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(product.id)}
+                                                        className="btn-ghost btn-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )
+            )}
+
+            {/* Inventory Table */}
+            {activeTab === 'inventory' && (
+                loading ? (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                    </div>
+                ) : (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-700">
+                                    <tr>
+                                        <th className="px-6 py-4">SKU</th>
+                                        <th className="px-6 py-4">Product</th>
+                                        <th className="px-6 py-4">Current Stock</th>
+                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4">Category</th>
+                                        <th className="px-6 py-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                    {products.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="6" className="px-6 py-12">
+                                                <div className="empty-state">
+                                                    <svg className="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                                                    </svg>
+                                                    <h3 className="empty-state-title">No inventory items</h3>
+                                                    <p className="empty-state-text">Add products to track inventory</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        products.map(product => (
+                                            <tr key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <code className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-400">
+                                                        {product.sku || '-'}
+                                                    </code>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
+                                                            {product.images?.[0] ? (
+                                                                <img src={`${mediaBaseUrl}${product.images[0]}`} alt={product.name} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                        <span className="font-medium text-slate-900 dark:text-white">{product.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-semibold ${product.stock <= 0 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                                            product.stock <= 10 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                        }`}>
+                                                        {product.stock || 0} units
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.stock <= 0 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                                            product.stock <= 10 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                        }`}>
+                                                        {product.stock <= 0 ? 'Out of Stock' : product.stock <= 10 ? 'Low Stock' : 'In Stock'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{product.category || '-'}</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <button
+                                                        onClick={() => openStockAdjust(product)}
+                                                        className="btn-secondary btn-sm flex items-center gap-1.5"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                        </svg>
+                                                        Adjust Stock
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )
             )}
 
             {/* Add/Edit Modal */}
@@ -403,6 +587,78 @@ const ProductsList = () => {
                     importing={importing}
                     results={importResults}
                 />
+            )}
+
+            {/* Stock Adjustment Modal */}
+            {showStockAdjust && adjustProduct && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => { setShowStockAdjust(false); setAdjustProduct(null); }}
+                    title="Adjust Stock Level"
+                    footer={
+                        <>
+                            <button onClick={() => { setShowStockAdjust(false); setAdjustProduct(null); }} className="btn-secondary">
+                                Cancel
+                            </button>
+                            <button onClick={handleStockAdjust} className="btn-primary" disabled={adjusting}>
+                                {adjusting ? 'Adjusting...' : 'Save Adjustment'}
+                            </button>
+                        </>
+                    }
+                >
+                    <div className="space-y-4">
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
+                                    {adjustProduct.images?.[0] ? (
+                                        <img src={`${mediaBaseUrl}${adjustProduct.images[0]}`} alt={adjustProduct.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                        </svg>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="font-medium text-slate-900 dark:text-white">{adjustProduct.name}</p>
+                                    <p className="text-sm text-slate-500">Current Stock: <span className="font-semibold">{adjustProduct.stock || 0} units</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="label">Adjustment Type</label>
+                            <select
+                                value={adjustForm.type}
+                                onChange={e => setAdjustForm({ ...adjustForm, type: e.target.value })}
+                                className="select"
+                            >
+                                <option value="add">Add Stock</option>
+                                <option value="remove">Remove Stock</option>
+                                <option value="set">Set Absolute Quantity</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="label">Quantity</label>
+                            <input
+                                type="number"
+                                value={adjustForm.quantity}
+                                onChange={e => setAdjustForm({ ...adjustForm, quantity: e.target.value })}
+                                className="input"
+                                placeholder="Enter quantity"
+                                min="0"
+                            />
+                        </div>
+                        <div>
+                            <label className="label">Reason (Optional)</label>
+                            <textarea
+                                value={adjustForm.reason}
+                                onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })}
+                                className="input"
+                                rows="2"
+                                placeholder="Reason for adjustment..."
+                            ></textarea>
+                        </div>
+                    </div>
+                </Modal>
             )}
         </div>
     );

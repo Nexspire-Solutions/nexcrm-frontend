@@ -300,8 +300,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             icon: Icons.store,
             visible: hasPermission('products', 'read') || hasPermission('orders', 'read'),
             items: [
-                { name: 'Products', path: '/products', icon: Icons.products },
-                { name: 'Inventory', path: '/inventory', icon: Icons.inventory },
+                { name: 'Products & Inventory', path: '/products', icon: Icons.products },
                 { name: 'Orders', path: '/orders', icon: Icons.orders },
                 { name: 'Returns', path: '/returns', icon: Icons.returns },
                 { name: 'Shipping', path: '/shipping', icon: Icons.truck },
