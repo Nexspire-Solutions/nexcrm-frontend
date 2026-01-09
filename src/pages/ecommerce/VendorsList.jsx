@@ -12,11 +12,25 @@ const VendorsList = () => {
     const [stats, setStats] = useState({});
     const [status, setStatus] = useState('');
     const [selectedVendor, setSelectedVendor] = useState(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [editingVendor, setEditingVendor] = useState(null);
 
     useEffect(() => {
         fetchVendors();
         fetchStats();
     }, [status]);
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this vendor?')) return;
+        try {
+            await apiClient.delete(`/vendors/${id}`);
+            toast.success('Vendor deleted successfully');
+            fetchVendors();
+            fetchStats();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to delete vendor');
+        }
+    };
 
     const fetchVendors = async () => {
         setLoading(true);
@@ -61,6 +75,15 @@ const VendorsList = () => {
                     <h1 className="text-xl font-bold text-slate-900 dark:text-white">Vendor Management</h1>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Manage marketplace vendors</p>
                 </div>
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="btn-primary"
+                >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Vendor
+                </button>
             </div>
 
             {/* Stats Cards */}
@@ -208,24 +231,35 @@ const VendorsList = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
+                                            {/* Actions */}
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     onClick={() => setSelectedVendor(vendor)}
                                                     className="btn-ghost btn-sm text-indigo-600"
+                                                    title="View Details"
                                                 >
                                                     View
+                                                </button>
+                                                <button
+                                                    onClick={() => setEditingVendor(vendor)}
+                                                    className="btn-ghost btn-sm text-blue-600"
+                                                    title="Edit Vendor"
+                                                >
+                                                    Edit
                                                 </button>
                                                 {vendor.status === 'pending' && (
                                                     <>
                                                         <button
                                                             onClick={() => handleStatusChange(vendor.id, 'approved')}
                                                             className="btn-ghost btn-sm text-emerald-600"
+                                                            title="Approve"
                                                         >
                                                             Approve
                                                         </button>
                                                         <button
                                                             onClick={() => handleStatusChange(vendor.id, 'rejected')}
                                                             className="btn-ghost btn-sm text-red-600"
+                                                            title="Reject"
                                                         >
                                                             Reject
                                                         </button>
@@ -235,10 +269,18 @@ const VendorsList = () => {
                                                     <button
                                                         onClick={() => handleStatusChange(vendor.id, 'suspended')}
                                                         className="btn-ghost btn-sm text-red-600"
+                                                        title="Suspend"
                                                     >
                                                         Suspend
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => handleDelete(vendor.id)}
+                                                    className="btn-ghost btn-sm text-red-600"
+                                                    title="Delete"
+                                                >
+                                                    Delete
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -256,9 +298,27 @@ const VendorsList = () => {
                     onClose={() => setSelectedVendor(null)}
                 />
             )}
+
+            {/* Vendor Form Modal (Create/Edit) */}
+            {(showCreateModal || editingVendor) && (
+                <VendorFormModal
+                    initialData={editingVendor}
+                    onClose={() => {
+                        setShowCreateModal(false);
+                        setEditingVendor(null);
+                    }}
+                    onSave={() => {
+                        setShowCreateModal(false);
+                        setEditingVendor(null);
+                        fetchVendors();
+                        fetchStats();
+                    }}
+                />
+            )}
         </div>
     );
 };
+
 
 /**
  * Vendor Detail Modal
@@ -266,10 +326,6 @@ const VendorsList = () => {
 const VendorDetailModal = ({ vendor, onClose }) => {
     const [details, setDetails] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetchDetails();
-    }, [vendor.id]);
 
     const fetchDetails = async () => {
         try {
@@ -281,6 +337,10 @@ const VendorDetailModal = ({ vendor, onClose }) => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchDetails();
+    }, [vendor.id]);
 
     return (
         <Modal isOpen={true} onClose={onClose} title={`Vendor: ${vendor.company_name}`}>
@@ -357,6 +417,159 @@ const VendorDetailModal = ({ vendor, onClose }) => {
             ) : (
                 <p className="text-center text-slate-500">No details available</p>
             )}
+        </Modal>
+    );
+};
+
+const VendorFormModal = ({ initialData, onClose, onSave }) => {
+    const [form, setForm] = useState({
+        company_name: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        pincode: '',
+        gst_number: '',
+        pan_number: '',
+        ...initialData
+    });
+    const [saving, setSaving] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        try {
+            if (initialData) {
+                await apiClient.put(`/vendors/${initialData.id}`, form);
+                toast.success('Vendor updated successfully');
+            } else {
+                await apiClient.post('/vendors', form);
+                toast.success('Vendor created successfully');
+            }
+            onSave();
+        } catch (error) {
+            toast.error(error.response?.data?.error || `Failed to ${initialData ? 'update' : 'create'} vendor`);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <Modal isOpen={true} onClose={onClose} title={initialData ? 'Edit Vendor' : 'Add New Vendor'}>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="label">Company Name *</label>
+                        <input
+                            type="text"
+                            required
+                            className="input"
+                            value={form.company_name}
+                            onChange={e => setForm({ ...form, company_name: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label">Email *</label>
+                        <input
+                            type="email"
+                            required
+                            className="input"
+                            value={form.email}
+                            onChange={e => setForm({ ...form, email: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="label">Phone *</label>
+                        <input
+                            type="tel"
+                            required
+                            className="input"
+                            value={form.phone}
+                            onChange={e => setForm({ ...form, phone: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label">City</label>
+                        <input
+                            type="text"
+                            className="input"
+                            value={form.city}
+                            onChange={e => setForm({ ...form, city: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="label">Commission Rate (%)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            className="input"
+                            value={form.commission_rate || ''}
+                            onChange={e => setForm({ ...form, commission_rate: e.target.value })}
+                            placeholder="Default: 10%"
+                        />
+                    </div>
+                    <div>
+                        <label className="label">State</label>
+                        <input
+                            type="text"
+                            className="input"
+                            value={form.state}
+                            onChange={e => setForm({ ...form, state: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label">Pincode</label>
+                        <input
+                            type="text"
+                            className="input"
+                            value={form.pincode}
+                            onChange={e => setForm({ ...form, pincode: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <div>
+                    <label className="label">Address</label>
+                    <textarea
+                        className="input"
+                        rows="2"
+                        value={form.address}
+                        onChange={e => setForm({ ...form, address: e.target.value })}
+                    />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="label">GST Number</label>
+                        <input
+                            type="text"
+                            className="input"
+                            value={form.gst_number}
+                            onChange={e => setForm({ ...form, gst_number: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label">PAN Number</label>
+                        <input
+                            type="text"
+                            className="input"
+                            value={form.pan_number}
+                            onChange={e => setForm({ ...form, pan_number: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <div className="flex justify-end gap-3 mt-6">
+                    <button type="button" onClick={onClose} className="btn-ghost">Cancel</button>
+                    <button type="submit" disabled={saving} className="btn-primary">
+                        {saving ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Vendor' : 'Create Vendor')}
+                    </button>
+                </div>
+            </form>
         </Modal>
     );
 };
