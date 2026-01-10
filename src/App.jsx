@@ -45,6 +45,7 @@ import PushNotifications from './pages/communications/PushNotifications';
 // E-Commerce (loaded based on tenant config)
 import ProductsList from './pages/ecommerce/ProductsList';
 import OrdersList from './pages/industry/ecommerce/Orders';
+import OrderDetail from './pages/industry/ecommerce/OrderDetail';
 import Analytics from './pages/industry/ecommerce/Analytics';
 import InventoryList from './pages/ecommerce/InventoryList'; // Legacy - redirects to /products
 import ReturnsList from './pages/ecommerce/ReturnsList';
@@ -177,6 +178,7 @@ function AppRoutes() {
           </Route>
           <Route element={<ProtectedRoute requiredPermission={['orders', 'read']} />}>
             <Route path="orders" element={<OrdersList />} />
+            <Route path="orders/:id" element={<OrderDetail />} />
           </Route>
 
           <Route path="analytics" element={<Analytics />} />
