@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ProHeader from '../../../components/common/ProHeader';
 import ProTable from '../../../components/common/ProTable';
 import StatusBadge from '../../../components/common/StatusBadge';
@@ -47,6 +48,7 @@ export default function OrderList() {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [draggingOrder, setDraggingOrder] = useState(null);
     const [dragOverColumn, setDragOverColumn] = useState(null);
+    const navigate = useNavigate();
 
     // Search and filter state
     const [searchQuery, setSearchQuery] = useState('');
@@ -192,10 +194,10 @@ export default function OrderList() {
     };
 
     const columns = [
-        { header: 'Order ID', accessor: 'order_number', className: 'font-medium text-slate-900 dark:text-white' },
-        { header: 'Customer', accessor: 'shipping_name' },
+        { header: 'Order ID', accessor: 'order_number', className: 'font-medium text-slate-900 dark:text-white', render: (row) => row.order_number || row.orderNumber || '-' },
+        { header: 'Customer', accessor: 'guest_name', render: (row) => row.guest_name || row.shipping_name || row.client_name || 'Guest' },
         { header: 'Date', accessor: 'created_at', className: 'text-slate-500', render: (row) => new Date(row.created_at).toLocaleDateString() },
-        { header: 'Items', accessor: 'items', align: 'right', render: (row) => row.items?.length || 0 },
+        { header: 'Items', accessor: 'items', align: 'right', render: (row) => row.items?.length || row.item_count || '-' },
         { header: 'Amount', accessor: 'total', align: 'right', className: 'font-medium', render: (row) => `₹${(row.total || 0).toLocaleString()}` },
         {
             header: 'Status',
@@ -209,7 +211,7 @@ export default function OrderList() {
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedOrder(row);
+                        navigate(`/orders/${row.id}`);
                     }}
                     className="text-indigo-600 hover:text-indigo-900 font-medium text-xs"
                 >
