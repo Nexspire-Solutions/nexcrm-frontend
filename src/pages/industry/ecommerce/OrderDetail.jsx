@@ -105,9 +105,26 @@ export default function OrderDetail() {
 
     // Parse shipping address from JSON if needed
     const getShippingAddress = () => {
+        // If shipping_address is a JSON string, parse it
+        if (order?.shipping_address && typeof order.shipping_address === 'string') {
+            try {
+                const parsed = JSON.parse(order.shipping_address);
+                return parsed;
+            } catch {
+                // Not JSON, treat as plain text address
+                return {
+                    address: order.shipping_address,
+                    city: order?.shipping_city,
+                    state: order?.shipping_state,
+                    zip: order?.shipping_pincode
+                };
+            }
+        }
+        // If already an object
         if (order?.shipping_address && typeof order.shipping_address === 'object') {
             return order.shipping_address;
         }
+        // Fallback for camelCase
         if (order?.shippingAddress) {
             try {
                 return typeof order.shippingAddress === 'string'
@@ -117,6 +134,7 @@ export default function OrderDetail() {
                 return {};
             }
         }
+        // Build from individual fields
         return {
             address: order?.shipping_address,
             city: order?.shipping_city,
@@ -192,8 +210,8 @@ export default function OrderDetail() {
                     {statusFlow.map((status, index) => (
                         <div key={status} className="relative z-10 flex flex-col items-center">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${index <= currentStatusIndex
-                                    ? 'bg-primary text-white'
-                                    : 'bg-gray-200 dark:bg-slate-700 text-gray-400'
+                                ? 'bg-primary text-white'
+                                : 'bg-gray-200 dark:bg-slate-700 text-gray-400'
                                 }`}>
                                 {index < currentStatusIndex ? (
                                     <FiCheckCircle size={20} />
@@ -227,15 +245,35 @@ export default function OrderDetail() {
                             {(order.items || []).map((item, idx) => (
                                 <div key={idx} className="py-4 flex items-center gap-4">
                                     <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
-                                        {item.image || item.product_images ? (
-                                            <img
-                                                src={item.image || (JSON.parse(item.product_images || '[]')[0])}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <FiPackage className="text-gray-400" size={24} />
-                                        )}
+                                        {(() => {
+                                            // Try to get image from various sources
+                                            let imgSrc = null;
+                                            if (item.image) {
+                                                imgSrc = item.image;
+                                            } else if (item.product_images) {
+                                                // Handle both array and JSON string
+                                                const images = typeof item.product_images === 'string'
+                                                    ? JSON.parse(item.product_images || '[]')
+                                                    : item.product_images;
+                                                if (Array.isArray(images) && images.length > 0) {
+                                                    imgSrc = images[0];
+                                                }
+                                            }
+
+                                            if (imgSrc) {
+                                                // Add API base URL if path is relative
+                                                const fullSrc = imgSrc.startsWith('http') ? imgSrc : `${import.meta.env.VITE_API_URL || ''}${imgSrc}`;
+                                                return (
+                                                    <img
+                                                        src={fullSrc}
+                                                        alt={item.name || 'Product'}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<svg class="text-gray-400 w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>'; }}
+                                                    />
+                                                );
+                                            }
+                                            return <FiPackage className="text-gray-400" size={24} />;
+                                        })()}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-medium text-slate-900 dark:text-white truncate">
