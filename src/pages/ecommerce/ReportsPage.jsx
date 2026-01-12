@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
 
@@ -13,21 +13,43 @@ const ReportsPage = () => {
         start_date: '',
         end_date: ''
     });
+    const abortControllerRef = useRef(null);
 
     useEffect(() => {
+        // Reset data when switching tabs to prevent stale data
+        setData(null);
         fetchReport();
+
+        // Cleanup: abort pending request on tab switch
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
     }, [activeReport]);
 
     const fetchReport = async () => {
+        // Abort previous request if any
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+
         setLoading(true);
         try {
             const params = new URLSearchParams();
             if (dateRange.start_date) params.append('start_date', dateRange.start_date);
             if (dateRange.end_date) params.append('end_date', dateRange.end_date);
 
-            const response = await apiClient.get(`/reports/${activeReport}?${params}`);
+            const response = await apiClient.get(`/reports/${activeReport}?${params}`, {
+                signal: abortControllerRef.current.signal
+            });
             setData(response.data);
         } catch (error) {
+            // Don't show error for aborted requests
+            if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+                return;
+            }
             console.error('Failed to fetch report:', error);
             toast.error('Failed to load report');
         } finally {
