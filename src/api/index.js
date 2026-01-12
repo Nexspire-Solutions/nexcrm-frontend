@@ -81,6 +81,23 @@ export const projectsAPI = {
     },
 };
 
+// Helper to transform lead data from camelCase to snake_case for backend
+const transformLeadData = (data) => {
+    const keyMap = {
+        contactName: 'contact_name',
+        leadSource: 'lead_source',
+        estimatedValue: 'estimated_value',
+        assignedTo: 'assigned_to'
+    };
+
+    const transformed = {};
+    Object.keys(data).forEach(key => {
+        const newKey = keyMap[key] || key;
+        transformed[newKey] = data[key];
+    });
+    return transformed;
+};
+
 export const leadsAPI = {
     getAll: async (params = {}) => {
         const response = await apiClient.get('/leads', { params });
@@ -93,17 +110,17 @@ export const leadsAPI = {
     },
 
     create: async (data) => {
-        const response = await apiClient.post('/leads', data);
+        const response = await apiClient.post('/leads', transformLeadData(data));
         return response.data;
     },
 
     bulkCreate: async (leads) => {
-        const response = await apiClient.post('/leads/bulk-create', { leads });
+        const response = await apiClient.post('/leads/bulk-create', { leads: leads.map(transformLeadData) });
         return response.data;
     },
 
     update: async (id, data) => {
-        const response = await apiClient.put(`/leads/${id}`, data);
+        const response = await apiClient.put(`/leads/${id}`, transformLeadData(data));
         return response.data;
     },
 
