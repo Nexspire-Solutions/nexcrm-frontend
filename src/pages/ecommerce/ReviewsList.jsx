@@ -13,6 +13,30 @@ const ReviewsList = () => {
     const [stats, setStats] = useState({});
     const mediaBaseUrl = tenantUtils.getMediaBaseUrl();
 
+    // Helper to get product image URL
+    const getProductImageUrl = (review) => {
+        let images = review.product_images;
+
+        // Parse JSON string if needed
+        if (typeof images === 'string') {
+            try {
+                images = JSON.parse(images);
+            } catch (e) {
+                // If it's a single image path string, use it directly
+                if (images && !images.startsWith('[')) {
+                    return images.startsWith('http') ? images : `${mediaBaseUrl}${images}`;
+                }
+                images = [];
+            }
+        }
+
+        // Get first image from array
+        const firstImage = Array.isArray(images) ? images[0] : null;
+        if (!firstImage) return null;
+
+        return firstImage.startsWith('http') ? firstImage : `${mediaBaseUrl}${firstImage}`;
+    };
+
     useEffect(() => {
         fetchReviews();
         fetchStats();
@@ -131,9 +155,9 @@ const ReviewsList = () => {
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-start gap-4">
                                         {/* Product Image */}
-                                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-lg flex-shrink-0 overflow-hidden">
-                                            {review.product_images?.[0] ? (
-                                                <img src={`${mediaBaseUrl}${review.product_images[0]}`} alt="" className="w-full h-full object-cover" />
+                                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center">
+                                            {getProductImageUrl(review) ? (
+                                                <img src={getProductImageUrl(review)} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
