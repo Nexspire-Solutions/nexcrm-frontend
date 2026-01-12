@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { clientsAPI } from '../../api';
+import { useTenantConfig } from '../../contexts/TenantConfigContext';
 
 
 
@@ -16,6 +17,9 @@ export default function Customers() {
     const [openDropdownId, setOpenDropdownId] = useState(null);
 
     const navigate = useNavigate();
+    const { getIndustry } = useTenantConfig();
+    const industry = getIndustry();
+    const isEcommerce = industry === 'ecommerce';
 
     useEffect(() => {
         fetchCustomers();
@@ -48,8 +52,11 @@ export default function Customers() {
     const stats = {
         total: customers.length,
         active: customers.filter(c => c.status === 'active').length,
-        totalValue: customers.reduce((sum, c) => sum + (c.totalValue || 0), 0),
-        projects: customers.reduce((sum, c) => sum + (c.projectsCount || c.projects_count || 0), 0)
+        totalValue: customers.reduce((sum, c) => sum + (c.totalValue || c.total_value || 0), 0),
+        // For e-commerce show orders, for others show projects
+        activity: isEcommerce
+            ? customers.reduce((sum, c) => sum + (c.ordersCount || c.orders_count || 0), 0)
+            : customers.reduce((sum, c) => sum + (c.projectsCount || c.projects_count || 0), 0)
     };
 
     const handleViewCustomer = (customer) => {
@@ -170,8 +177,10 @@ export default function Customers() {
                             </svg>
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.projects}</p>
-                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Total Projects</p>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.activity}</p>
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                                {isEcommerce ? 'Total Orders' : 'Total Projects'}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -283,8 +292,14 @@ export default function Customers() {
                                     <p className="font-semibold text-slate-900 dark:text-white">₹{(customer.totalValue || 0).toLocaleString()}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Projects</p>
-                                    <p className="font-semibold text-slate-900 dark:text-white">{customer.projectsCount || customer.projects_count || 0}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        {isEcommerce ? 'Orders' : 'Projects'}
+                                    </p>
+                                    <p className="font-semibold text-slate-900 dark:text-white">
+                                        {isEcommerce
+                                            ? (customer.ordersCount || customer.orders_count || 0)
+                                            : (customer.projectsCount || customer.projects_count || 0)}
+                                    </p>
                                 </div>
                             </div>
 
@@ -309,7 +324,7 @@ export default function Customers() {
                                     <th className="px-6 py-4">Contact Info</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4">Total Value</th>
-                                    <th className="px-6 py-4">Projects</th>
+                                    <th className="px-6 py-4">{isEcommerce ? 'Orders' : 'Projects'}</th>
                                     <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -345,7 +360,9 @@ export default function Customers() {
                                             ₹{(customer.totalValue || 0).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                                            {customer.projectsCount || customer.projects_count || 0}
+                                            {isEcommerce
+                                                ? (customer.ordersCount || customer.orders_count || 0)
+                                                : (customer.projectsCount || customer.projects_count || 0)}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <button
