@@ -98,15 +98,36 @@ const transformLeadData = (data) => {
     return transformed;
 };
 
+// Helper to transform lead data from snake_case (API) to camelCase (frontend)
+const transformLeadFromAPI = (lead) => {
+    if (!lead) return lead;
+    return {
+        ...lead,
+        contactName: lead.contact_name,
+        leadSource: lead.lead_source,
+        estimatedValue: lead.estimated_value,
+        assignedTo: lead.assigned_to,
+        customerId: lead.customer_id,
+        createdAt: lead.created_at,
+        updatedAt: lead.updated_at,
+        assignedFirstName: lead.assigned_first_name,
+        assignedLastName: lead.assigned_last_name
+    };
+};
+
 export const leadsAPI = {
     getAll: async (params = {}) => {
         const response = await apiClient.get('/leads', { params });
-        return response.data;
+        // Transform leads array from snake_case to camelCase
+        const leads = (response.data.leads || []).map(transformLeadFromAPI);
+        return { ...response.data, leads };
     },
 
     getById: async (id) => {
         const response = await apiClient.get(`/leads/${id}`);
-        return response.data;
+        // Transform single lead from snake_case to camelCase
+        const lead = transformLeadFromAPI(response.data.lead || response.data);
+        return { ...response.data, lead };
     },
 
     create: async (data) => {
