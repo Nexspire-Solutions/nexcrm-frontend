@@ -209,7 +209,13 @@ export default function LeadDetail() {
                     <p className="text-sm text-slate-500 dark:text-slate-400">{lead.company}</p>
                 </div>
                 <button onClick={handleEdit} className="btn-secondary">Edit Lead</button>
-                <button onClick={handleConvert} className="btn-primary">Convert to Client</button>
+                {lead.status === 'won' || lead.customerId ? (
+                    <button disabled className="btn-secondary cursor-not-allowed opacity-60" title="Lead already converted">
+                        Already Converted
+                    </button>
+                ) : (
+                    <button onClick={handleConvert} className="btn-primary">Convert to Client</button>
+                )}
             </div>
 
             {/* Tabs */}
