@@ -189,8 +189,8 @@ const CouponsList = () => {
                                             <button
                                                 onClick={() => handleToggleActive(coupon)}
                                                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${coupon.is_active
-                                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                        : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
+                                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                    : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400'
                                                     }`}
                                             >
                                                 {coupon.is_active ? 'Active' : 'Inactive'}
@@ -248,8 +248,30 @@ const CouponModal = ({ coupon, onClose, onSave }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.code || !form.value) {
-            toast.error('Code and value are required');
+
+        // Validation
+        if (!form.code?.trim()) {
+            toast.error('Coupon code is required');
+            return;
+        }
+        if (!form.value || Number(form.value) <= 0) {
+            toast.error('Valid discount value is required');
+            return;
+        }
+        if (form.type === 'percentage' && Number(form.value) > 100) {
+            toast.error('Percentage discount cannot exceed 100%');
+            return;
+        }
+        if (form.min_order_value && Number(form.min_order_value) < 0) {
+            toast.error('Min order value cannot be negative');
+            return;
+        }
+        if (form.usage_limit && Number(form.usage_limit) <= 0) {
+            toast.error('Usage limit must be greater than 0');
+            return;
+        }
+        if (form.end_date && new Date(form.end_date) < new Date()) {
+            toast.error('Expiry date cannot be in the past');
             return;
         }
 

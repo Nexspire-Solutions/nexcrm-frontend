@@ -5,7 +5,7 @@ import ProTable from '../../../components/common/ProTable';
 import StatusBadge from '../../../components/common/StatusBadge';
 import ProCard from '../../../components/common/ProCard';
 import Modal from '../../../components/common/Modal';
-import apiClient from '../../../api/axios';
+import apiClient, { tenantUtils } from '../../../api/axios';
 import toast from 'react-hot-toast';
 
 const statusVariants = {
@@ -438,8 +438,29 @@ export default function OrderList() {
 /**
  * Order Detail Modal - Enhanced with items list, payment breakdown, and tabs
  */
-const OrderDetailModal = ({ order, onClose }) => {
+const OrderDetailModal = ({ order: initialOrder, onClose }) => {
     const [activeTab, setActiveTab] = useState('details');
+    const [fullOrder, setFullOrder] = useState(initialOrder);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchOrderDetails = async () => {
+            try {
+                setLoading(true);
+                const response = await apiClient.get(`/orders/${initialOrder.id}`);
+                setFullOrder(response.data.data);
+            } catch (error) {
+                console.error('Failed to fetch order details:', error);
+                toast.error('Failed to load full order details');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (initialOrder.id) {
+            fetchOrderDetails();
+        }
+    }, [initialOrder.id]);
 
     const getStatusColor = (status) => {
         const colors = {
@@ -462,11 +483,63 @@ const OrderDetailModal = ({ order, onClose }) => {
         return colors[status] || 'bg-slate-100 text-slate-800';
     };
 
+    // Parse shipping address from JSON if needed
+    const getShippingAddress = (orderData) => {
+        // If shipping_address is a JSON string, parse it
+        if (orderData?.shipping_address && typeof orderData.shipping_address === 'string') {
+            try {
+                const parsed = JSON.parse(orderData.shipping_address);
+                return parsed;
+            } catch {
+                // Not JSON, treat as plain text address
+                return {
+                    address: orderData.shipping_address,
+                    city: orderData?.shipping_city,
+                    state: orderData?.shipping_state,
+                    zip: orderData?.shipping_pincode
+                };
+            }
+        }
+        // If already an object
+        if (orderData?.shipping_address && typeof orderData.shipping_address === 'object') {
+            return orderData.shipping_address;
+        }
+        // Fallback for camelCase
+        if (orderData?.shippingAddress) {
+            try {
+                return typeof orderData.shippingAddress === 'string'
+                    ? JSON.parse(orderData.shippingAddress)
+                    : orderData.shippingAddress;
+            } catch {
+                return {};
+            }
+        }
+        // Build from individual fields
+        return {
+            address: orderData?.shipping_address,
+            city: orderData?.shipping_city,
+            state: orderData?.shipping_state,
+            zip: orderData?.shipping_pincode
+        };
+    };
+
+    const shippingAddr = getShippingAddress(fullOrder);
+
     const tabs = [
         { id: 'details', label: 'Details' },
-        { id: 'items', label: `Items (${order.items?.length || 0})` },
+        { id: 'items', label: `Items (${fullOrder.items?.length || 0})` },
         { id: 'shipping', label: 'Shipping' }
     ];
+
+    if (loading) {
+        return (
+            <Modal isOpen={true} onClose={onClose} title="Loading Order...">
+                <div className="flex items-center justify-center p-12">
+                    <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+            </Modal>
+        );
+    }
 
     return (
         <Modal
@@ -474,9 +547,9 @@ const OrderDetailModal = ({ order, onClose }) => {
             onClose={onClose}
             title={
                 <div className="flex items-center gap-3">
-                    <span>Order {order.order_number}</span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                        {order.status}
+                    <span>Order {fullOrder.order_number || fullOrder.orderNumber}</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(fullOrder.status)}`}>
+                        {fullOrder.status}
                     </span>
                 </div>
             }
@@ -506,7 +579,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                             <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
                                 <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Order Date</p>
                                 <p className="text-sm font-medium text-slate-900 dark:text-white">
-                                    {new Date(order.created_at).toLocaleDateString('en-IN', {
+                                    {new Date(fullOrder.created_at).toLocaleDateString('en-IN', {
                                         day: 'numeric', month: 'short', year: 'numeric',
                                         hour: '2-digit', minute: '2-digit'
                                     })}
@@ -514,8 +587,8 @@ const OrderDetailModal = ({ order, onClose }) => {
                             </div>
                             <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
                                 <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Payment Status</p>
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentColor(order.payment_status)}`}>
-                                    {order.payment_status || 'N/A'}
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentColor(fullOrder.payment_status)}`}>
+                                    {fullOrder.payment_status || 'N/A'}
                                 </span>
                             </div>
                         </div>
@@ -529,12 +602,12 @@ const OrderDetailModal = ({ order, onClose }) => {
                                 Customer
                             </h3>
                             <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg space-y-2">
-                                <p className="font-medium text-slate-900 dark:text-white">{order.shipping_name || order.client_name || 'Guest'}</p>
-                                {order.shipping_phone && (
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">{order.shipping_phone}</p>
+                                <p className="font-medium text-slate-900 dark:text-white">{fullOrder.shipping_name || fullOrder.client_name || 'Guest'}</p>
+                                {fullOrder.shipping_phone && (
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">{fullOrder.shipping_phone}</p>
                                 )}
-                                {order.shipping_email && (
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">{order.shipping_email}</p>
+                                {fullOrder.shipping_email && (
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">{fullOrder.shipping_email}</p>
                                 )}
                             </div>
                         </div>
@@ -550,40 +623,40 @@ const OrderDetailModal = ({ order, onClose }) => {
                             <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg space-y-2 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
-                                    <span className="text-slate-900 dark:text-white">₹{(order.subtotal || order.total || 0).toLocaleString()}</span>
+                                    <span className="text-slate-900 dark:text-white">₹{(fullOrder.subtotal || fullOrder.total || 0).toLocaleString()}</span>
                                 </div>
-                                {order.discount_amount > 0 && (
+                                {Number(fullOrder.discount) > 0 && (
                                     <div className="flex justify-between text-emerald-600">
-                                        <span>Discount</span>
-                                        <span>-₹{order.discount_amount.toLocaleString()}</span>
+                                        <span>Discount {fullOrder.coupon_code ? `(${fullOrder.coupon_code})` : ''}</span>
+                                        <span>-₹{Number(fullOrder.discount).toLocaleString()}</span>
                                     </div>
                                 )}
-                                {order.tax > 0 && (
+                                {fullOrder.tax > 0 && (
                                     <div className="flex justify-between">
                                         <span className="text-slate-500 dark:text-slate-400">Tax</span>
-                                        <span className="text-slate-900 dark:text-white">₹{order.tax.toLocaleString()}</span>
+                                        <span className="text-slate-900 dark:text-white">₹{fullOrder.tax.toLocaleString()}</span>
                                     </div>
                                 )}
-                                {order.shipping_cost > 0 && (
+                                {(Number(fullOrder.shipping_cost) > 0 || Number(fullOrder.shipping) > 0) && (
                                     <div className="flex justify-between">
                                         <span className="text-slate-500 dark:text-slate-400">Shipping</span>
-                                        <span className="text-slate-900 dark:text-white">₹{order.shipping_cost.toLocaleString()}</span>
+                                        <span className="text-slate-900 dark:text-white">₹{(Number(fullOrder.shipping_cost) || Number(fullOrder.shipping) || 0).toLocaleString()}</span>
                                     </div>
                                 )}
                                 <hr className="border-slate-200 dark:border-slate-700 my-2" />
                                 <div className="flex justify-between font-semibold text-base">
                                     <span className="text-slate-900 dark:text-white">Total</span>
-                                    <span className="text-indigo-600 dark:text-indigo-400">₹{(order.total || 0).toLocaleString()}</span>
+                                    <span className="text-indigo-600 dark:text-indigo-400">₹{(fullOrder.total || 0).toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Notes */}
-                        {order.notes && (
+                        {fullOrder.notes && (
                             <div>
                                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Notes</h3>
                                 <p className="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
-                                    {order.notes}
+                                    {fullOrder.notes}
                                 </p>
                             </div>
                         )}
@@ -593,27 +666,61 @@ const OrderDetailModal = ({ order, onClose }) => {
                 {/* Items Tab */}
                 {activeTab === 'items' && (
                     <div className="space-y-3">
-                        {order.items?.length > 0 ? (
-                            order.items.map((item, idx) => (
+                        {fullOrder.items?.length > 0 ? (
+                            fullOrder.items.map((item, idx) => (
                                 <div key={idx} className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
                                     <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                                        {item.product_image ? (
-                                            <img src={item.product_image} alt="" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                            </svg>
-                                        )}
+                                        {(() => {
+                                            // Try to get image from various sources
+                                            let imgSrc = null;
+                                            if (item.image) {
+                                                imgSrc = item.image;
+                                            } else if (item.product_images) {
+                                                // Handle both array and JSON string
+                                                try {
+                                                    const images = typeof item.product_images === 'string'
+                                                        ? JSON.parse(item.product_images || '[]')
+                                                        : item.product_images;
+                                                    if (Array.isArray(images) && images.length > 0) {
+                                                        imgSrc = images[0];
+                                                    }
+                                                } catch (e) {
+                                                    console.warn('Failed to parse product images:', e);
+                                                }
+                                            }
+
+                                            if (imgSrc) {
+                                                // Use tenantUtils to get base URL
+                                                const baseUrl = tenantUtils.getMediaBaseUrl();
+                                                const fullSrc = imgSrc.startsWith('http') ? imgSrc : `${baseUrl}${imgSrc}`;
+                                                return (
+                                                    <img
+                                                        src={fullSrc}
+                                                        alt=""
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>'; }}
+                                                    />
+                                                );
+                                            }
+
+                                            return (
+                                                <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                </svg>
+                                            );
+                                        })()}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-slate-900 dark:text-white truncate">{item.product_name || item.name}</p>
+                                        <p className="font-medium text-slate-900 dark:text-white truncate">
+                                            {item.current_product_name || item.product_name || item.name || item.productName || 'Product Item'}
+                                        </p>
                                         <p className="text-xs text-slate-500 dark:text-slate-400">
                                             {item.variant && `${item.variant} • `}Qty: {item.quantity}
                                         </p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-semibold text-indigo-600 dark:text-indigo-400">₹{(item.price * item.quantity).toLocaleString()}</p>
-                                        <p className="text-xs text-slate-500">₹{item.price} × {item.quantity}</p>
+                                        <p className="font-semibold text-indigo-600 dark:text-indigo-400">₹{(item.total || (item.unit_price * item.quantity)).toLocaleString()}</p>
+                                        <p className="text-xs text-slate-500">₹{item.unit_price || item.price} × {item.quantity}</p>
                                     </div>
                                 </div>
                             ))
@@ -641,17 +748,24 @@ const OrderDetailModal = ({ order, onClose }) => {
                                 Shipping Address
                             </h3>
                             <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg space-y-1 text-sm">
-                                <p className="font-medium text-slate-900 dark:text-white">{order.shipping_name}</p>
-                                <p className="text-slate-600 dark:text-slate-400">{order.shipping_address}</p>
-                                <p className="text-slate-600 dark:text-slate-400">
-                                    {order.shipping_city}{order.shipping_state && `, ${order.shipping_state}`} - {order.shipping_pincode}
-                                </p>
-                                <p className="text-slate-600 dark:text-slate-400">Phone: {order.shipping_phone}</p>
+                                {shippingAddr?.address ? (
+                                    <>
+                                        <p className="font-medium text-slate-900 dark:text-white">{fullOrder.shipping_name}</p>
+                                        <p className="text-slate-600 dark:text-slate-400">{shippingAddr.address}</p>
+                                        {shippingAddr.apartment && <p className="text-slate-600 dark:text-slate-400">{shippingAddr.apartment}</p>}
+                                        <p className="text-slate-600 dark:text-slate-400">
+                                            {[shippingAddr.city, shippingAddr.state, shippingAddr.zip].filter(Boolean).join(', ')}
+                                        </p>
+                                        <p className="text-slate-600 dark:text-slate-400">Phone: {fullOrder.shipping_phone}</p>
+                                    </>
+                                ) : (
+                                    <p className="italic text-slate-400">No shipping address provided</p>
+                                )}
                             </div>
                         </div>
 
                         {/* Tracking Info */}
-                        {order.tracking_number && (
+                        {fullOrder.tracking_number && (
                             <div>
                                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -662,10 +776,10 @@ const OrderDetailModal = ({ order, onClose }) => {
                                 <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
                                     <div className="flex items-center justify-between">
                                         <code className="text-sm bg-white dark:bg-slate-800 px-3 py-2 rounded border border-slate-200 dark:border-slate-700">
-                                            {order.tracking_number}
+                                            {fullOrder.tracking_number}
                                         </code>
                                         <button
-                                            onClick={() => { navigator.clipboard.writeText(order.tracking_number); }}
+                                            onClick={() => { navigator.clipboard.writeText(fullOrder.tracking_number); }}
                                             className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
                                         >
                                             Copy
@@ -676,10 +790,10 @@ const OrderDetailModal = ({ order, onClose }) => {
                         )}
 
                         {/* Shipping Provider */}
-                        {order.shipping_provider && (
+                        {fullOrder.shipping_provider && (
                             <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
                                 <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Shipping Provider</p>
-                                <p className="font-medium text-slate-900 dark:text-white">{order.shipping_provider}</p>
+                                <p className="font-medium text-slate-900 dark:text-white">{fullOrder.shipping_provider}</p>
                             </div>
                         )}
                     </div>

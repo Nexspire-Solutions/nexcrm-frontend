@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import ProCard from '../../../components/common/ProCard';
 import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
-import apiClient from '../../../api/axios';
+import apiClient, { tenantUtils } from '../../../api/axios';
 import toast from 'react-hot-toast';
 import {
     FiArrowLeft, FiPackage, FiTruck, FiUser, FiMapPin, FiPhone, FiMail,
@@ -164,6 +164,21 @@ export default function OrderDetail() {
     }
 
     const shippingAddr = getShippingAddress();
+
+    const getProgressStatus = () => {
+        if (order.status === 'cancelled') return { color: 'bg-red-500', width: '100%' };
+        if (order.status === 'refunded') return { color: 'bg-gray-500', width: '100%' };
+
+        const index = statusFlow.indexOf(order.status);
+        if (index === -1) return { color: 'bg-blue-600', width: '0%' };
+
+        return {
+            color: 'bg-blue-600',
+            width: `${(index / (statusFlow.length - 1)) * 100}%`
+        };
+    };
+
+    const progress = getProgressStatus();
     const currentStatusIndex = statusFlow.indexOf(order.status);
 
     return (
@@ -204,13 +219,13 @@ export default function OrderDetail() {
                 <div className="flex items-center justify-between relative">
                     <div className="absolute left-0 right-0 top-5 h-1 bg-gray-200 dark:bg-slate-700" />
                     <div
-                        className="absolute left-0 top-5 h-1 bg-primary transition-all"
-                        style={{ width: `${(currentStatusIndex / (statusFlow.length - 1)) * 100}%` }}
+                        className={`absolute left-0 top-5 h-1 transition-all ${progress.color}`}
+                        style={{ width: progress.width }}
                     />
                     {statusFlow.map((status, index) => (
                         <div key={status} className="relative z-10 flex flex-col items-center">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${index <= currentStatusIndex
-                                ? 'bg-primary text-white'
+                                ? 'bg-blue-600 text-white'
                                 : 'bg-gray-200 dark:bg-slate-700 text-gray-400'
                                 }`}>
                                 {index < currentStatusIndex ? (
@@ -252,23 +267,34 @@ export default function OrderDetail() {
                                                 imgSrc = item.image;
                                             } else if (item.product_images) {
                                                 // Handle both array and JSON string
-                                                const images = typeof item.product_images === 'string'
-                                                    ? JSON.parse(item.product_images || '[]')
-                                                    : item.product_images;
-                                                if (Array.isArray(images) && images.length > 0) {
-                                                    imgSrc = images[0];
+                                                try {
+                                                    const images = typeof item.product_images === 'string'
+                                                        ? JSON.parse(item.product_images || '[]')
+                                                        : item.product_images;
+                                                    if (Array.isArray(images) && images.length > 0) {
+                                                        imgSrc = images[0];
+                                                    }
+                                                } catch (e) {
+                                                    console.warn('Failed to parse product images:', e);
                                                 }
                                             }
 
                                             if (imgSrc) {
                                                 // Add API base URL if path is relative
-                                                const fullSrc = imgSrc.startsWith('http') ? imgSrc : `${import.meta.env.VITE_API_URL || ''}${imgSrc}`;
+                                                // Use getMediaBaseUrl to ensure we don't have double /api/api or missing base
+                                                const baseUrl = tenantUtils.getMediaBaseUrl();
+                                                const fullSrc = imgSrc.startsWith('http') ? imgSrc : `${baseUrl}${imgSrc}`;
+
                                                 return (
                                                     <img
                                                         src={fullSrc}
                                                         alt={item.name || 'Product'}
                                                         className="w-full h-full object-cover"
-                                                        onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<svg class="text-gray-400 w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>'; }}
+                                                        onError={(e) => {
+                                                            console.error('Image load error:', fullSrc);
+                                                            e.target.style.display = 'none';
+                                                            e.target.parentElement.innerHTML = '<svg class="text-gray-400 w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>';
+                                                        }}
                                                     />
                                                 );
                                             }
@@ -277,7 +303,7 @@ export default function OrderDetail() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-medium text-slate-900 dark:text-white truncate">
-                                            {item.name || item.productName || 'Product'}
+                                            {item.current_product_name || item.product_name || item.name || item.productName || 'Product Item'}
                                         </h4>
                                         {item.sku && (
                                             <p className="text-xs text-slate-500">SKU: {item.sku}</p>
@@ -315,9 +341,9 @@ export default function OrderDetail() {
                                 <span className="text-slate-500">Shipping</span>
                                 <span>{formatCurrency(order.shipping_cost || order.shipping || 0)}</span>
                             </div>
-                            {order.discount > 0 && (
+                            {Number(order.discount) > 0 && (
                                 <div className="flex justify-between text-sm text-green-600">
-                                    <span>Discount</span>
+                                    <span>Discount {order.coupon_code ? `(${order.coupon_code})` : ''}</span>
                                     <span>-{formatCurrency(order.discount)}</span>
                                 </div>
                             )}
@@ -370,8 +396,8 @@ export default function OrderDetail() {
                                     <p className="font-medium text-slate-900 dark:text-white">
                                         {order.shipping_name || order.guest_name || order.client_name || 'Guest'}
                                     </p>
-                                    {order.clientId && (
-                                        <p className="text-xs text-slate-500">Customer ID: {order.clientId}</p>
+                                    {order.client_id && (
+                                        <p className="text-xs text-slate-500">Customer ID: {order.client_id}</p>
                                     )}
                                 </div>
                             </div>
@@ -397,12 +423,18 @@ export default function OrderDetail() {
                             Shipping Address
                         </h3>
                         <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                            {shippingAddr.address && <p>{shippingAddr.address}</p>}
-                            {shippingAddr.apartment && <p>{shippingAddr.apartment}</p>}
-                            <p>
-                                {[shippingAddr.city, shippingAddr.state, shippingAddr.zip].filter(Boolean).join(', ')}
-                            </p>
-                            {shippingAddr.country && <p>{shippingAddr.country}</p>}
+                            {shippingAddr?.address ? (
+                                <>
+                                    <p className="font-medium text-slate-900 dark:text-white">{shippingAddr.address}</p>
+                                    {shippingAddr.apartment && <p>{shippingAddr.apartment}</p>}
+                                    <p>
+                                        {[shippingAddr.city, shippingAddr.state, shippingAddr.zip].filter(Boolean).join(', ')}
+                                    </p>
+                                    {shippingAddr.country && <p>{shippingAddr.country}</p>}
+                                </>
+                            ) : (
+                                <p className="italic text-slate-400">No shipping address provided</p>
+                            )}
                         </div>
                     </ProCard>
 
