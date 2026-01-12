@@ -247,7 +247,7 @@ export default function Customers() {
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg">
-                                        {(customer.name || customer.contactName).split(' ').map(n => n[0]).join('')}
+                                        {(customer.name || customer.contactName || '?').split(' ').map(n => n[0]).join('')}
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-slate-900 dark:text-white">{customer.name || customer.contactName}</h3>
@@ -319,7 +319,7 @@ export default function Customers() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs">
-                                                    {(customer.name || customer.contactName).split(' ').map(n => n[0]).join('')}
+                                                    {(customer.name || customer.contactName || '?').split(' ').map(n => n[0]).join('')}
                                                 </div>
                                                 <div>
                                                     <p className="font-medium text-slate-900 dark:text-white">{customer.name || customer.contactName}</p>
