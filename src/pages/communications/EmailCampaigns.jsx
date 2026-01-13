@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
-import { templatesAPI, campaignsAPI } from '../../api';
+import { templatesAPI, campaignsAPI, smtpAPI } from '../../api';
 
 const statusStyles = {
     active: 'badge-success',
@@ -13,10 +14,14 @@ const statusStyles = {
 };
 
 export default function EmailCampaigns() {
+    const navigate = useNavigate();
     const [campaigns, setCampaigns] = useState([]);
     const [templates, setTemplates] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showSmtpModal, setShowSmtpModal] = useState(false);
+    const [smtpConfigured, setSmtpConfigured] = useState(true);
+    const [smtpAccount, setSmtpAccount] = useState(null);
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -34,6 +39,15 @@ export default function EmailCampaigns() {
 
     const fetchData = async () => {
         try {
+            // Check SMTP status first
+            try {
+                const smtpRes = await smtpAPI.getStatus();
+                setSmtpConfigured(smtpRes.configured);
+                setSmtpAccount(smtpRes.account || null);
+            } catch (e) {
+                setSmtpConfigured(false);
+            }
+
             // Fetch templates for the dropdown
             const templatesRes = await templatesAPI.getAll().catch(() => ({ data: [] }));
             setTemplates(templatesRes.data || []);
@@ -58,12 +72,23 @@ export default function EmailCampaigns() {
     };
 
     const handleSendCampaign = async (id) => {
+        // Check SMTP before sending
+        if (!smtpConfigured) {
+            setShowSmtpModal(true);
+            return;
+        }
+
         try {
             const res = await campaignsAPI.send(id);
             toast.success(res.message || 'Campaign started!');
             fetchData();
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to send campaign');
+            const errorMsg = error.response?.data?.error || 'Failed to send campaign';
+            if (errorMsg.includes('SMTP') || errorMsg.includes('Email service')) {
+                setShowSmtpModal(true);
+            } else {
+                toast.error(errorMsg);
+            }
         }
     };
 
@@ -419,6 +444,61 @@ export default function EmailCampaigns() {
                             </p>
                         </div>
                     )}
+                </div>
+            </Modal>
+
+            {/* SMTP Not Configured Modal */}
+            <Modal
+                isOpen={showSmtpModal}
+                onClose={() => setShowSmtpModal(false)}
+                title="Email Setup Required"
+                size="md"
+                footer={
+                    <>
+                        <button onClick={() => setShowSmtpModal(false)} className="btn-secondary">Cancel</button>
+                        <button onClick={() => navigate('/settings/smtp')} className="btn-primary">
+                            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Go to SMTP Settings
+                        </button>
+                    </>
+                }
+            >
+                <div className="text-center py-4">
+                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">No Email Account Configured</h3>
+                    <p className="text-slate-600 dark:text-slate-400 mb-4">
+                        To send email campaigns, you need to configure your SMTP settings first.
+                    </p>
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-left">
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Quick Setup:</p>
+                        <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            <li className="flex items-center gap-2">
+                                <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Go to Settings &gt; SMTP
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Add your email provider details
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Test the connection
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </Modal>
         </div>

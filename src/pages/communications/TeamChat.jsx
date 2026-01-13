@@ -4,6 +4,17 @@ import chatAPI from '../../api/chat';
 import { initSocket, getSocket, joinChannel, leaveChannel, disconnectSocket } from '../../utils/socket';
 import toast from 'react-hot-toast';
 
+// Helper to construct full file URL from relative path
+const getFileUrl = (relativePath) => {
+    if (!relativePath) return null;
+    if (relativePath.startsWith('http')) return relativePath;
+
+    // Get API base URL and construct full path
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    const baseUrl = apiUrl.replace('/api', '');
+    return `${baseUrl}${relativePath}`;
+};
+
 export default function TeamChat() {
     const { user, token } = useAuth();
     const [channels, setChannels] = useState([]);
@@ -308,16 +319,17 @@ export default function TeamChat() {
                                             {msg.file_url && (
                                                 <div className="mb-2">
                                                     {msg.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                                        <a href={msg.file_url} target="_blank" rel="noopener noreferrer">
+                                                        <a href={getFileUrl(msg.file_url)} target="_blank" rel="noopener noreferrer">
                                                             <img
-                                                                src={msg.file_url}
+                                                                src={getFileUrl(msg.file_url)}
                                                                 alt="Attachment"
                                                                 className="max-w-xs max-h-48 rounded-lg object-cover cursor-pointer hover:opacity-90"
+                                                                onError={(e) => { e.target.style.display = 'none'; }}
                                                             />
                                                         </a>
                                                     ) : (
                                                         <a
-                                                            href={msg.file_url}
+                                                            href={getFileUrl(msg.file_url)}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className={`flex items-center gap-2 p-2 rounded-lg ${isMine ? 'bg-indigo-500 hover:bg-indigo-400' : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600'}`}

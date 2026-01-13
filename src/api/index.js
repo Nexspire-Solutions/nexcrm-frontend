@@ -512,6 +512,11 @@ export const smtpAPI = {
         const response = await apiClient.delete(`/smtp/${id}`);
         return response.data;
     },
+
+    getStatus: async () => {
+        const response = await apiClient.get('/smtp/status');
+        return response.data;
+    }
 };
 
 // Workflow Automation API
@@ -631,4 +636,37 @@ export const notificationsAPI = {
         const response = await apiClient.post(`/notifications/${id}/click`);
         return response.data;
     },
+};
+
+// Returns API - for managing product returns
+export const returnsAPI = {
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/returns', { params });
+        return response.data;
+    },
+
+    getStats: async () => {
+        const response = await apiClient.get('/returns/stats');
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/returns/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/returns', data);
+        return response.data;
+    },
+
+    updateStatus: async (id, status) => {
+        const response = await apiClient.patch(`/returns/${id}/status`, { status });
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/returns/${id}`);
+        return response.data;
+    }
 };
