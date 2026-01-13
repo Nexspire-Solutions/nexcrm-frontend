@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { templatesAPI } from '../../api';
 
-// Widget types
+// Widget types with icons
 const WIDGETS = [
-    { id: 'header', name: 'Header', icon: 'M4 6h16M4 12h16M4 18h7' },
-    { id: 'text', name: 'Text Block', icon: 'M4 6h16M4 12h8m-8 6h16' },
-    { id: 'image', name: 'Image', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
-    { id: 'button', name: 'Button', icon: 'M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122' },
-    { id: 'divider', name: 'Divider', icon: 'M5 12h14' },
-    { id: 'columns', name: '2 Columns', icon: 'M9 4v16m6-16v16M4 7h4m-4 5h4m-4 5h4m8-10h4m-4 5h4m-4 5h4' },
-    { id: 'spacer', name: 'Spacer', icon: 'M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4' },
-    { id: 'social', name: 'Social Links', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3V2z' },
-    { id: 'footer', name: 'Footer', icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2zM5 12h14' }
+    { id: 'header', name: 'Header', icon: 'M4 6h16M4 12h16M4 18h7', description: 'Title and logo section' },
+    { id: 'text', name: 'Text Block', icon: 'M4 6h16M4 12h8m-8 6h16', description: 'Rich text content' },
+    { id: 'image', name: 'Image', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', description: 'Add an image' },
+    { id: 'button', name: 'Button', icon: 'M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122', description: 'Call-to-action button' },
+    { id: 'divider', name: 'Divider', icon: 'M5 12h14', description: 'Horizontal line' },
+    { id: 'columns', name: '2 Columns', icon: 'M9 4v16m6-16v16M4 7h4m-4 5h4m-4 5h4m8-10h4m-4 5h4m-4 5h4', description: 'Two column layout' },
+    { id: 'spacer', name: 'Spacer', icon: 'M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4', description: 'Empty space' },
+    { id: 'social', name: 'Social Links', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3V2z', description: 'Social media icons' },
+    { id: 'footer', name: 'Footer', icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2zM5 12h14', description: 'Footer with unsubscribe' }
 ];
 
 // Default settings for each widget type
@@ -116,6 +116,7 @@ export default function EmailTemplateEditor() {
     const { id } = useParams();
     const navigate = useNavigate();
     const isEditing = !!id;
+    const canvasRef = useRef(null);
 
     const [loading, setLoading] = useState(isEditing);
     const [saving, setSaving] = useState(false);
@@ -124,9 +125,12 @@ export default function EmailTemplateEditor() {
     const [category, setCategory] = useState('Marketing');
     const [widgets, setWidgets] = useState([]);
     const [selectedWidget, setSelectedWidget] = useState(null);
-    const [viewMode, setViewMode] = useState('visual'); // 'visual' | 'code'
+    const [viewMode, setViewMode] = useState('visual');
     const [showPreview, setShowPreview] = useState(false);
     const [templateVariables, setTemplateVariables] = useState([]);
+    const [draggedItem, setDraggedItem] = useState(null);
+    const [dragOverIndex, setDragOverIndex] = useState(null);
+    const [activeInput, setActiveInput] = useState(null);
 
     // Fetch template variables from API
     useEffect(() => {
@@ -135,8 +139,6 @@ export default function EmailTemplateEditor() {
                 const response = await templatesAPI.getVariables();
                 setTemplateVariables(response.data || []);
             } catch (error) {
-                console.error('Failed to fetch variables:', error);
-                // Fallback to defaults
                 setTemplateVariables([
                     { variable_key: 'first_name', label: 'First Name', category: 'contact' },
                     { variable_key: 'last_name', label: 'Last Name', category: 'contact' },
@@ -162,10 +164,7 @@ export default function EmailTemplateEditor() {
             setTemplateName(template.name || '');
             setSubject(template.subject || '');
             setCategory(template.category || 'Marketing');
-
-            // Try to parse widgets from body, or start with default
             if (template.body) {
-                // For existing templates, create a text widget with the HTML
                 setWidgets([{ id: Date.now(), type: 'text', settings: { ...getDefaultSettings('text'), content: template.body } }]);
             }
         } catch (error) {
@@ -173,6 +172,95 @@ export default function EmailTemplateEditor() {
             navigate('/communications/templates');
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Drag handlers for widgets from sidebar
+    const handleWidgetDragStart = (e, widgetType) => {
+        setDraggedItem({ type: 'new-widget', widgetType });
+        e.dataTransfer.effectAllowed = 'copy';
+        e.dataTransfer.setData('text/plain', widgetType);
+    };
+
+    // Drag handlers for reordering existing widgets
+    const handleCanvasWidgetDragStart = (e, index) => {
+        setDraggedItem({ type: 'reorder', index });
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e, index) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = draggedItem?.type === 'new-widget' ? 'copy' : 'move';
+        setDragOverIndex(index);
+    };
+
+    const handleDragLeave = () => {
+        setDragOverIndex(null);
+    };
+
+    const handleDrop = (e, dropIndex) => {
+        e.preventDefault();
+        setDragOverIndex(null);
+
+        if (!draggedItem) return;
+
+        if (draggedItem.type === 'new-widget') {
+            // Add new widget at position
+            const newWidget = {
+                id: Date.now(),
+                type: draggedItem.widgetType,
+                settings: getDefaultSettings(draggedItem.widgetType)
+            };
+            const newWidgets = [...widgets];
+            newWidgets.splice(dropIndex, 0, newWidget);
+            setWidgets(newWidgets);
+            setSelectedWidget(newWidget);
+            toast.success(`Added ${WIDGETS.find(w => w.id === draggedItem.widgetType)?.name}`);
+        } else if (draggedItem.type === 'reorder') {
+            // Reorder existing widget
+            const dragIndex = draggedItem.index;
+            if (dragIndex === dropIndex) return;
+
+            const newWidgets = [...widgets];
+            const [removed] = newWidgets.splice(dragIndex, 1);
+            newWidgets.splice(dropIndex > dragIndex ? dropIndex - 1 : dropIndex, 0, removed);
+            setWidgets(newWidgets);
+        }
+
+        setDraggedItem(null);
+    };
+
+    const handleCanvasDropZone = (e) => {
+        e.preventDefault();
+        if (draggedItem?.type === 'new-widget') {
+            const newWidget = {
+                id: Date.now(),
+                type: draggedItem.widgetType,
+                settings: getDefaultSettings(draggedItem.widgetType)
+            };
+            setWidgets(prev => [...prev, newWidget]);
+            setSelectedWidget(newWidget);
+            toast.success(`Added ${WIDGETS.find(w => w.id === draggedItem.widgetType)?.name}`);
+        }
+        setDraggedItem(null);
+        setDragOverIndex(null);
+    };
+
+    // Variable drag handlers
+    const handleVariableDragStart = (e, variable) => {
+        const varStr = `{{${variable.variable_key}}}`;
+        e.dataTransfer.setData('text/plain', varStr);
+        e.dataTransfer.effectAllowed = 'copy';
+    };
+
+    const insertVariable = (variable) => {
+        const varStr = `{{${variable.variable_key}}}`;
+        if (activeInput && selectedWidget) {
+            updateWidgetSettings(selectedWidget.id, activeInput, selectedWidget.settings[activeInput] + varStr);
+            toast.success(`Inserted ${varStr}`);
+        } else {
+            navigator.clipboard.writeText(varStr);
+            toast.success(`Copied ${varStr} to clipboard`);
         }
     };
 
@@ -202,14 +290,17 @@ export default function EmailTemplateEditor() {
         }
     };
 
-    const moveWidget = (widgetId, direction) => {
-        const index = widgets.findIndex(w => w.id === widgetId);
-        if ((direction === 'up' && index === 0) || (direction === 'down' && index === widgets.length - 1)) return;
-
+    const duplicateWidget = (widget) => {
+        const newWidget = {
+            ...widget,
+            id: Date.now(),
+            settings: { ...widget.settings }
+        };
+        const index = widgets.findIndex(w => w.id === widget.id);
         const newWidgets = [...widgets];
-        const newIndex = direction === 'up' ? index - 1 : index + 1;
-        [newWidgets[index], newWidgets[newIndex]] = [newWidgets[newIndex], newWidgets[index]];
+        newWidgets.splice(index + 1, 0, newWidget);
         setWidgets(newWidgets);
+        toast.success('Widget duplicated');
     };
 
     const handleSave = async () => {
@@ -258,26 +349,35 @@ export default function EmailTemplateEditor() {
         );
     }
 
+    // Group variables by category
+    const groupedVariables = templateVariables.reduce((acc, v) => {
+        const cat = v.category || 'custom';
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(v);
+        return acc;
+    }, {});
+
     return (
-        <div className="h-[calc(100vh-100px)] flex flex-col">
+        <div className="h-[calc(100vh-100px)] flex flex-col bg-slate-100 dark:bg-slate-950">
             {/* Top Bar */}
-            <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between flex-shrink-0">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => navigate('/communications/templates')} className="btn-ghost">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-2.5 flex items-center justify-between flex-shrink-0 shadow-sm">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate('/communications/templates')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                        <svg className="w-5 h-5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
                     </button>
+                    <div className="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
                     <input
                         type="text"
                         value={templateName}
                         onChange={(e) => setTemplateName(e.target.value)}
-                        placeholder="Template name..."
-                        className="text-lg font-semibold bg-transparent border-none focus:outline-none focus:ring-0 text-slate-900 dark:text-white w-64"
+                        placeholder="Untitled Template"
+                        className="text-lg font-semibold bg-transparent border-none focus:outline-none focus:ring-0 text-slate-900 dark:text-white w-56"
                     />
                 </div>
-                <div className="flex items-center gap-3">
-                    <select value={category} onChange={(e) => setCategory(e.target.value)} className="select text-sm">
+                <div className="flex items-center gap-2">
+                    <select value={category} onChange={(e) => setCategory(e.target.value)} className="select text-sm h-9">
                         <option value="Marketing">Marketing</option>
                         <option value="Sales">Sales</option>
                         <option value="Onboarding">Onboarding</option>
@@ -288,202 +388,316 @@ export default function EmailTemplateEditor() {
                         type="text"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
-                        placeholder="Email subject..."
-                        className="input text-sm w-64"
+                        placeholder="Email subject line..."
+                        className="input text-sm h-9 w-56"
                     />
-                    <button onClick={() => setShowPreview(!showPreview)} className={`btn-ghost ${showPreview ? 'text-indigo-600' : ''}`}>
+                    <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                    <button
+                        onClick={() => setShowPreview(!showPreview)}
+                        className={`p-2 rounded-lg transition-colors ${showPreview ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400'}`}
+                        title="Toggle Preview"
+                    >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                     </button>
-                    <button onClick={handleSave} disabled={saving} className="btn-primary">
-                        {saving ? 'Saving...' : 'Save Template'}
+                    <button onClick={handleSave} disabled={saving} className="btn-primary h-9 px-4">
+                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {saving ? 'Saving...' : 'Save'}
                     </button>
                 </div>
             </div>
 
             {/* Main Editor Area */}
             <div className="flex-1 flex overflow-hidden">
-                {/* Left Sidebar - Widgets */}
-                <div className="w-56 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 p-4 overflow-y-auto flex-shrink-0">
-                    <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Content Blocks</h3>
-                    <div className="space-y-2">
-                        {WIDGETS.map(w => (
-                            <button
-                                key={w.id}
-                                onClick={() => addWidget(w.id)}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-sm transition-all text-slate-700 dark:text-slate-300"
-                            >
-                                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={w.icon} />
-                                </svg>
-                                {w.name}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Template Variables */}
-                    <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-                        <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Variables</h3>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">Click to copy, then paste in any text field</p>
-                        <div className="space-y-1 max-h-64 overflow-y-auto">
-                            {templateVariables.map(v => (
-                                <button
-                                    key={v.variable_key}
-                                    onClick={() => {
-                                        const varStr = `{{${v.variable_key}}}`;
-                                        navigator.clipboard.writeText(varStr);
-                                        toast.success(`Copied ${varStr}`);
-                                    }}
-                                    className="w-full flex items-center justify-between px-2 py-1.5 rounded text-xs hover:bg-white dark:hover:bg-slate-800 transition-colors group"
-                                >
-                                    <span className="text-slate-600 dark:text-slate-400">{v.label}</span>
-                                    <code className="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded text-[10px] group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50">
-                                        {`{{${v.variable_key}}}`}
-                                    </code>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Center - Canvas */}
-                <div className="flex-1 bg-slate-100 dark:bg-slate-950 overflow-auto p-6">
-                    {/* View Toggle */}
-                    <div className="flex justify-center mb-4">
-                        <div className="inline-flex bg-white dark:bg-slate-800 rounded-lg p-1 shadow-sm">
-                            <button onClick={() => setViewMode('visual')} className={`px-4 py-1.5 text-sm rounded-md transition-colors ${viewMode === 'visual' ? 'bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-400'}`}>
-                                Visual
-                            </button>
-                            <button onClick={() => setViewMode('code')} className={`px-4 py-1.5 text-sm rounded-md transition-colors ${viewMode === 'code' ? 'bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-400'}`}>
-                                HTML Code
-                            </button>
-                        </div>
+                {/* Left Sidebar - Widgets & Variables */}
+                <div className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col flex-shrink-0">
+                    {/* Tab Switcher */}
+                    <div className="flex border-b border-slate-200 dark:border-slate-700">
+                        <button
+                            onClick={() => setViewMode('visual')}
+                            className={`flex-1 py-3 text-sm font-medium transition-colors ${viewMode === 'visual' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Blocks
+                        </button>
+                        <button
+                            onClick={() => setViewMode('code')}
+                            className={`flex-1 py-3 text-sm font-medium transition-colors ${viewMode === 'code' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Code
+                        </button>
                     </div>
 
                     {viewMode === 'visual' ? (
-                        <div className="max-w-2xl mx-auto">
-                            {widgets.length === 0 ? (
-                                <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 p-12 text-center">
-                                    <svg className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                                    </svg>
-                                    <p className="text-slate-500 dark:text-slate-400 mb-2">Start building your email</p>
-                                    <p className="text-sm text-slate-400 dark:text-slate-500">Click a content block from the left sidebar</p>
-                                </div>
-                            ) : (
-                                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
-                                    {widgets.map((widget, index) => (
+                        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+                            {/* Content Blocks - Draggable */}
+                            <div>
+                                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">Drag to Add</h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {WIDGETS.map(w => (
                                         <div
-                                            key={widget.id}
-                                            onClick={() => setSelectedWidget(widget)}
-                                            className={`relative group cursor-pointer ${selectedWidget?.id === widget.id ? 'ring-2 ring-indigo-500 ring-inset' : ''}`}
+                                            key={w.id}
+                                            draggable
+                                            onDragStart={(e) => handleWidgetDragStart(e, w.id)}
+                                            onClick={() => addWidget(w.id)}
+                                            className="flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-grab active:cursor-grabbing transition-all group"
+                                            title={w.description}
                                         >
-                                            {/* Widget Preview */}
-                                            <div dangerouslySetInnerHTML={{ __html: widgetToHtml(widget) }} />
+                                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 flex items-center justify-center transition-colors">
+                                                <svg className="w-4 h-4 text-slate-400 group-hover:text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={w.icon} />
+                                                </svg>
+                                            </div>
+                                            <span className="text-[11px] text-slate-600 dark:text-slate-400 group-hover:text-indigo-600 font-medium">{w.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
 
-                                            {/* Hover Controls */}
-                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                                <button onClick={(e) => { e.stopPropagation(); moveWidget(widget.id, 'up'); }} className="p-1 bg-white dark:bg-slate-700 rounded shadow text-slate-500 hover:text-slate-700">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
-                                                </button>
-                                                <button onClick={(e) => { e.stopPropagation(); moveWidget(widget.id, 'down'); }} className="p-1 bg-white dark:bg-slate-700 rounded shadow text-slate-500 hover:text-slate-700">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                                </button>
-                                                <button onClick={(e) => { e.stopPropagation(); removeWidget(widget.id); }} className="p-1 bg-white dark:bg-slate-700 rounded shadow text-red-500 hover:text-red-600">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                                </button>
+                            {/* Variables - Draggable */}
+                            <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
+                                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+                                    Variables
+                                    <span className="text-[10px] normal-case font-normal ml-1 text-slate-400">(drag or click)</span>
+                                </h3>
+                                <div className="space-y-3">
+                                    {Object.entries(groupedVariables).map(([cat, vars]) => (
+                                        <div key={cat}>
+                                            <p className="text-[10px] text-slate-400 uppercase mb-1 px-1">{cat}</p>
+                                            <div className="space-y-1">
+                                                {vars.map(v => (
+                                                    <div
+                                                        key={v.variable_key}
+                                                        draggable
+                                                        onDragStart={(e) => handleVariableDragStart(e, v)}
+                                                        onClick={() => insertVariable(v)}
+                                                        className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 cursor-grab active:cursor-grabbing transition-colors group"
+                                                    >
+                                                        <span className="text-xs text-slate-600 dark:text-slate-400">{v.label}</span>
+                                                        <code className="text-[10px] text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono">
+                                                            {`{{${v.variable_key}}}`}
+                                                        </code>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-                            )}
+                            </div>
                         </div>
                     ) : (
-                        <div className="max-w-4xl mx-auto">
+                        <div className="flex-1 p-3">
                             <textarea
                                 value={generatedHtml}
                                 readOnly
-                                className="w-full h-[500px] font-mono text-sm bg-slate-900 text-emerald-400 p-4 rounded-xl border border-slate-700"
+                                className="w-full h-full font-mono text-xs bg-slate-900 text-emerald-400 p-3 rounded-lg border border-slate-700 resize-none"
                             />
                         </div>
                     )}
                 </div>
 
+                {/* Center - Canvas */}
+                <div
+                    ref={canvasRef}
+                    className="flex-1 overflow-auto p-6"
+                    onDragOver={(e) => { e.preventDefault(); setDragOverIndex(widgets.length); }}
+                    onDrop={handleCanvasDropZone}
+                >
+                    <div className="max-w-xl mx-auto">
+                        {widgets.length === 0 ? (
+                            <div
+                                className={`rounded-2xl border-2 border-dashed p-16 text-center transition-all ${draggedItem ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-300 dark:border-slate-600'
+                                    }`}
+                            >
+                                <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                                    <svg className="w-8 h-8 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                                    {draggedItem ? 'Drop here to add' : 'Start Building'}
+                                </h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                    Drag blocks from the left sidebar or click to add
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
+                                {widgets.map((widget, index) => (
+                                    <div key={widget.id}>
+                                        {/* Drop zone indicator */}
+                                        {dragOverIndex === index && (
+                                            <div className="h-1 bg-indigo-500 mx-4 rounded-full animate-pulse" />
+                                        )}
+                                        <div
+                                            draggable
+                                            onDragStart={(e) => handleCanvasWidgetDragStart(e, index)}
+                                            onDragOver={(e) => handleDragOver(e, index)}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={(e) => handleDrop(e, index)}
+                                            onClick={() => setSelectedWidget(widget)}
+                                            className={`relative group cursor-pointer ${selectedWidget?.id === widget.id
+                                                    ? 'ring-2 ring-indigo-500 ring-inset'
+                                                    : 'hover:ring-2 hover:ring-slate-300 hover:ring-inset'
+                                                }`}
+                                        >
+                                            <div dangerouslySetInnerHTML={{ __html: widgetToHtml(widget) }} />
+
+                                            {/* Widget Controls */}
+                                            <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-all flex gap-0.5 bg-white dark:bg-slate-700 rounded-lg shadow-lg p-0.5">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); duplicateWidget(widget); }}
+                                                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 rounded text-slate-500 hover:text-slate-700"
+                                                    title="Duplicate"
+                                                >
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); removeWidget(widget.id); }}
+                                                    className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-slate-500 hover:text-red-600"
+                                                    title="Delete"
+                                                >
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+
+                                            {/* Drag handle */}
+                                            <div className="absolute top-1/2 -translate-y-1/2 left-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                                                <svg className="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {/* Final drop zone */}
+                                {dragOverIndex === widgets.length && (
+                                    <div className="h-1 bg-indigo-500 mx-4 mb-2 rounded-full animate-pulse" />
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* Right Sidebar - Properties */}
                 {selectedWidget && (
-                    <div className="w-72 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 p-4 overflow-y-auto flex-shrink-0">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-slate-900 dark:text-white capitalize">{selectedWidget.type} Settings</h3>
-                            <button onClick={() => setSelectedWidget(null)} className="text-slate-400 hover:text-slate-600">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-72 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 flex flex-col flex-shrink-0">
+                        <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700">
+                            <h3 className="font-semibold text-slate-900 dark:text-white capitalize flex items-center gap-2">
+                                <span className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                                    <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={WIDGETS.find(w => w.id === selectedWidget.type)?.icon || ''} />
+                                    </svg>
+                                </span>
+                                {selectedWidget.type}
+                            </h3>
+                            <button onClick={() => setSelectedWidget(null)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
+                                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="flex-1 overflow-y-auto p-3 space-y-4">
                             {Object.entries(selectedWidget.settings).map(([key, value]) => (
                                 <div key={key}>
-                                    <label className="label capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
+                                    <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 block">
+                                        {key.replace(/([A-Z])/g, ' $1')}
+                                    </label>
                                     {key.includes('Color') ? (
                                         <div className="flex items-center gap-2">
                                             <input
                                                 type="color"
                                                 value={value}
                                                 onChange={(e) => updateWidgetSettings(selectedWidget.id, key, e.target.value)}
-                                                className="w-10 h-10 rounded border border-slate-300 dark:border-slate-600 cursor-pointer"
+                                                className="w-10 h-10 rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer overflow-hidden"
                                             />
                                             <input
                                                 type="text"
                                                 value={value}
                                                 onChange={(e) => updateWidgetSettings(selectedWidget.id, key, e.target.value)}
-                                                className="input flex-1"
+                                                onFocus={() => setActiveInput(key)}
+                                                className="input flex-1 text-sm h-10"
                                             />
                                         </div>
                                     ) : key === 'align' ? (
-                                        <select
-                                            value={value}
-                                            onChange={(e) => updateWidgetSettings(selectedWidget.id, key, e.target.value)}
-                                            className="select"
-                                        >
-                                            <option value="left">Left</option>
-                                            <option value="center">Center</option>
-                                            <option value="right">Right</option>
-                                        </select>
+                                        <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                                            {['left', 'center', 'right'].map(align => (
+                                                <button
+                                                    key={align}
+                                                    onClick={() => updateWidgetSettings(selectedWidget.id, key, align)}
+                                                    className={`flex-1 py-2 rounded-md text-sm capitalize transition-colors ${value === align
+                                                            ? 'bg-white dark:bg-slate-600 shadow text-slate-900 dark:text-white'
+                                                            : 'text-slate-500 hover:text-slate-700'
+                                                        }`}
+                                                >
+                                                    {align}
+                                                </button>
+                                            ))}
+                                        </div>
                                     ) : key === 'content' || key === 'leftContent' || key === 'rightContent' ? (
                                         <textarea
                                             value={value}
                                             onChange={(e) => updateWidgetSettings(selectedWidget.id, key, e.target.value)}
-                                            className="input min-h-24"
+                                            onFocus={() => setActiveInput(key)}
+                                            className="input min-h-28 text-sm"
+                                            placeholder="Type content or drag variables here..."
                                         />
                                     ) : (
                                         <input
                                             type={key.includes('height') || key.includes('Size') || key.includes('width') || key.includes('padding') || key.includes('Radius') ? 'number' : 'text'}
                                             value={value}
                                             onChange={(e) => updateWidgetSettings(selectedWidget.id, key, e.target.value)}
-                                            className="input"
+                                            onFocus={() => setActiveInput(key)}
+                                            className="input text-sm h-10"
                                         />
                                     )}
                                 </div>
                             ))}
+                        </div>
+
+                        {/* Quick Variable Insert */}
+                        <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                            <p className="text-[10px] text-slate-400 uppercase font-medium mb-2">Quick Insert Variable</p>
+                            <div className="flex flex-wrap gap-1">
+                                {templateVariables.slice(0, 6).map(v => (
+                                    <button
+                                        key={v.variable_key}
+                                        onClick={() => insertVariable(v)}
+                                        className="px-2 py-1 text-[10px] bg-white dark:bg-slate-700 rounded border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-indigo-400 hover:text-indigo-600 transition-colors"
+                                    >
+                                        {v.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* Preview Panel */}
                 {showPreview && (
-                    <div className="w-96 bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700 flex-shrink-0 flex flex-col">
-                        <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                            <h3 className="font-semibold text-sm text-slate-900 dark:text-white">Live Preview</h3>
+                    <div className="w-96 bg-slate-50 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700 flex flex-col flex-shrink-0">
+                        <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between">
+                            <h3 className="font-semibold text-sm text-slate-900 dark:text-white">Preview</h3>
+                            <div className="flex gap-1 text-xs">
+                                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Desktop</span>
+                            </div>
                         </div>
-                        <div className="flex-1 overflow-auto p-3">
-                            <iframe
-                                srcDoc={generatedHtml}
-                                className="w-full h-full bg-white rounded-lg shadow-sm"
-                                title="Email Preview"
-                            />
+                        <div className="flex-1 overflow-auto p-4">
+                            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                                <iframe
+                                    srcDoc={generatedHtml}
+                                    className="w-full h-[600px]"
+                                    title="Email Preview"
+                                />
+                            </div>
                         </div>
                     </div>
                 )}
