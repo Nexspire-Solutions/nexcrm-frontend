@@ -187,7 +187,18 @@ const CouponsList = () => {
                                                     {coupon.type === 'percentage' ? `${coupon.value}%` : `₹${coupon.value}`}
                                                 </td>
                                                 <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
-                                                    {coupon.used_count || 0} / {coupon.usage_limit || '∞'}
+                                                    {coupon.used_count > 0 ? (
+                                                        <button
+                                                            onClick={() => { setHistoryCoupon(coupon); setShowHistoryModal(true); }}
+                                                            className="text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
+                                                        >
+                                                            {coupon.used_count} used
+                                                        </button>
+                                                    ) : (
+                                                        <span>0 used</span>
+                                                    )}
+                                                    <span className="text-slate-400 mx-1">/</span>
+                                                    {coupon.usage_limit || '∞'}
                                                 </td>
                                                 <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-xs">
                                                     {coupon.end_date ? new Date(coupon.end_date).toLocaleDateString() : 'No expiry'}
