@@ -1,27 +1,19 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { templatesAPI } from '../../api';
 
 export default function EmailTemplates() {
+    const navigate = useNavigate();
     const [templates, setTemplates] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [showModal, setShowModal] = useState(false);
-    const [editingTemplate, setEditingTemplate] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [previewTemplate, setPreviewTemplate] = useState(null);
-    const [saving, setSaving] = useState(false);
-    const [formData, setFormData] = useState({
-        name: '',
-        subject: '',
-        category: 'Sales',
-        body: '',
-        status: 'active'
-    });
 
     useEffect(() => {
         fetchTemplates();
@@ -33,63 +25,10 @@ export default function EmailTemplates() {
             setTemplates(response.data || []);
         } catch (error) {
             console.error('Failed to load templates:', error);
-            // Use empty array, no mock data
             setTemplates([]);
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const resetForm = () => {
-        setFormData({
-            name: '',
-            subject: '',
-            category: 'Sales',
-            body: '',
-            status: 'active'
-        });
-    };
-
-    const handleSubmit = async () => {
-        if (!formData.name.trim() || !formData.subject.trim()) {
-            toast.error('Name and subject are required');
-            return;
-        }
-        setSaving(true);
-        try {
-            if (editingTemplate) {
-                await templatesAPI.update(editingTemplate.id, formData);
-                toast.success('Template updated successfully');
-            } else {
-                await templatesAPI.create(formData);
-                toast.success('Template created successfully');
-            }
-            setShowModal(false);
-            resetForm();
-            fetchTemplates();
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to save template');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const openCreateModal = () => {
-        resetForm();
-        setEditingTemplate(null);
-        setShowModal(true);
-    };
-
-    const openEditModal = (template) => {
-        setFormData({
-            name: template.name || '',
-            subject: template.subject || '',
-            category: template.category || 'Sales',
-            body: template.body || '',
-            status: template.status || 'active'
-        });
-        setEditingTemplate(template);
-        setShowModal(true);
     };
 
     const filteredTemplates = templates.filter(t =>
@@ -130,14 +69,17 @@ export default function EmailTemplates() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6  rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6 rounded-xl">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 dark:text-white">Email Templates</h1>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                         Create and manage reusable email templates
                     </p>
                 </div>
-                <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow">
+                <button
+                    onClick={() => navigate('/communications/templates/new')}
+                    className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow"
+                >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
@@ -161,154 +103,87 @@ export default function EmailTemplates() {
                 </div>
             </div>
 
-            {/* Templates Table */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-700">
-                        <tr>
-                            <th className="px-6 py-4">Template Name</th>
-                            <th className="px-6 py-4">Subject</th>
-                            <th className="px-6 py-4">Category</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                        {filteredTemplates.map((template) => (
-                            <tr key={template.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
-                                        <p className="font-semibold text-slate-900 dark:text-white">{template.name}</p>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-slate-600 dark:text-slate-400 max-w-xs truncate">{template.subject}</td>
-                                <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-600">
-                                        {template.category}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={template.status === 'active'
-                                        ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                        : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                    }>
+            {/* Templates Grid */}
+            {filteredTemplates.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredTemplates.map((template) => (
+                        <div key={template.id} className="card overflow-hidden group hover:shadow-lg transition-shadow">
+                            {/* Preview Thumbnail */}
+                            <div className="h-32 bg-slate-100 dark:bg-slate-700 relative overflow-hidden">
+                                <iframe
+                                    srcDoc={template.body || '<p style="padding:40px;text-align:center;color:#999;">No content</p>'}
+                                    className="w-full h-full scale-50 origin-top-left pointer-events-none"
+                                    style={{ width: '200%', height: '200%' }}
+                                    title={template.name}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+
+                            {/* Card Body */}
+                            <div className="p-4">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                    <h3 className="font-semibold text-slate-900 dark:text-white truncate">{template.name}</h3>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${template.status === 'active'
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                        }`}>
                                         {template.status}
                                     </span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <button onClick={() => openEditModal(template)} className="btn-ghost btn-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
-                                            Edit
-                                        </button>
+                                </div>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 truncate mb-3">{template.subject}</p>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-400">
+                                        {template.category}
+                                    </span>
+                                    <div className="flex items-center gap-1">
                                         <button
                                             onClick={() => { setPreviewTemplate(template); setShowPreview(true); }}
-                                            className="btn-ghost btn-sm text-slate-600 hover:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                                            className="btn-ghost btn-sm"
+                                            title="Preview"
                                         >
-                                            Preview
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
                                         </button>
-                                        <button onClick={() => handleDelete(template.id)} className="btn-ghost btn-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                        <button
+                                            onClick={() => navigate(`/communications/templates/${template.id}/edit`)}
+                                            className="btn-ghost btn-sm text-indigo-600"
+                                            title="Edit"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(template.id)}
+                                            className="btn-ghost btn-sm text-red-500"
+                                            title="Delete"
+                                        >
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
                                         </button>
                                     </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            {filteredTemplates.length === 0 && (
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
                 <div className="card">
-                    <div className="empty-state">
-                        <svg className="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="empty-state py-12">
+                        <svg className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
-                        <h3 className="empty-state-title">No templates found</h3>
-                        <p className="empty-state-text">Create your first email template to get started</p>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">No templates yet</h3>
+                        <p className="text-slate-500 dark:text-slate-400 mb-4">Create your first email template to get started</p>
+                        <button onClick={() => navigate('/communications/templates/new')} className="btn-primary">
+                            Create Template
+                        </button>
                     </div>
                 </div>
             )}
-
-            {/* Template Modal */}
-            <Modal
-                isOpen={showModal}
-                onClose={() => setShowModal(false)}
-                title={editingTemplate ? 'Edit Template' : 'New Template'}
-                footer={
-                    <>
-                        <button onClick={() => setShowModal(false)} className="btn-secondary" disabled={saving}>Cancel</button>
-                        <button onClick={handleSubmit} className="btn-primary" disabled={saving}>
-                            {saving ? 'Saving...' : (editingTemplate ? 'Update' : 'Create')}
-                        </button>
-                    </>
-                }
-            >
-                <div className="space-y-4">
-                    <div>
-                        <label className="label">Template Name *</label>
-                        <input
-                            type="text"
-                            className="input"
-                            value={formData.name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="e.g., Welcome Email"
-                        />
-                    </div>
-                    <div>
-                        <label className="label">Subject Line *</label>
-                        <input
-                            type="text"
-                            className="input"
-                            value={formData.subject}
-                            onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                            placeholder="Email subject"
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="label">Category</label>
-                            <select
-                                className="select"
-                                value={formData.category}
-                                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                            >
-                                <option value="Onboarding">Onboarding</option>
-                                <option value="Sales">Sales</option>
-                                <option value="Scheduling">Scheduling</option>
-                                <option value="Post-Sale">Post-Sale</option>
-                                <option value="Marketing">Marketing</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="label">Status</label>
-                            <select
-                                className="select"
-                                value={formData.status}
-                                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
-                            >
-                                <option value="active">Active</option>
-                                <option value="draft">Draft</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label className="label">Email Body</label>
-                        <textarea
-                            className="input min-h-48"
-                            value={formData.body}
-                            onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value }))}
-                            placeholder="Write your email content here..."
-                        ></textarea>
-                    </div>
-                </div>
-            </Modal>
 
             {/* Delete Confirmation */}
             <ConfirmModal
@@ -322,49 +197,36 @@ export default function EmailTemplates() {
                 variant="danger"
             />
 
-            {/* Preview Modal */}
+            {/* Preview Modal with HTML Rendering */}
             <Modal
                 isOpen={showPreview}
                 onClose={() => setShowPreview(false)}
-                title="Template Preview"
+                title={previewTemplate?.name || 'Template Preview'}
+                size="xl"
                 footer={
                     <>
                         <button onClick={() => setShowPreview(false)} className="btn-secondary">Close</button>
-                        <button onClick={() => { openEditModal(previewTemplate); setShowPreview(false); }} className="btn-primary">Edit Template</button>
+                        <button
+                            onClick={() => { navigate(`/communications/templates/${previewTemplate?.id}/edit`); setShowPreview(false); }}
+                            className="btn-primary"
+                        >
+                            Edit Template
+                        </button>
                     </>
                 }
             >
                 {previewTemplate && (
                     <div className="space-y-4">
-                        <div>
-                            <label className="label">Template Name</label>
-                            <p className="text-slate-900 dark:text-white font-medium">{previewTemplate.name}</p>
+                        <div className="flex items-center gap-4 text-sm">
+                            <span className="text-slate-500 dark:text-slate-400">Subject:</span>
+                            <span className="font-medium text-slate-900 dark:text-white">{previewTemplate.subject}</span>
                         </div>
-                        <div>
-                            <label className="label">Subject Line</label>
-                            <p className="text-slate-900 dark:text-white font-medium">{previewTemplate.subject}</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="label">Category</label>
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
-                                    {previewTemplate.category}
-                                </span>
-                            </div>
-                            <div>
-                                <label className="label">Status</label>
-                                <span className={previewTemplate.status === 'active' ? 'badge-success' : 'badge-warning'}>
-                                    {previewTemplate.status}
-                                </span>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="label">Email Body Preview</label>
-                            <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-700 min-h-48">
-                                <p className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
-                                    {previewTemplate.body || 'No email body content yet...'}
-                                </p>
-                            </div>
+                        <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                            <iframe
+                                srcDoc={previewTemplate.body || '<p style="padding:40px;text-align:center;color:#666;">No email content</p>'}
+                                className="w-full h-[500px] bg-white"
+                                title="Email Preview"
+                            />
                         </div>
                     </div>
                 )}
