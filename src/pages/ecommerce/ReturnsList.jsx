@@ -1,56 +1,152 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
+import ConfirmModal from '../../components/common/ConfirmModal';
+import { returnsAPI, ordersAPI } from '../../api';
 
 export default function ReturnsList() {
+    const [returns, setReturns] = useState([]);
+    const [orders, setOrders] = useState([]);
+    const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, total_amount: 0 });
+    const [isLoading, setIsLoading] = useState(true);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [returns] = useState([
-        { id: 1, orderId: '#ORD-7829', customer: 'John Doe', reason: 'Defective Item', status: 'Pending', date: '2023-10-25', amount: 129.00 },
-        { id: 2, orderId: '#ORD-7811', customer: 'Jane Smith', reason: 'Wrong Size', status: 'Approved', date: '2023-10-24', amount: 59.50 },
-        { id: 3, orderId: '#ORD-7790', customer: 'Mike Johnson', reason: 'Changed Mind', status: 'Rejected', date: '2023-10-22', amount: 45.00 },
-        { id: 4, orderId: '#ORD-7780', customer: 'Sarah Wilson', reason: 'Wrong Item Sent', status: 'Completed', date: '2023-10-20', amount: 89.99 },
-    ]);
+    const [isProcessOpen, setIsProcessOpen] = useState(false);
+    const [selectedReturn, setSelectedReturn] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [deleteConfirm, setDeleteConfirm] = useState(false);
+    const [deleteId, setDeleteId] = useState(null);
+    const [formData, setFormData] = useState({
+        order_id: '',
+        reason: 'Defective Item',
+        notes: '',
+        refund_amount: ''
+    });
 
-    const stats = {
-        total: 4,
-        pending: 1,
-        approved: 1,
-        total_amount: 323.49
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            // Fetch returns
+            const returnsRes = await returnsAPI.getAll().catch(() => ({ data: [] }));
+            setReturns(returnsRes.data || []);
+
+            // Fetch stats
+            const statsRes = await returnsAPI.getStats().catch(() => ({ data: {} }));
+            setStats(statsRes.data || { total: 0, pending: 0, approved: 0, total_amount: 0 });
+
+            // Fetch orders for dropdown
+            const ordersRes = await ordersAPI.getAll({ status: 'delivered' }).catch(() => ({ data: [] }));
+            setOrders(ordersRes.data || []);
+        } catch (error) {
+            console.error('Failed to load returns:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleCreateReturn = () => {
-        setIsCreateOpen(true);
+    const handleCreateReturn = async () => {
+        if (!formData.order_id) {
+            toast.error('Please select an order');
+            return;
+        }
+        if (!formData.refund_amount || parseFloat(formData.refund_amount) <= 0) {
+            toast.error('Please enter a valid refund amount');
+            return;
+        }
+
+        setSaving(true);
+        try {
+            await returnsAPI.create({
+                order_id: formData.order_id,
+                reason: formData.reason,
+                notes: formData.notes,
+                refund_amount: parseFloat(formData.refund_amount)
+            });
+            toast.success('Return request created');
+            setIsCreateOpen(false);
+            setFormData({ order_id: '', reason: 'Defective Item', notes: '', refund_amount: '' });
+            fetchData();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to create return');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleProcess = (item) => {
-        toast.info(`Process functionality coming soon for ${item.orderId}`);
+        setSelectedReturn(item);
+        setIsProcessOpen(true);
     };
 
-    const handleSaveReturn = () => {
-        toast.success('Return created successfully');
-        setIsCreateOpen(false);
+    const handleUpdateStatus = async (status) => {
+        if (!selectedReturn) return;
+
+        setSaving(true);
+        try {
+            await returnsAPI.updateStatus(selectedReturn.id, status);
+            toast.success(`Return ${status.toLowerCase()}`);
+            setIsProcessOpen(false);
+            setSelectedReturn(null);
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to update status');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deleteId) return;
+        try {
+            await returnsAPI.delete(deleteId);
+            toast.success('Return deleted');
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to delete return');
+        }
+        setDeleteId(null);
     };
 
     const getStatusColor = (status) => {
         const colors = {
-            'Pending': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-            'Approved': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-            'Completed': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-            'Rejected': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+            'pending': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+            'approved': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+            'completed': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+            'rejected': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
         };
-        return colors[status] || 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400';
+        return colors[status?.toLowerCase()] || 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400';
     };
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3 animate-pulse"></div>
+                <div className="grid grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-20 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+                    ))}
+                </div>
+                <div className="card p-4">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="h-12 bg-slate-100 dark:bg-slate-800 rounded mb-2 animate-pulse"></div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6  rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6 rounded-xl">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 dark:text-white">Returns Management</h1>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Process and track customer returns</p>
                 </div>
                 <button
-                    onClick={handleCreateReturn}
+                    onClick={() => setIsCreateOpen(true)}
                     className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,7 +205,7 @@ export default function ReturnsList() {
                             </svg>
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{stats.total_amount.toFixed(2)}</p>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{(stats.total_amount || 0).toFixed(2)}</p>
                             <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Total Amount</p>
                         </div>
                     </div>
@@ -118,51 +214,79 @@ export default function ReturnsList() {
 
             {/* Returns Table */}
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-700">
-                            <tr>
-                                <th className="px-6 py-4">Order ID</th>
-                                <th className="px-6 py-4">Customer</th>
-                                <th className="px-6 py-4">Reason</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Date</th>
-                                <th className="px-6 py-4">Amount</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                            {returns.map((item) => (
-                                <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <code className="text-xs font-semibold bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-indigo-600 dark:text-indigo-400">
-                                            {item.orderId}
-                                        </code>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{item.customer}</td>
-                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{item.reason}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                                            {item.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">{item.date}</td>
-                                    <td className="px-6 py-4 font-semibold text-indigo-600 dark:text-indigo-400">
-                                        ₹{item.amount.toFixed(2)}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => handleProcess(item)}
-                                            className="btn-ghost btn-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-                                        >
-                                            Process
-                                        </button>
-                                    </td>
+                {returns.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <svg className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        <p className="text-slate-500 dark:text-slate-400">No returns found</p>
+                        <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Create a return request when needed</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-700">
+                                <tr>
+                                    <th className="px-6 py-4">Return ID</th>
+                                    <th className="px-6 py-4">Order</th>
+                                    <th className="px-6 py-4">Reason</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">Date</th>
+                                    <th className="px-6 py-4">Refund</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                {returns.map((item) => (
+                                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <code className="text-xs font-semibold bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-indigo-600 dark:text-indigo-400">
+                                                #RTN-{String(item.id).padStart(4, '0')}
+                                            </code>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <code className="text-xs font-semibold bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
+                                                #ORD-{String(item.order_id).padStart(4, '0')}
+                                            </code>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{item.reason}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(item.status)}`}>
+                                                {item.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
+                                            {item.created_at ? new Date(item.created_at).toLocaleDateString() : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 font-semibold text-indigo-600 dark:text-indigo-400">
+                                            ₹{(item.refund_amount || 0).toFixed(2)}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                {item.status === 'pending' && (
+                                                    <button
+                                                        onClick={() => handleProcess(item)}
+                                                        className="btn-ghost btn-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                                                    >
+                                                        Process
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => { setDeleteId(item.id); setDeleteConfirm(true); }}
+                                                    className="btn-ghost btn-sm text-red-500 hover:text-red-600"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
             {/* Create Return Modal */}
@@ -172,35 +296,139 @@ export default function ReturnsList() {
                 title="Create New Return"
                 footer={
                     <>
-                        <button onClick={() => setIsCreateOpen(false)} className="btn-secondary">Cancel</button>
-                        <button onClick={handleSaveReturn} className="btn-primary">Create Return</button>
+                        <button onClick={() => setIsCreateOpen(false)} className="btn-secondary" disabled={saving}>Cancel</button>
+                        <button onClick={handleCreateReturn} className="btn-primary" disabled={saving}>
+                            {saving ? 'Creating...' : 'Create Return'}
+                        </button>
                     </>
                 }
             >
                 <div className="space-y-4">
                     <div>
-                        <label className="label">Order ID</label>
-                        <input type="text" className="input" placeholder="#ORD-" />
-                    </div>
-                    <div>
-                        <label className="label">Customer Name</label>
-                        <input type="text" className="input" placeholder="John Doe" />
+                        <label className="label">Order *</label>
+                        <select
+                            className="select"
+                            value={formData.order_id}
+                            onChange={(e) => setFormData(prev => ({ ...prev, order_id: e.target.value }))}
+                        >
+                            <option value="">Select an order</option>
+                            {orders.map(o => (
+                                <option key={o.id} value={o.id}>
+                                    #ORD-{String(o.id).padStart(4, '0')} - ₹{(o.total || 0).toFixed(2)}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                     <div>
                         <label className="label">Return Reason</label>
-                        <select className="select">
+                        <select
+                            className="select"
+                            value={formData.reason}
+                            onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
+                        >
                             <option>Defective Item</option>
                             <option>Wrong Size</option>
                             <option>Changed Mind</option>
                             <option>Wrong Item Sent</option>
+                            <option>Damaged in Transit</option>
+                            <option>Not as Described</option>
+                            <option>Other</option>
                         </select>
                     </div>
                     <div>
-                        <label className="label">Refund Amount (₹)</label>
-                        <input type="number" className="input" placeholder="0.00" step="0.01" />
+                        <label className="label">Notes</label>
+                        <textarea
+                            className="input min-h-20"
+                            placeholder="Additional details..."
+                            value={formData.notes}
+                            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                        />
+                    </div>
+                    <div>
+                        <label className="label">Refund Amount (₹) *</label>
+                        <input
+                            type="number"
+                            className="input"
+                            placeholder="0.00"
+                            step="0.01"
+                            value={formData.refund_amount}
+                            onChange={(e) => setFormData(prev => ({ ...prev, refund_amount: e.target.value }))}
+                        />
                     </div>
                 </div>
             </Modal>
+
+            {/* Process Return Modal */}
+            <Modal
+                isOpen={isProcessOpen}
+                onClose={() => setIsProcessOpen(false)}
+                title="Process Return"
+                size="md"
+            >
+                {selectedReturn && (
+                    <div className="space-y-4">
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <p className="text-slate-500 dark:text-slate-400">Return ID</p>
+                                    <p className="font-semibold text-slate-900 dark:text-white">#RTN-{String(selectedReturn.id).padStart(4, '0')}</p>
+                                </div>
+                                <div>
+                                    <p className="text-slate-500 dark:text-slate-400">Order ID</p>
+                                    <p className="font-semibold text-slate-900 dark:text-white">#ORD-{String(selectedReturn.order_id).padStart(4, '0')}</p>
+                                </div>
+                                <div>
+                                    <p className="text-slate-500 dark:text-slate-400">Reason</p>
+                                    <p className="font-semibold text-slate-900 dark:text-white">{selectedReturn.reason}</p>
+                                </div>
+                                <div>
+                                    <p className="text-slate-500 dark:text-slate-400">Refund Amount</p>
+                                    <p className="font-semibold text-indigo-600 dark:text-indigo-400">₹{(selectedReturn.refund_amount || 0).toFixed(2)}</p>
+                                </div>
+                            </div>
+                            {selectedReturn.notes && (
+                                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Notes</p>
+                                    <p className="text-slate-700 dark:text-slate-300 text-sm">{selectedReturn.notes}</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => handleUpdateStatus('approved')}
+                                disabled={saving}
+                                className="flex-1 btn-primary bg-emerald-600 hover:bg-emerald-700"
+                            >
+                                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Approve
+                            </button>
+                            <button
+                                onClick={() => handleUpdateStatus('rejected')}
+                                disabled={saving}
+                                className="flex-1 btn-secondary text-red-600 border-red-300 hover:bg-red-50"
+                            >
+                                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            {/* Delete Confirmation */}
+            <ConfirmModal
+                isOpen={deleteConfirm}
+                onClose={() => setDeleteConfirm(false)}
+                onConfirm={handleDelete}
+                title="Delete Return"
+                message="Are you sure you want to delete this return request? This action cannot be undone."
+                confirmText="Delete"
+                variant="danger"
+            />
         </div>
     );
 }
