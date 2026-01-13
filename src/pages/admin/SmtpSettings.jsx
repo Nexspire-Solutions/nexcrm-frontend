@@ -81,8 +81,13 @@ export default function SmtpSettings() {
     };
 
     const handleSave = async () => {
-        if (!formData.host || !formData.username || !formData.password) {
-            toast.error('Host, username, and password are required');
+        // Password is only required for new accounts
+        if (!formData.host || !formData.username) {
+            toast.error('Host and username are required');
+            return;
+        }
+        if (!editingAccount && !formData.password) {
+            toast.error('Password is required for new accounts');
             return;
         }
         setSaving(true);
