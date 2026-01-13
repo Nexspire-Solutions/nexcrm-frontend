@@ -36,6 +36,7 @@ import LeadSettings from './pages/leads/LeadSettings';
 
 // Communications
 import EmailTemplates from './pages/communications/EmailTemplates';
+import EmailTemplateEditor from './pages/communications/EmailTemplateEditor';
 import BulkMailing from './pages/communications/BulkMailing';
 import EmailCampaigns from './pages/communications/EmailCampaigns';
 import TeamChat from './pages/communications/TeamChat';
@@ -165,6 +166,8 @@ function AppRoutes() {
           {/* Communications */}
           <Route element={<ProtectedRoute requiredPermission={['communications', 'read']} />}>
             <Route path="communications/templates" element={<EmailTemplates />} />
+            <Route path="communications/templates/new" element={<EmailTemplateEditor />} />
+            <Route path="communications/templates/:id/edit" element={<EmailTemplateEditor />} />
             <Route path="communications/bulk-mail" element={<BulkMailing />} />
             <Route path="communications/campaigns" element={<EmailCampaigns />} />
             <Route path="communications/chat" element={<TeamChat />} />

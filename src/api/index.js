@@ -271,6 +271,21 @@ export const templatesAPI = {
         const response = await apiClient.get('/email-templates/stats');
         return response.data;
     },
+
+    getVariables: async () => {
+        const response = await apiClient.get('/email-templates/variables/list');
+        return response.data;
+    },
+
+    addVariable: async (data) => {
+        const response = await apiClient.post('/email-templates/variables', data);
+        return response.data;
+    },
+
+    deleteVariable: async (id) => {
+        const response = await apiClient.delete(`/email-templates/variables/${id}`);
+        return response.data;
+    }
 };
 
 // Activities API - for tracking notes, calls, status changes etc.
