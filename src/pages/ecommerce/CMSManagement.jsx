@@ -681,10 +681,58 @@ const CMSModal = ({ type, item, onClose, onSave, mediaBaseUrl }) => {
                         <div className="space-y-3 max-h-60 overflow-y-auto">
                             {sectionItems.map((item, idx) => (
                                 <div key={item.id || idx} className="flex gap-2 items-start p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                                    <div className="flex-1 grid grid-cols-3 gap-2">
-                                        <input type="text" value={item.label} onChange={(e) => updateSectionItem(idx, 'label', e.target.value)} className="input text-sm" placeholder="Label" />
-                                        <input type="text" value={item.image} onChange={(e) => updateSectionItem(idx, 'image', e.target.value)} className="input text-sm" placeholder="Image URL" />
-                                        <input type="text" value={item.link} onChange={(e) => updateSectionItem(idx, 'link', e.target.value)} className="input text-sm" placeholder="/products?..." />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input type="text" value={item.label} onChange={(e) => updateSectionItem(idx, 'label', e.target.value)} className="input text-sm" placeholder="Label (e.g., Men)" />
+                                            <input type="text" value={item.link} onChange={(e) => updateSectionItem(idx, 'link', e.target.value)} className="input text-sm" placeholder="Link (e.g., /products?cat=men)" />
+                                        </div>
+                                        <div className="flex gap-2 items-center">
+                                            <input type="text" value={item.image} onChange={(e) => updateSectionItem(idx, 'image', e.target.value)} className="input text-sm flex-1" placeholder="Image URL or upload" />
+                                            <label className={`shrink-0 flex items-center gap-1.5 px-3 py-2 border rounded-lg cursor-pointer text-sm transition-colors
+                                                ${uploading ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (!file) return;
+                                                        setUploading(true);
+                                                        try {
+                                                            const formData = new FormData();
+                                                            formData.append('file', file);
+                                                            formData.append('folder', 'cms');
+                                                            const res = await apiClient.post('/upload', formData, {
+                                                                headers: { 'Content-Type': 'multipart/form-data' }
+                                                            });
+                                                            if (res.data.url) {
+                                                                updateSectionItem(idx, 'image', res.data.url);
+                                                                toast.success('Image uploaded');
+                                                            }
+                                                        } catch (error) {
+                                                            toast.error('Upload failed');
+                                                        } finally {
+                                                            setUploading(false);
+                                                        }
+                                                    }}
+                                                    className="hidden"
+                                                    disabled={uploading}
+                                                />
+                                                {uploading ? (
+                                                    <svg className="w-4 h-4 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                                    </svg>
+                                                ) : (
+                                                    <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                )}
+                                                <span className="text-slate-600 dark:text-slate-400">Upload</span>
+                                            </label>
+                                        </div>
+                                        {item.image && (
+                                            <img src={item.image.startsWith('http') ? item.image : `${mediaBaseUrl}${item.image}`} alt="" className="h-12 w-20 object-cover rounded" onError={(e) => e.target.style.display = 'none'} />
+                                        )}
                                     </div>
                                     <button type="button" onClick={() => removeSectionItem(idx)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
