@@ -14,6 +14,7 @@ const CMSManagement = () => {
     const [sections, setSections] = useState([]);
     const [pages, setPages] = useState([]);
     const [posts, setPosts] = useState([]);
+    const [themeConfig, setThemeConfig] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('');
@@ -26,7 +27,8 @@ const CMSManagement = () => {
         { id: 'banners', label: 'Hero Banners', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
         { id: 'sections', label: 'Homepage Sections', icon: 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z' },
         { id: 'pages', label: 'Static Pages', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-        { id: 'blog', label: 'Blog Posts', icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z' }
+        { id: 'blog', label: 'Blog Posts', icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z' },
+        { id: 'theme', label: 'Theme Settings', icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01' }
     ];
 
     useEffect(() => {
@@ -48,6 +50,9 @@ const CMSManagement = () => {
             } else if (activeTab === 'blog') {
                 const res = await apiClient.get('/cms/blog');
                 setPosts(res.data.data || []);
+            } else if (activeTab === 'theme') {
+                const res = await apiClient.get('/config/storefront');
+                setThemeConfig(res.data || {});
             }
         } catch (error) {
             console.error('CMS fetch error:', error);
@@ -102,7 +107,7 @@ const CMSManagement = () => {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
-                    Add {activeTab === 'banners' ? 'Banner' : activeTab === 'sections' ? 'Section' : activeTab === 'pages' ? 'Page' : 'Post'}
+                    Add {activeTab === 'banners' ? 'Banner' : activeTab === 'sections' ? 'Section' : activeTab === 'pages' ? 'Page' : activeTab === 'blog' ? 'Post' : 'Setting'}
                 </button>
             </div>
 
@@ -340,6 +345,15 @@ const CMSManagement = () => {
                                 </div>
                             )}
                         </div>
+                    )}
+
+                    {/* ========== THEME TAB ========== */}
+                    {activeTab === 'theme' && themeConfig && (
+                        <ThemeSettingsForm
+                            initialConfig={themeConfig}
+                            mediaBaseUrl={mediaBaseUrl}
+                            onSave={() => fetchData()}
+                        />
                     )}
                 </>
             )}
@@ -843,6 +857,279 @@ const CMSModal = ({ type, item, onClose, onSave, mediaBaseUrl }) => {
                 )}
             </div>
         </Modal>
+    );
+};
+
+/**
+ * Theme Settings Form
+ */
+const ThemeSettingsForm = ({ initialConfig, mediaBaseUrl, onSave }) => {
+    const [form, setForm] = useState(initialConfig);
+    const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
+    // Handle image upload
+    const handleImageUpload = async (e, field) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please select an image file');
+            return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('Image must be less than 2MB');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('folder', 'theme');
+
+            const res = await apiClient.post('/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (res.data.url) {
+                setForm(prev => ({ ...prev, [field]: res.data.url }));
+                toast.success('Image uploaded');
+            }
+        } catch (error) {
+            toast.error('Upload failed');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleSubmit = async () => {
+        setSaving(true);
+        try {
+            await apiClient.put('/config/storefront', form);
+            toast.success('Theme settings saved');
+            onSave();
+        } catch (error) {
+            toast.error('Failed to save settings');
+            console.error(error);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+            {/* Branding Settings */}
+            <div className="space-y-6">
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        Brand Identity
+                    </h3>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="label">Store Name</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={form.company_name || ''}
+                                onChange={e => setForm({ ...form, company_name: e.target.value })}
+                                placeholder="My Amazing Store"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="label">Store Logo</label>
+                            <div className="flex items-center gap-4">
+                                <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-600">
+                                    {form.logo ? (
+                                        <img
+                                            src={form.logo.startsWith('http') ? form.logo : `${mediaBaseUrl}${form.logo}`}
+                                            alt="Logo"
+                                            className="w-full h-full object-contain p-2"
+                                        />
+                                    ) : (
+                                        <span className="text-xs text-slate-400">No Logo</span>
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <label className="btn-secondary btn-sm cursor-pointer inline-flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                        </svg>
+                                        Upload Logo
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={e => handleImageUpload(e, 'logo')}
+                                            disabled={uploading}
+                                        />
+                                    </label>
+                                    <p className="text-xs text-slate-500 mt-2">Recommended: 200x60px PNG</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                        </svg>
+                        Color Palette
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="label">Primary Color</label>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="color"
+                                    value={form.primary_color || '#3b82f6'}
+                                    onChange={e => setForm({ ...form, primary_color: e.target.value })}
+                                    className="w-12 h-12 rounded-lg border-2 border-slate-200 dark:border-slate-600 cursor-pointer p-1 bg-white"
+                                />
+                                <input
+                                    type="text"
+                                    value={form.primary_color || '#3b82f6'}
+                                    onChange={e => setForm({ ...form, primary_color: e.target.value })}
+                                    className="input font-mono uppercase"
+                                />
+                            </div>
+                            <p className="text-xs text-slate-500 mt-2">Used for buttons, links, and major highlights.</p>
+                        </div>
+
+                        <div>
+                            <label className="label">Secondary Color</label>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="color"
+                                    value={form.secondary_color || '#10b981'}
+                                    onChange={e => setForm({ ...form, secondary_color: e.target.value })}
+                                    className="w-12 h-12 rounded-lg border-2 border-slate-200 dark:border-slate-600 cursor-pointer p-1 bg-white"
+                                />
+                                <input
+                                    type="text"
+                                    value={form.secondary_color || '#10b981'}
+                                    onChange={e => setForm({ ...form, secondary_color: e.target.value })}
+                                    className="input font-mono uppercase"
+                                />
+                            </div>
+                            <p className="text-xs text-slate-500 mt-2">Used for accents, badges, and secondary actions.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Typography & Hero Settings */}
+            <div className="space-y-6">
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Global Hero (Fallback)
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-4">Default hero content when no banners are active.</p>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="label">Hero Title</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={form.hero_title || ''}
+                                onChange={e => setForm({ ...form, hero_title: e.target.value })}
+                                placeholder="Welcome to our store"
+                            />
+                        </div>
+                        <div>
+                            <label className="label">Hero Subtitle</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={form.hero_subtitle || ''}
+                                onChange={e => setForm({ ...form, hero_subtitle: e.target.value })}
+                                placeholder="Discover amazing products"
+                            />
+                        </div>
+                        <div>
+                            <label className="label">Hero Image</label>
+                            <div className="space-y-3">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        className="input flex-1"
+                                        value={form.hero_image || ''}
+                                        onChange={e => setForm({ ...form, hero_image: e.target.value })}
+                                        placeholder="https://images.unsplash.com/..."
+                                    />
+                                    <label className="btn-secondary btn-sm cursor-pointer whitespace-nowrap">
+                                        Upload
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={e => handleImageUpload(e, 'hero_image')}
+                                            disabled={uploading}
+                                        />
+                                    </label>
+                                </div>
+                                {form.hero_image && (
+                                    <div className="relative aspect-video rounded-lg overflow-hidden border border-slate-200">
+                                        <img
+                                            src={form.hero_image.startsWith('http') ? form.hero_image : `${mediaBaseUrl}${form.hero_image}`}
+                                            alt="Hero Preview"
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <button
+                                            onClick={() => setForm({ ...form, hero_image: '' })}
+                                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-4">
+                    <button
+                        onClick={handleSubmit}
+                        disabled={saving}
+                        className="btn-primary w-full md:w-auto"
+                    >
+                        {saving ? (
+                            <>
+                                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                Saving Changes...
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Save Theme Settings
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 };
 
