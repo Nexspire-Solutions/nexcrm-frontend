@@ -8,10 +8,59 @@ import Modal from '../../components/common/Modal';
  */
 const CouponsList = () => {
     const [activeTab, setActiveTab] = useState('coupons'); // 'coupons' | 'flash_sales'
+    const [coupons, setCoupons] = useState([]);
+    const [stats, setStats] = useState({ total: 0, active: 0, total_used: 0, total_discount: 0 });
+    const [loading, setLoading] = useState(true);
+    const [showModal, setShowModal] = useState(false);
+    const [editingCoupon, setEditingCoupon] = useState(null);
     const [flashSales, setFlashSales] = useState([]);
     const [showFlashModal, setShowFlashModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [historyCoupon, setHistoryCoupon] = useState(null);
+
+    const fetchCoupons = async () => {
+        try {
+            setLoading(true);
+            const response = await apiClient.get('/coupons');
+            setCoupons(response.data.data || []);
+        } catch (error) {
+            console.error('Failed to load coupons');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchStats = async () => {
+        try {
+            const response = await apiClient.get('/coupons/stats');
+            setStats(response.data.data || { total: 0, active: 0, total_used: 0, total_discount: 0 });
+        } catch (error) {
+            console.error('Failed to load stats');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this coupon?')) return;
+        try {
+            await apiClient.delete(`/coupons/${id}`);
+            toast.success('Coupon deleted');
+            fetchCoupons();
+            fetchStats();
+        } catch (error) {
+            toast.error('Failed to delete coupon');
+        }
+    };
+
+    const handleToggleActive = async (coupon) => {
+        try {
+            await apiClient.put(`/coupons/${coupon.id}`, { is_active: !coupon.is_active });
+            toast.success(coupon.is_active ? 'Coupon deactivated' : 'Coupon activated');
+            fetchCoupons();
+            fetchStats();
+        } catch (error) {
+            toast.error('Failed to update coupon');
+        }
+    };
 
     useEffect(() => {
         fetchCoupons();
@@ -28,7 +77,6 @@ const CouponsList = () => {
         }
     };
 
-    // ... (existing fetchCoupons, fetchStats etc)
 
     return (
         <div className="space-y-6">
