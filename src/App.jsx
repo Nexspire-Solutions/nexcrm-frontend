@@ -39,6 +39,7 @@ import EmailTemplates from './pages/communications/EmailTemplates';
 import EmailTemplateEditor from './pages/communications/EmailTemplateEditor';
 import BulkMailing from './pages/communications/BulkMailing';
 import EmailCampaigns from './pages/communications/EmailCampaigns';
+import CampaignDetail from './pages/communications/CampaignDetail';
 import TeamChat from './pages/communications/TeamChat';
 import Chatbot from './pages/communications/Chatbot';
 import PushNotifications from './pages/communications/PushNotifications';
@@ -170,6 +171,7 @@ function AppRoutes() {
             <Route path="communications/templates/:id/edit" element={<EmailTemplateEditor />} />
             <Route path="communications/bulk-mail" element={<BulkMailing />} />
             <Route path="communications/campaigns" element={<EmailCampaigns />} />
+            <Route path="communications/campaigns/:id" element={<CampaignDetail />} />
             <Route path="communications/chat" element={<TeamChat />} />
             <Route path="communications/chatbot" element={<Chatbot />} />
             <Route path="communications/notifications" element={<PushNotifications />} />
