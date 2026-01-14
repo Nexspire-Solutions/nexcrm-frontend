@@ -144,6 +144,16 @@ export default function SmtpSettings() {
         }
     };
 
+    const handleToggleActive = async (account) => {
+        try {
+            await smtpAPI.update(account.id, { is_active: !account.is_active });
+            toast.success(account.is_active ? 'Account disabled' : 'Account enabled');
+            fetchAccounts();
+        } catch (error) {
+            toast.error('Failed to update account status');
+        }
+    };
+
     // Common SMTP presets
     const presets = [
         { name: 'Gmail', host: 'smtp.gmail.com', port: 587, secure: false },
@@ -275,9 +285,15 @@ export default function SmtpSettings() {
                                         </div>
                                     </td>
                                     <td>
-                                        <span className={account.is_active ? 'badge-success' : 'badge-gray'}>
-                                            {account.is_active ? 'Active' : 'Disabled'}
-                                        </span>
+                                        <button
+                                            onClick={() => handleToggleActive(account)}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${account.is_active ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                            title={account.is_active ? 'Click to disable' : 'Click to enable'}
+                                        >
+                                            <span
+                                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${account.is_active ? 'translate-x-6' : 'translate-x-1'}`}
+                                            />
+                                        </button>
                                     </td>
                                     <td>
                                         <div className="flex items-center gap-1">
