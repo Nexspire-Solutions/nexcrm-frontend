@@ -254,7 +254,11 @@ export default function EmailCampaigns() {
                                 const clickRate = campaign.total_sent > 0 ? Math.round((campaign.total_clicked || 0) / campaign.total_sent * 100) : 0;
 
                                 return (
-                                    <tr key={campaign.id}>
+                                    <tr
+                                        key={campaign.id}
+                                        className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                                        onClick={() => navigate(`/communications/campaigns/${campaign.id}`)}
+                                    >
                                         <td>
                                             <p className="font-medium text-slate-900 dark:text-white">{campaign.name}</p>
                                             {campaign.template_name && (
@@ -290,10 +294,10 @@ export default function EmailCampaigns() {
                                             {campaign.sent_at ? new Date(campaign.sent_at).toLocaleDateString() : campaign.scheduled_at ? `Scheduled: ${new Date(campaign.scheduled_at).toLocaleDateString()}` : '-'}
                                         </td>
                                         <td>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                                 {campaign.status === 'draft' && (
                                                     <button
-                                                        onClick={() => handleSendCampaign(campaign.id)}
+                                                        onClick={(e) => { e.stopPropagation(); handleSendCampaign(campaign.id); }}
                                                         className="btn-primary btn-sm"
                                                         title="Send Campaign"
                                                     >
@@ -304,7 +308,7 @@ export default function EmailCampaigns() {
                                                     </button>
                                                 )}
                                                 <button
-                                                    onClick={() => handleDeleteCampaign(campaign.id)}
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteCampaign(campaign.id); }}
                                                     className="btn-ghost btn-sm text-red-500 hover:text-red-600"
                                                     title="Delete Campaign"
                                                 >
