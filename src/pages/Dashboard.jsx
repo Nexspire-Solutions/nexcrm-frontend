@@ -58,8 +58,9 @@ export default function Dashboard() {
         communication: { calls: 0, emails: 0 }
     });
 
-    // Industry-specific data
     const [industryData, setIndustryData] = useState(null);
+    const [storeStats, setStoreStats] = useState(null); // Dedicated E-commerce stats
+
 
     // Listen for refresh triggers from other pages
     const { refreshKey } = useDashboardRefresh();
@@ -68,13 +69,28 @@ export default function Dashboard() {
         const fetchDashboardData = async () => {
             try {
                 setIsLoading(true);
-                const response = await dashboardAPI.getCRMStats();
-                if (response.success && response.data) {
-                    setDashboardData(response.data);
+
+                // 1. Always fetch CRM Stats
+                const crmResponse = await dashboardAPI.getCRMStats();
+                if (crmResponse.success && crmResponse.data) {
+                    setDashboardData(crmResponse.data);
                 }
 
-                // Fetch industry-specific data based on current industry
                 const industry = getIndustry();
+
+                // 2. If E-commerce, fetch Store Stats in parallel
+                if (industry === 'ecommerce') {
+                    try {
+                        const ecommerceResponse = await dashboardAPI.getEcommerceStats();
+                        if (ecommerceResponse.success) {
+                            setStoreStats(ecommerceResponse.data);
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch store stats', e);
+                    }
+                }
+
+                // 3. Fetch generic Industry Stats if needed
                 if (industry && industry !== 'general') {
                     try {
                         const industryResponse = await dashboardAPI.getIndustryStats(industry);
@@ -82,7 +98,6 @@ export default function Dashboard() {
                             setIndustryData(industryResponse.data);
                         }
                     } catch (e) {
-                        // Industry API might not exist yet, gracefully ignore
                         console.log('Industry stats not available');
                     }
                 }
@@ -113,9 +128,16 @@ export default function Dashboard() {
 
     // Extract data from API response
     const { stats, leadsPipeline, monthlyRevenue, teamPerformance, weeklyActivity, upcomingTasks, recentLeads, thisMonth, communication } = dashboardData;
+    const isEcommerce = getIndustry() === 'ecommerce';
+
+    // Filter out Admin from team performance
+    const filteredTeamPerformance = teamPerformance.filter(member => member.name !== 'Admin');
 
     // Calculate max for charts
+    // Calculate max for charts
     const maxRevenue = Math.max(...monthlyRevenue.map(m => m.revenue), 1);
+
+
     const totalLeads = Object.values(leadsPipeline).reduce((a, b) => a + b, 0) || 1;
 
     return (
@@ -182,7 +204,7 @@ export default function Dashboard() {
                                     <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium text-slate-600 opacity-0 group-hover:opacity-100 transition bg-slate-800 text-white px-2 py-1 rounded">₹{item.revenue}k</div>
                                     <div className="w-full bg-indigo-500 rounded-t hover:bg-indigo-600 transition cursor-pointer" style={{ height: `${Math.max((item.revenue / maxRevenue) * 160, 4)}px` }}></div>
                                 </div>
-                                <span className="text-xs text-slate-400 mt-2">{item.month}</span>
+                                <span className="text-[10px] text-slate-400 mt-2 rotate-45 origin-left translate-y-2">{item.month}</span>
                             </div>
                         )) : (
                             <div className="flex-1 flex items-center justify-center text-slate-400">No data</div>
@@ -215,7 +237,7 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Leads Pipeline - Dynamic */}
+                {/* Leads Pipeline */}
                 <div className="col-span-12 lg:col-span-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
@@ -243,7 +265,7 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Recent Leads Table - Dynamic */}
+                {/* Recent Leads Table */}
                 <div className="col-span-12 lg:col-span-7 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                     <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
                         <h3 className="font-semibold text-slate-900 dark:text-white">Recent Leads</h3>
@@ -296,7 +318,7 @@ export default function Dashboard() {
                         <Link to="/users" className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">View all</Link>
                     </div>
                     <div className="space-y-4">
-                        {teamPerformance.length > 0 ? teamPerformance.map((member, i) => {
+                        {filteredTeamPerformance.length > 0 ? filteredTeamPerformance.map((member, i) => {
                             const progress = member.tasks > 0 ? (member.completed / member.tasks) * 100 : 0;
                             return (
                                 <div key={i} className="flex items-center gap-3">
@@ -392,140 +414,211 @@ export default function Dashboard() {
                     </div>
 
                     {/* Dynamic industry content */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {getIndustry() === 'ecommerce' && (
-                            <>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Products</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.products || 0}</p>
+                    {getIndustry() === 'ecommerce' && storeStats ? (
+                        <div className="space-y-6">
+                            {/* E-com Stats */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-medium">Store Revenue</p>
+                                        <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded text-emerald-600 dark:text-emerald-400">{Icons.revenue}</div>
+                                    </div>
+                                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{formatCurrency(storeStats.overview.total_revenue)}</p>
                                 </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Orders Today</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.ordersToday || 0}</p>
+                                <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-medium">Orders Today</p>
+                                        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded text-blue-600 dark:text-blue-400">{Icons.calendar}</div>
+                                    </div>
+                                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{storeStats.overview.today_orders}</p>
                                 </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Low Stock</p>
-                                    <p className="text-xl font-bold text-amber-600">{industryData?.lowStock || 0}</p>
+                                <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-medium">Pending</p>
+                                        <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded text-amber-600 dark:text-amber-400">{Icons.tasks}</div>
+                                    </div>
+                                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{storeStats.overview.pending_orders}</p>
                                 </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Pending Orders</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.pendingOrders || 0}</p>
+                                <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-medium">Products</p>
+                                        <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded text-purple-600 dark:text-purple-400">{Icons.projects}</div>
+                                    </div>
+                                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{storeStats.customerStats.total_customers}</p>
                                 </div>
-                            </>
-                        )}
-
-                        {getIndustry() === 'realestate' && (
-                            <>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Active Listings</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.activeListings || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Viewings Today</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.viewingsToday || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Properties Sold</p>
-                                    <p className="text-xl font-bold text-emerald-600">{industryData?.propertiesSold || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Pending</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.pendingProperties || 0}</p>
-                                </div>
-                            </>
-                        )}
-
-                        {getIndustry() === 'healthcare' && (
-                            <>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Patients</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.totalPatients || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Appointments Today</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.appointmentsToday || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Prescriptions</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.prescriptions || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Pending</p>
-                                    <p className="text-xl font-bold text-amber-600">{industryData?.pendingAppointments || 0}</p>
-                                </div>
-                            </>
-                        )}
-
-                        {getIndustry() === 'hospitality' && (
-                            <>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Total Rooms</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.totalRooms || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Check-ins Today</p>
-                                    <p className="text-xl font-bold text-emerald-600">{industryData?.checkInsToday || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Available</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.availableRooms || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Housekeeping</p>
-                                    <p className="text-xl font-bold text-amber-600">{industryData?.pendingHousekeeping || 0}</p>
-                                </div>
-                            </>
-                        )}
-
-                        {getIndustry() === 'education' && (
-                            <>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Active Courses</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.activeCourses || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Total Students</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.totalStudents || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Enrollments</p>
-                                    <p className="text-xl font-bold text-emerald-600">{industryData?.enrollmentsThisMonth || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Attendance %</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.attendanceRate || 0}%</p>
-                                </div>
-                            </>
-                        )}
-
-                        {getIndustry() === 'restaurant' && (
-                            <>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Tables</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.totalTables || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Active Orders</p>
-                                    <p className="text-xl font-bold text-amber-600">{industryData?.activeOrders || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Menu Items</p>
-                                    <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.menuItems || 0}</p>
-                                </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Today's Revenue</p>
-                                    <p className="text-xl font-bold text-emerald-600">{formatShortCurrency(industryData?.todayRevenue || 0)}</p>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Fallback for other industries */}
-                        {!['ecommerce', 'realestate', 'healthcare', 'hospitality', 'education', 'restaurant'].includes(getIndustry()) && (
-                            <div className="col-span-4 text-center py-4 text-slate-400 text-sm">
-                                Industry-specific stats coming soon for {industryName}
                             </div>
-                        )}
-                    </div>
+
+                            {/* Recent Store Orders Table */}
+                            {storeStats.recentOrders && (
+                                <div className="bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                    <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+                                        <h4 className="font-semibold text-slate-900 dark:text-white text-sm">Recent Store Orders</h4>
+                                        <div className="flex gap-2">
+                                            <Link to="/orders" className="flex items-center gap-1 text-xs px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition">View All Orders</Link>
+                                            <Link to="/orders" className="flex items-center gap-1 text-xs px-3 py-1.5 bg-emerald-600 text-white rounded-md shadow-sm hover:bg-emerald-700 transition">{Icons.plus} Add Order</Link>
+                                        </div>
+                                    </div>
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-slate-100 dark:bg-slate-700/50 text-xs text-slate-500 dark:text-slate-400 uppercase">
+                                            <tr>
+                                                <th className="text-left px-4 py-2 font-medium">Order ID</th>
+                                                <th className="text-left px-4 py-2 font-medium">Total</th>
+                                                <th className="text-left px-4 py-2 font-medium">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                            {storeStats.recentOrders.slice(0, 5).map((order) => (
+                                                <tr key={order.id} className="hover:bg-slate-100 dark:hover:bg-slate-700/50 transition">
+                                                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{order.order_number}</td>
+                                                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatCurrency(order.total)}</td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' : order.status === 'processing' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
+                                                            {order.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {getIndustry() === 'ecommerce' && (
+                                <>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Products</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.products || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Orders Today</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.ordersToday || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Low Stock</p>
+                                        <p className="text-xl font-bold text-amber-600">{industryData?.lowStock || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Pending Orders</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.pendingOrders || 0}</p>
+                                    </div>
+                                </>
+                            )}
+
+                            {getIndustry() === 'realestate' && (
+                                <>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Active Listings</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.activeListings || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Viewings Today</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.viewingsToday || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Properties Sold</p>
+                                        <p className="text-xl font-bold text-emerald-600">{industryData?.propertiesSold || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Pending</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.pendingProperties || 0}</p>
+                                    </div>
+                                </>
+                            )}
+
+                            {getIndustry() === 'healthcare' && (
+                                <>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Patients</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.totalPatients || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Appointments Today</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.appointmentsToday || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Prescriptions</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.prescriptions || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Pending</p>
+                                        <p className="text-xl font-bold text-amber-600">{industryData?.pendingAppointments || 0}</p>
+                                    </div>
+                                </>
+                            )}
+
+                            {getIndustry() === 'hospitality' && (
+                                <>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Total Rooms</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.totalRooms || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Check-ins Today</p>
+                                        <p className="text-xl font-bold text-emerald-600">{industryData?.checkInsToday || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Available</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.availableRooms || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Housekeeping</p>
+                                        <p className="text-xl font-bold text-amber-600">{industryData?.pendingHousekeeping || 0}</p>
+                                    </div>
+                                </>
+                            )}
+
+                            {getIndustry() === 'education' && (
+                                <>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Active Courses</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.activeCourses || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Total Students</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.totalStudents || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Enrollments</p>
+                                        <p className="text-xl font-bold text-emerald-600">{industryData?.enrollmentsThisMonth || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Attendance %</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.attendanceRate || 0}%</p>
+                                    </div>
+                                </>
+                            )}
+
+                            {getIndustry() === 'restaurant' && (
+                                <>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Tables</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.totalTables || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Active Orders</p>
+                                        <p className="text-xl font-bold text-amber-600">{industryData?.activeOrders || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Menu Items</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{industryData?.menuItems || 0}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Today's Revenue</p>
+                                        <p className="text-xl font-bold text-emerald-600">{formatShortCurrency(industryData?.todayRevenue || 0)}</p>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Fallback for other industries */}
+                            {!['ecommerce', 'realestate', 'healthcare', 'hospitality', 'education', 'restaurant'].includes(getIndustry()) && (
+                                <div className="col-span-4 text-center py-4 text-slate-400 text-sm">
+                                    Industry-specific stats coming soon for {industryName}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
