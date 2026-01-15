@@ -323,12 +323,16 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             ]
         },
         realestate: {
-            name: 'Properties',
+            name: 'Real Estate',
             icon: Icons.property,
             visible: hasPermission('properties', 'read'),
             items: [
-                { name: 'All Properties', path: '/properties', icon: Icons.property },
+                { name: 'Dashboard', path: '/realestate-dashboard', icon: Icons.dashboard },
+                { name: 'Properties', path: '/properties', icon: Icons.property },
+                { name: 'Inquiries', path: '/property-inquiries', icon: Icons.users },
                 { name: 'Viewings', path: '/viewings', icon: Icons.calendar },
+                { name: 'Transactions', path: '/transactions', icon: Icons.chart },
+                { name: 'Agents', path: '/agents', icon: Icons.employees },
                 { name: 'Listings', path: '/listings', icon: Icons.orders }
             ]
         },
@@ -377,9 +381,13 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             icon: Icons.legal,
             visible: hasPermission('cases', 'read'),
             items: [
+                { name: 'Dashboard', path: '/legal-dashboard', icon: Icons.dashboard },
                 { name: 'Cases', path: '/cases', icon: Icons.legal },
-                { name: 'Documents', path: '/documents', icon: Icons.orders },
-                { name: 'Billing', path: '/billing', icon: Icons.chart }
+                { name: 'Clients', path: '/legal-clients', icon: Icons.users },
+                { name: 'Lawyers', path: '/lawyers', icon: Icons.employees },
+                { name: 'Time Tracking', path: '/time-tracking', icon: Icons.calendar },
+                { name: 'Invoices', path: '/legal-invoices', icon: Icons.chart },
+                { name: 'Tasks', path: '/legal-tasks', icon: Icons.activity }
             ]
         },
         manufacturing: {
