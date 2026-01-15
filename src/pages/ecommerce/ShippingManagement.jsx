@@ -316,89 +316,91 @@ const ShippingManagement = () => {
                                     Add Provider
                                 </button>
                             </div>
-                            {providers.map(provider => (
-                                <div key={provider.id} className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${provider.provider_type === 'shiprocket' ? 'bg-purple-100 dark:bg-purple-900/30' :
-                                                provider.provider_type === 'delhivery' ? 'bg-red-100 dark:bg-red-900/30' :
-                                                    provider.provider_type === 'bluedart' ? 'bg-blue-100 dark:bg-blue-900/30' :
-                                                        provider.provider_type === 'dtdc' ? 'bg-orange-100 dark:bg-orange-900/30' :
-                                                            provider.provider_type === 'indiapost' ? 'bg-amber-100 dark:bg-amber-900/30' :
-                                                                'bg-slate-100 dark:bg-slate-700'
-                                                }`}>
-                                                <svg className={`w-6 h-6 ${provider.provider_type === 'shiprocket' ? 'text-purple-600' :
-                                                    provider.provider_type === 'delhivery' ? 'text-red-600' :
-                                                        provider.provider_type === 'bluedart' ? 'text-blue-600' :
-                                                            provider.provider_type === 'dtdc' ? 'text-orange-600' :
-                                                                provider.provider_type === 'indiapost' ? 'text-amber-600' :
-                                                                    'text-slate-500'
-                                                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-slate-900 dark:text-white">{provider.name}</h3>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${provider.provider_type === 'shiprocket' ? 'bg-purple-100 text-purple-700' :
-                                                        provider.provider_type === 'delhivery' ? 'bg-red-100 text-red-700' :
-                                                            provider.provider_type === 'bluedart' ? 'bg-blue-100 text-blue-700' :
-                                                                provider.provider_type === 'dtdc' ? 'bg-orange-100 text-orange-700' :
-                                                                    provider.provider_type === 'indiapost' ? 'bg-amber-100 text-amber-700' :
-                                                                        'bg-slate-100 text-slate-600'
-                                                        }`}>
-                                                        {provider.provider_type || 'manual'}
-                                                    </span>
-                                                    {provider.has_credentials && (
-                                                        <span className="text-xs text-emerald-600">API Connected</span>
-                                                    )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {providers.map(provider => (
+                                    <div key={provider.id} className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${provider.provider_type === 'shiprocket' ? 'bg-purple-100 dark:bg-purple-900/30' :
+                                                    provider.provider_type === 'delhivery' ? 'bg-red-100 dark:bg-red-900/30' :
+                                                        provider.provider_type === 'bluedart' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                                                            provider.provider_type === 'dtdc' ? 'bg-orange-100 dark:bg-orange-900/30' :
+                                                                provider.provider_type === 'indiapost' ? 'bg-amber-100 dark:bg-amber-900/30' :
+                                                                    'bg-slate-100 dark:bg-slate-700'
+                                                    }`}>
+                                                    <svg className={`w-6 h-6 ${provider.provider_type === 'shiprocket' ? 'text-purple-600' :
+                                                        provider.provider_type === 'delhivery' ? 'text-red-600' :
+                                                            provider.provider_type === 'bluedart' ? 'text-blue-600' :
+                                                                provider.provider_type === 'dtdc' ? 'text-orange-600' :
+                                                                    provider.provider_type === 'indiapost' ? 'text-amber-600' :
+                                                                        'text-slate-500'
+                                                        }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-semibold text-slate-900 dark:text-white">{provider.name}</h3>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${provider.provider_type === 'shiprocket' ? 'bg-purple-100 text-purple-700' :
+                                                            provider.provider_type === 'delhivery' ? 'bg-red-100 text-red-700' :
+                                                                provider.provider_type === 'bluedart' ? 'bg-blue-100 text-blue-700' :
+                                                                    provider.provider_type === 'dtdc' ? 'bg-orange-100 text-orange-700' :
+                                                                        provider.provider_type === 'indiapost' ? 'bg-amber-100 text-amber-700' :
+                                                                            'bg-slate-100 text-slate-600'
+                                                            }`}>
+                                                            {provider.provider_type || 'manual'}
+                                                        </span>
+                                                        {provider.has_credentials && (
+                                                            <span className="text-xs text-emerald-600">API Connected</span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            {getStatusBadge(provider.is_active)}
                                         </div>
-                                        {getStatusBadge(provider.is_active)}
-                                    </div>
-                                    <div className="flex justify-end gap-2">
-                                        {provider.provider_type && provider.provider_type !== 'manual' && (
+                                        <div className="flex justify-end gap-2">
+                                            {provider.provider_type && provider.provider_type !== 'manual' && (
+                                                <button
+                                                    onClick={() => testProviderConnection(provider)}
+                                                    disabled={testingProvider === provider.id}
+                                                    className="text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-3 py-1.5 rounded-lg transition-colors"
+                                                >
+                                                    {testingProvider === provider.id ? 'Testing...' : 'Test Connection'}
+                                                </button>
+                                            )}
                                             <button
-                                                onClick={() => testProviderConnection(provider)}
-                                                disabled={testingProvider === provider.id}
-                                                className="text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-3 py-1.5 rounded-lg transition-colors"
+                                                onClick={() => { setEditingItem(provider); setShowProviderModal(true); }}
+                                                className="text-xs font-medium text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg transition-colors"
                                             >
-                                                {testingProvider === provider.id ? 'Testing...' : 'Test Connection'}
+                                                Edit
                                             </button>
-                                        )}
+                                            <button
+                                                onClick={() => toggleProviderStatus(provider)}
+                                                className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${provider.is_active
+                                                    ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                                    : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                                                    }`}
+                                            >
+                                                {provider.is_active ? 'Disable' : 'Enable'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {providers.length === 0 && (
+                                    <div className="col-span-full text-center py-12">
+                                        <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                                        </svg>
+                                        <p className="text-slate-500 dark:text-slate-400">No shipping providers configured</p>
                                         <button
-                                            onClick={() => { setEditingItem(provider); setShowProviderModal(true); }}
-                                            className="text-xs font-medium text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg transition-colors"
+                                            onClick={() => { setEditingItem(null); setShowProviderModal(true); }}
+                                            className="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                                         >
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() => toggleProviderStatus(provider)}
-                                            className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${provider.is_active
-                                                ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
-                                                : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
-                                                }`}
-                                        >
-                                            {provider.is_active ? 'Disable' : 'Enable'}
+                                            Add your first provider
                                         </button>
                                     </div>
-                                </div>
-                            ))}
-                            {providers.length === 0 && (
-                                <div className="col-span-full text-center py-12">
-                                    <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                                    </svg>
-                                    <p className="text-slate-500 dark:text-slate-400">No shipping providers configured</p>
-                                    <button
-                                        onClick={() => { setEditingItem(null); setShowProviderModal(true); }}
-                                        className="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-                                    >
-                                        Add your first provider
-                                    </button>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     )}
 
