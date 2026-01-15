@@ -67,6 +67,7 @@ import RealEstateDashboard from './pages/industry/realestate/RealEstateDashboard
 import InquiryList from './pages/industry/realestate/InquiryList';
 import Transactions from './pages/industry/realestate/Transactions';
 import AgentList from './pages/industry/realestate/AgentList';
+import PropertyForm from './pages/industry/realestate/PropertyForm';
 
 // Healthcare
 import Patients from './pages/industry/healthcare/Patients';
@@ -212,6 +213,9 @@ function AppRoutes() {
           {/* Real Estate */}
           <Route path="realestate-dashboard" element={<RealEstateDashboard />} />
           <Route path="properties" element={<Properties />} />
+          <Route path="properties/new" element={<PropertyForm />} />
+          <Route path="properties/:id" element={<PropertyForm />} />
+          <Route path="properties/:id/edit" element={<PropertyForm />} />
           <Route path="viewings" element={<Viewings />} />
           <Route path="listings" element={<Listings />} />
           <Route path="property-inquiries" element={<InquiryList />} />
