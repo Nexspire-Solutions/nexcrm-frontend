@@ -77,6 +77,12 @@ import Enrollments from './pages/industry/education/Enrollments';
 import Appointments from './pages/industry/services/Appointments';
 import ServicesList from './pages/industry/services/ServicesList';
 import Clients from './pages/industry/services/Clients';
+import StaffManagement from './pages/industry/services/StaffManagement';
+import ServicePackages from './pages/industry/services/ServicePackages';
+import ServiceCategories from './pages/industry/services/ServiceCategories';
+import MembershipPlans from './pages/industry/services/MembershipPlans';
+import BookingCalendar from './pages/industry/services/BookingCalendar';
+import ServicesReports from './pages/industry/services/ServicesReports';
 
 // Hospitality
 import Rooms from './pages/industry/hospitality/Rooms';
@@ -217,6 +223,12 @@ function AppRoutes() {
           <Route path="appointments" element={<Appointments />} />
           <Route path="services" element={<ServicesList />} />
           <Route path="clients" element={<Clients />} />
+          <Route path="staff-specialists" element={<StaffManagement />} />
+          <Route path="service-packages" element={<ServicePackages />} />
+          <Route path="service-categories" element={<ServiceCategories />} />
+          <Route path="membership-plans" element={<MembershipPlans />} />
+          <Route path="booking-calendar" element={<BookingCalendar />} />
+          <Route path="services-reports" element={<ServicesReports />} />
 
           {/* Hospitality */}
           <Route path="rooms" element={<Rooms />} />
