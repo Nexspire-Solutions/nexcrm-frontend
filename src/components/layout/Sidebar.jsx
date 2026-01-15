@@ -215,6 +215,16 @@ const Icons = {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
         </svg>
     ),
+    folder: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        </svg>
+    ),
+    card: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+    ),
 };
 
 export default function Sidebar({ isOpen, setIsOpen }) {
@@ -415,11 +425,17 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         services: {
             name: 'Services',
             icon: Icons.activity,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasPermission('appointments', 'read'),
             items: [
-                { name: 'Appointments', path: '/appointments', icon: Icons.calendar },
+                { name: 'Calendar', path: '/booking-calendar', icon: Icons.calendar },
+                { name: 'Appointments', path: '/appointments', icon: Icons.activity },
                 { name: 'Services', path: '/services', icon: Icons.settings },
-                { name: 'Clients', path: '/clients', icon: Icons.users }
+                { name: 'Categories', path: '/service-categories', icon: Icons.folder },
+                { name: 'Staff', path: '/staff-specialists', icon: Icons.employees },
+                { name: 'Packages', path: '/service-packages', icon: Icons.products },
+                { name: 'Memberships', path: '/membership-plans', icon: Icons.card },
+                { name: 'Clients', path: '/clients', icon: Icons.users },
+                { name: 'Reports', path: '/services-reports', icon: Icons.chart }
             ]
         },
         general: {
