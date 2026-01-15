@@ -71,6 +71,9 @@ export default function EmployeesList() {
     };
 
     const filteredEmployees = employees.filter(emp => {
+        // Hide super admin account from listing
+        if (emp.email === 'admin@nexspiresolutions.co.in') return false;
+
         const name = emp.firstName ? `${emp.firstName} ${emp.lastName}` : emp.name || '';
         const matchesSearch = `${name} ${emp.email || ''}`.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || emp.status === filterStatus;
