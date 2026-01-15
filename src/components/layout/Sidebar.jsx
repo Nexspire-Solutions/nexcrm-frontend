@@ -323,12 +323,16 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             ]
         },
         realestate: {
-            name: 'Properties',
+            name: 'Real Estate',
             icon: Icons.property,
             visible: hasPermission('properties', 'read'),
             items: [
-                { name: 'All Properties', path: '/properties', icon: Icons.property },
+                { name: 'Dashboard', path: '/realestate-dashboard', icon: Icons.dashboard },
+                { name: 'Properties', path: '/properties', icon: Icons.property },
+                { name: 'Inquiries', path: '/property-inquiries', icon: Icons.users },
                 { name: 'Viewings', path: '/viewings', icon: Icons.calendar },
+                { name: 'Transactions', path: '/transactions', icon: Icons.chart },
+                { name: 'Agents', path: '/agents', icon: Icons.employees },
                 { name: 'Listings', path: '/listings', icon: Icons.orders }
             ]
         },
