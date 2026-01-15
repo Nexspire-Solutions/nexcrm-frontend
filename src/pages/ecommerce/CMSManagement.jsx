@@ -28,7 +28,8 @@ const CMSManagement = () => {
         { id: 'sections', label: 'Homepage Sections', icon: 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z' },
         { id: 'pages', label: 'Static Pages', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
         { id: 'blog', label: 'Blog Posts', icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z' },
-        { id: 'theme', label: 'Theme Settings', icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01' }
+        { id: 'theme', label: 'Theme Settings', icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01' },
+        { id: 'seo', label: 'SEO Settings', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' }
     ];
 
     useEffect(() => {
@@ -50,7 +51,7 @@ const CMSManagement = () => {
             } else if (activeTab === 'blog') {
                 const res = await apiClient.get('/cms/blog');
                 setPosts(res.data.data || []);
-            } else if (activeTab === 'theme') {
+            } else if (activeTab === 'theme' || activeTab === 'seo') {
                 const res = await apiClient.get('/config/storefront');
                 setThemeConfig(res.data || {});
             }
@@ -348,13 +349,9 @@ const CMSManagement = () => {
                     )}
 
                     {/* ========== THEME TAB ========== */}
-                    {activeTab === 'theme' && themeConfig && (
-                        <ThemeSettingsForm
-                            initialConfig={themeConfig}
-                            mediaBaseUrl={mediaBaseUrl}
-                            onSave={() => fetchData()}
-                        />
-                    )}
+                    {activeTab === 'theme' && themeConfig && <ThemeSettingsForm initialConfig={themeConfig} mediaBaseUrl={mediaBaseUrl} onSave={fetchData} activeSection="theme" />}
+                    {/* ========== SEO TAB ========== */}
+                    {activeTab === 'seo' && themeConfig && <ThemeSettingsForm initialConfig={themeConfig} mediaBaseUrl={mediaBaseUrl} onSave={fetchData} activeSection="seo" />}
                 </>
             )}
 
@@ -863,10 +860,57 @@ const CMSModal = ({ type, item, onClose, onSave, mediaBaseUrl }) => {
 /**
  * Theme Settings Form
  */
-const ThemeSettingsForm = ({ initialConfig, mediaBaseUrl, onSave }) => {
-    const [form, setForm] = useState(initialConfig);
+const ThemeSettingsForm = ({ initialConfig, mediaBaseUrl, onSave, activeSection }) => {
+    // Parse initial JSON fields
+    const parseJSON = (str, fallback = []) => {
+        try {
+            return str ? JSON.parse(str) : fallback;
+        } catch (e) {
+            return fallback;
+        }
+    };
+
+    // Helper to parse boolean from string/number/boolean
+    const parseBoolean = (val, defaultVal = true) => {
+        if (val === undefined || val === null) return defaultVal;
+        if (val === 'true' || val === '1' || val === 1 || val === true) return true;
+        if (val === 'false' || val === '0' || val === 0 || val === false) return false;
+        return defaultVal;
+    };
+
+    const [form, setForm] = useState({
+        ...initialConfig,
+        logo_width: initialConfig.logo_width || 120,
+        logo_enabled: parseBoolean(initialConfig.logo_enabled, true),
+        font_family: initialConfig.font_family || 'Inter, sans-serif',
+        text_color: initialConfig.text_color || '#374151',
+        heading_color: initialConfig.heading_color || '#111827',
+        link_color: initialConfig.link_color || '#2563eb',
+        meta_title: initialConfig.meta_title || '',
+        meta_description: initialConfig.meta_description || '',
+        meta_keywords: initialConfig.meta_keywords || '',
+        og_image: initialConfig.og_image || '',
+        favicon: initialConfig.favicon || '',
+        ga_id: initialConfig.ga_id || '',
+        pixel_id: initialConfig.pixel_id || '',
+        header_scripts: initialConfig.header_scripts || '',
+        footer_scripts: initialConfig.footer_scripts || '',
+        store_locations: parseJSON(initialConfig.store_locations),
+        social_links: parseJSON(initialConfig.social_links)
+    });
+
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
+
+    // Initial parsing check when config changes (if parent refreshes)
+    useEffect(() => {
+        setForm(prev => ({
+            ...prev,
+            ...initialConfig,
+            store_locations: parseJSON(initialConfig.store_locations),
+            social_links: parseJSON(initialConfig.social_links)
+        }));
+    }, [initialConfig]);
 
     // Handle image upload
     const handleImageUpload = async (e, field) => {
@@ -904,10 +948,62 @@ const ThemeSettingsForm = ({ initialConfig, mediaBaseUrl, onSave }) => {
         }
     };
 
+    // --- Dynamic List Handlers ---
+
+    // Locations
+    const addLocation = () => {
+        setForm(prev => ({
+            ...prev,
+            store_locations: [
+                ...prev.store_locations,
+                { id: Date.now(), name: '', address: '', phone: '', email: '', active: true }
+            ]
+        }));
+    };
+
+    const updateLocation = (index, field, value) => {
+        const updated = [...form.store_locations];
+        updated[index][field] = value;
+        setForm({ ...form, store_locations: updated });
+    };
+
+    const removeLocation = (index) => {
+        setForm({ ...form, store_locations: form.store_locations.filter((_, i) => i !== index) });
+    };
+
+    // Socials
+    const addSocial = () => {
+        setForm(prev => ({
+            ...prev,
+            social_links: [
+                ...prev.social_links,
+                { id: Date.now(), platform: 'facebook', url: '', active: true }
+            ]
+        }));
+    };
+
+    const updateSocial = (index, field, value) => {
+        const updated = [...form.social_links];
+        updated[index][field] = value;
+        setForm({ ...form, social_links: updated });
+    };
+
+    const removeSocial = (index) => {
+        setForm({ ...form, social_links: form.social_links.filter((_, i) => i !== index) });
+    };
+
+
     const handleSubmit = async () => {
         setSaving(true);
         try {
-            await apiClient.put('/config/storefront', form);
+            // Prepare payload: stringify JSON fields
+            const payload = {
+                ...form,
+                store_locations: JSON.stringify(form.store_locations),
+                social_links: JSON.stringify(form.social_links)
+            };
+
+            await apiClient.put('/config/storefront', payload);
             toast.success('Theme settings saved');
             onSave();
         } catch (error) {
@@ -918,216 +1014,571 @@ const ThemeSettingsForm = ({ initialConfig, mediaBaseUrl, onSave }) => {
         }
     };
 
+    const socialPlatforms = [
+        { id: 'facebook', label: 'Facebook' },
+        { id: 'instagram', label: 'Instagram' },
+        { id: 'twitter', label: 'Twitter/X' },
+        { id: 'linkedin', label: 'LinkedIn' },
+        { id: 'youtube', label: 'YouTube' },
+        { id: 'tiktok', label: 'TikTok' },
+        { id: 'pinterest', label: 'Pinterest' }
+    ];
+
+
+
+    const fontOptions = [
+        { id: 'Inter, sans-serif', label: 'Inter (Clean Modern)' },
+        { id: 'Roboto, sans-serif', label: 'Roboto (Google Standard)' },
+        { id: '\'Open Sans\', sans-serif', label: 'Open Sans (Friendly)' },
+        { id: 'Lato, sans-serif', label: 'Lato (Professional)' },
+        { id: 'Montserrat, sans-serif', label: 'Montserrat (Bold/Geometric)' },
+        { id: '\'Playfair Display\', serif', label: 'Playfair Display (Elegant Serif)' },
+        { id: 'ui-sans-serif, system-ui, sans-serif', label: 'System Default' }
+    ];
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
-            {/* Branding Settings */}
-            <div className="space-y-6">
-                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                        Brand Identity
-                    </h3>
+            {/* Branding Settings (Theme Tab) */}
+            {activeSection === 'theme' && (
+                <div className="space-y-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            Brand Identity
+                        </h3>
 
-                    <div className="space-y-4">
-                        <div>
-                            <label className="label">Store Name</label>
-                            <input
-                                type="text"
-                                className="input"
-                                value={form.company_name || ''}
-                                onChange={e => setForm({ ...form, company_name: e.target.value })}
-                                placeholder="My Amazing Store"
-                            />
+                        {/* ... Logo/Name form content ... */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="label">Store Name</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={form.company_name || ''}
+                                    onChange={e => setForm({ ...form, company_name: e.target.value })}
+                                    placeholder="My Amazing Store"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="label">Store Logo</label>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-24 h-24 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-600 relative">
+                                        {form.logo ? (
+                                            <img
+                                                src={form.logo.startsWith('http') ? form.logo : `${mediaBaseUrl}${form.logo}`}
+                                                alt="Logo"
+                                                className={`object-contain p-1 ${!form.logo_enabled ? 'opacity-25 grayscale' : ''}`}
+                                                style={{ width: `${Math.min(form.logo_width || 100, 90)}px` }}
+                                            />
+                                        ) : (
+                                            <span className="text-xs text-slate-400">No Logo</span>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <label className="btn-secondary btn-sm cursor-pointer inline-flex items-center gap-2">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                                </svg>
+                                                {form.logo ? 'Change Logo' : 'Upload Logo'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={e => handleImageUpload(e, 'logo')}
+                                                    disabled={uploading}
+                                                />
+                                            </label>
+
+                                            {form.logo && (
+                                                <button
+                                                    onClick={() => setForm({ ...form, logo: '' })}
+                                                    className="btn-danger btn-sm text-red-600 hover:bg-red-50 px-3 py-1.5 rounded border border-red-200"
+                                                    title="Remove Logo"
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-4">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Show Logo</span>
+                                                <div className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={form.logo_enabled}
+                                                        onChange={e => setForm({ ...form, logo_enabled: e.target.checked })}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-indigo-600 transition-colors"></div>
+                                                    <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs font-semibold text-slate-500 mb-1 block">Logo Size (Width: {form.logo_width}px)</label>
+                                            <input
+                                                type="range"
+                                                min="30"
+                                                max="300"
+                                                value={form.logo_width || 120}
+                                                onChange={e => setForm({ ...form, logo_width: parseInt(e.target.value) })}
+                                                className="w-full"
+                                                disabled={!form.logo_enabled}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                            </svg>
+                            Typography & Colors
+                        </h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="label">Font Family</label>
+                                <select
+                                    value={form.font_family || 'Inter, sans-serif'}
+                                    onChange={e => setForm({ ...form, font_family: e.target.value })}
+                                    className="select"
+                                >
+                                    {fontOptions.map(font => (
+                                        <option key={font.id} value={font.id}>{font.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label className="label text-xs">Primary</label>
+                                    <div className="flex gap-2">
+                                        <input type="color" value={form.primary_color || '#3b82f6'} onChange={e => setForm({ ...form, primary_color: e.target.value })} className="h-8 w-8 rounded cursor-pointer border-0 bg-transparent p-0" />
+                                        <input type="text" value={form.primary_color || '#3b82f6'} onChange={e => setForm({ ...form, primary_color: e.target.value })} className="input py-1 text-sm font-mono" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="label text-xs">Secondary</label>
+                                    <div className="flex gap-2">
+                                        <input type="color" value={form.secondary_color || '#10b981'} onChange={e => setForm({ ...form, secondary_color: e.target.value })} className="h-8 w-8 rounded cursor-pointer border-0 bg-transparent p-0" />
+                                        <input type="text" value={form.secondary_color || '#10b981'} onChange={e => setForm({ ...form, secondary_color: e.target.value })} className="input py-1 text-sm font-mono" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr className="border-slate-100 dark:border-slate-700 my-2" />
+
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="label text-xs">Body Text</label>
+                                    <div className="flex gap-2">
+                                        <input type="color" value={form.text_color || '#374151'} onChange={e => setForm({ ...form, text_color: e.target.value })} className="h-8 w-8 rounded cursor-pointer border-0 bg-transparent p-0" />
+                                        <input type="text" value={form.text_color || '#374151'} onChange={e => setForm({ ...form, text_color: e.target.value })} className="input py-1 text-sm font-mono" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="label text-xs">Headings & Titles</label>
+                                    <div className="flex gap-2">
+                                        <input type="color" value={form.heading_color || '#111827'} onChange={e => setForm({ ...form, heading_color: e.target.value })} className="h-8 w-8 rounded cursor-pointer border-0 bg-transparent p-0" />
+                                        <input type="text" value={form.heading_color || '#111827'} onChange={e => setForm({ ...form, heading_color: e.target.value })} className="input py-1 text-sm font-mono" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="label text-xs">Links & Buttons</label>
+                                    <div className="flex gap-2">
+                                        <input type="color" value={form.link_color || '#2563eb'} onChange={e => setForm({ ...form, link_color: e.target.value })} className="h-8 w-8 rounded cursor-pointer border-0 bg-transparent p-0" />
+                                        <input type="text" value={form.link_color || '#2563eb'} onChange={e => setForm({ ...form, link_color: e.target.value })} className="input py-1 text-sm font-mono" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Contact & Locations */}
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Store Locations
+                        </h3>
+
+                        {/* General Support (Global) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                            <div>
+                                <label className="label text-xs">General Support Email</label>
+                                <input type="email" value={form.support_email || ''} onChange={(e) => setForm({ ...form, support_email: e.target.value })} className="input text-sm" placeholder="support@store.com" />
+                            </div>
+                            <div>
+                                <label className="label text-xs">General Support Phone</label>
+                                <input type="text" value={form.support_phone || ''} onChange={(e) => setForm({ ...form, support_phone: e.target.value })} className="input text-sm" placeholder="+1..." />
+                            </div>
                         </div>
 
-                        <div>
-                            <label className="label">Store Logo</label>
-                            <div className="flex items-center gap-4">
-                                <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-600">
-                                    {form.logo ? (
-                                        <img
-                                            src={form.logo.startsWith('http') ? form.logo : `${mediaBaseUrl}${form.logo}`}
-                                            alt="Logo"
-                                            className="w-full h-full object-contain p-2"
+                        <div className="space-y-4">
+                            {form.store_locations.map((loc, idx) => (
+                                <div key={idx} className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg relative group">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                        <input type="text" value={loc.name} onChange={(e) => updateLocation(idx, 'name', e.target.value)} className="input text-sm font-medium" placeholder="Location Name (e.g. HQ)" />
+                                        <div className="flex items-center justify-end gap-2">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" checked={loc.active} onChange={(e) => updateLocation(idx, 'active', e.target.checked)} className="rounded text-indigo-600" />
+                                                <span className={`text-xs font-medium ${loc.active ? 'text-emerald-600' : 'text-slate-400'}`}>{loc.active ? 'Active' : 'Inactive'}</span>
+                                            </label>
+                                            <button onClick={() => removeLocation(idx)} className="text-red-500 hover:text-red-600 p-1">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <input type="text" value={loc.address} onChange={(e) => updateLocation(idx, 'address', e.target.value)} className="input text-sm mb-2" placeholder="Full Address" />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input type="text" value={loc.phone} onChange={(e) => updateLocation(idx, 'phone', e.target.value)} className="input text-sm" placeholder="Phone (Optional)" />
+                                        <input type="text" value={loc.email} onChange={(e) => updateLocation(idx, 'email', e.target.value)} className="input text-sm" placeholder="Email (Optional)" />
+                                    </div>
+                                </div>
+                            ))}
+                            <button type="button" onClick={addLocation} className="btn-secondary w-full text-sm py-2 border-dashed">+ Add Location</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Right Column */}
+            {activeSection === 'theme' && (
+                <div className="space-y-6">
+                    {/* Social Media */}
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Social Profiles
+                        </h3>
+
+                        <div className="space-y-3">
+                            {form.social_links.map((social, idx) => (
+                                <div key={idx} className="flex gap-3 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg group">
+                                    <select value={social.platform} onChange={(e) => updateSocial(idx, 'platform', e.target.value)} className="select text-sm w-32 shrink-0">
+                                        {socialPlatforms.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                                    </select>
+                                    <input type="text" value={social.url} onChange={(e) => updateSocial(idx, 'url', e.target.value)} className="input text-sm flex-1" placeholder="https://..." />
+
+                                    <label className="cursor-pointer" title="Toggle visibility">
+                                        <input type="checkbox" checked={social.active} onChange={(e) => updateSocial(idx, 'active', e.target.checked)} className="rounded text-indigo-600" />
+                                    </label>
+
+                                    <button onClick={() => removeSocial(idx)} className="text-red-400 hover:text-red-500 p-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                            ))}
+                            <button type="button" onClick={addSocial} className="btn-secondary w-full text-sm py-2 border-dashed">+ Add Social Profile</button>
+                        </div>
+                    </div>
+
+                    {/* Hero Settings */}
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Global Hero (Fallback)
+                        </h3>
+                        <p className="text-xs text-slate-500 mb-4">Default hero content when no banners are active.</p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="label">Hero Title</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={form.hero_title || ''}
+                                    onChange={e => setForm({ ...form, hero_title: e.target.value })}
+                                    placeholder="Welcome to our store"
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Hero Subtitle</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={form.hero_subtitle || ''}
+                                    onChange={e => setForm({ ...form, hero_subtitle: e.target.value })}
+                                    placeholder="Discover amazing products"
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Hero Image</label>
+                                <div className="space-y-3">
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            className="input flex-1"
+                                            value={form.hero_image || ''}
+                                            onChange={e => setForm({ ...form, hero_image: e.target.value })}
+                                            placeholder="https://images.unsplash.com/..."
                                         />
-                                    ) : (
-                                        <span className="text-xs text-slate-400">No Logo</span>
+                                        <label className="btn-secondary btn-sm cursor-pointer whitespace-nowrap">
+                                            Upload
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={e => handleImageUpload(e, 'hero_image')}
+                                                disabled={uploading}
+                                            />
+                                        </label>
+                                    </div>
+                                    {form.hero_image && (
+                                        <div className="relative aspect-video rounded-lg overflow-hidden border border-slate-200">
+                                            <img
+                                                src={form.hero_image.startsWith('http') ? form.hero_image : `${mediaBaseUrl}${form.hero_image}`}
+                                                alt="Hero Preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <button
+                                                onClick={() => setForm({ ...form, hero_image: '' })}
+                                                className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
-                                <div className="flex-1">
-                                    <label className="btn-secondary btn-sm cursor-pointer inline-flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                        </svg>
-                                        Upload Logo
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={e => handleImageUpload(e, 'logo')}
-                                            disabled={uploading}
-                                        />
-                                    </label>
-                                    <p className="text-xs text-slate-500 mt-2">Recommended: 200x60px PNG</p>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            )}
 
-                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+            {/* SEO Settings (SEO Tab) */}
+            {activeSection === 'seo' && (
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm lg:col-span-2">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                         <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                        Color Palette
+                        SEO Settings
                     </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="label">Primary Color</label>
-                            <div className="flex items-center gap-3">
-                                <input
-                                    type="color"
-                                    value={form.primary_color || '#3b82f6'}
-                                    onChange={e => setForm({ ...form, primary_color: e.target.value })}
-                                    className="w-12 h-12 rounded-lg border-2 border-slate-200 dark:border-slate-600 cursor-pointer p-1 bg-white"
-                                />
-                                <input
-                                    type="text"
-                                    value={form.primary_color || '#3b82f6'}
-                                    onChange={e => setForm({ ...form, primary_color: e.target.value })}
-                                    className="input font-mono uppercase"
-                                />
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">Used for buttons, links, and major highlights.</p>
-                        </div>
-
-                        <div>
-                            <label className="label">Secondary Color</label>
-                            <div className="flex items-center gap-3">
-                                <input
-                                    type="color"
-                                    value={form.secondary_color || '#10b981'}
-                                    onChange={e => setForm({ ...form, secondary_color: e.target.value })}
-                                    className="w-12 h-12 rounded-lg border-2 border-slate-200 dark:border-slate-600 cursor-pointer p-1 bg-white"
-                                />
-                                <input
-                                    type="text"
-                                    value={form.secondary_color || '#10b981'}
-                                    onChange={e => setForm({ ...form, secondary_color: e.target.value })}
-                                    className="input font-mono uppercase"
-                                />
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">Used for accents, badges, and secondary actions.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Typography & Hero Settings */}
-            <div className="space-y-6">
-                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Global Hero (Fallback)
-                    </h3>
-                    <p className="text-xs text-slate-500 mb-4">Default hero content when no banners are active.</p>
-
                     <div className="space-y-4">
                         <div>
-                            <label className="label">Hero Title</label>
+                            <label className="label">Meta Title</label>
                             <input
                                 type="text"
                                 className="input"
-                                value={form.hero_title || ''}
-                                onChange={e => setForm({ ...form, hero_title: e.target.value })}
-                                placeholder="Welcome to our store"
+                                value={form.meta_title || ''}
+                                onChange={e => setForm({ ...form, meta_title: e.target.value })}
+                                placeholder="Store Name | Best Products Online"
                             />
                         </div>
                         <div>
-                            <label className="label">Hero Subtitle</label>
+                            <label className="label">Meta Description</label>
+                            <textarea
+                                className="input h-24"
+                                value={form.meta_description || ''}
+                                onChange={e => setForm({ ...form, meta_description: e.target.value })}
+                                placeholder="A brief description of your store for search engines..."
+                            />
+                        </div>
+                        <div>
+                            <label className="label">Meta Keywords</label>
                             <input
                                 type="text"
                                 className="input"
-                                value={form.hero_subtitle || ''}
-                                onChange={e => setForm({ ...form, hero_subtitle: e.target.value })}
-                                placeholder="Discover amazing products"
+                                value={form.meta_keywords || ''}
+                                onChange={e => setForm({ ...form, meta_keywords: e.target.value })}
+                                placeholder="fashion, electronics, sale, best prices"
                             />
                         </div>
-                        <div>
-                            <label className="label">Hero Image</label>
-                            <div className="space-y-3">
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        className="input flex-1"
-                                        value={form.hero_image || ''}
-                                        onChange={e => setForm({ ...form, hero_image: e.target.value })}
-                                        placeholder="https://images.unsplash.com/..."
-                                    />
-                                    <label className="btn-secondary btn-sm cursor-pointer whitespace-nowrap">
-                                        Upload
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={e => handleImageUpload(e, 'hero_image')}
-                                            disabled={uploading}
-                                        />
-                                    </label>
-                                </div>
-                                {form.hero_image && (
-                                    <div className="relative aspect-video rounded-lg overflow-hidden border border-slate-200">
-                                        <img
-                                            src={form.hero_image.startsWith('http') ? form.hero_image : `${mediaBaseUrl}${form.hero_image}`}
-                                            alt="Hero Preview"
-                                            className="w-full h-full object-cover"
-                                        />
-                                        <button
-                                            onClick={() => setForm({ ...form, hero_image: '' })}
-                                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Favicon */}
+                            <div>
+                                <label className="label">Favicon</label>
+                                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    <div className="w-24 h-24 bg-white dark:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-600 overflow-hidden relative group shrink-0">
+                                        {form.favicon ? (
+                                            <a href={form.favicon.startsWith('http') ? form.favicon : `${mediaBaseUrl}${form.favicon}`} target="_blank" rel="noopener noreferrer" className="cursor-zoom-in">
+                                                <img
+                                                    src={form.favicon.startsWith('http') ? form.favicon : `${mediaBaseUrl}${form.favicon}`}
+                                                    alt="Favicon"
+                                                    className="w-8 h-8 object-contain"
+                                                />
+                                            </a>
+                                        ) : (
+                                            <span className="text-xs text-slate-400">Icon</span>
+                                        )}
                                     </div>
-                                )}
+                                    <div className="flex-1 min-w-0">
+                                        {form.favicon ? (
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-xs text-slate-500 truncate">{form.favicon.split('/').pop()}</span>
+                                                <div className="flex gap-2">
+                                                    <label className="text-xs text-indigo-600 font-medium cursor-pointer hover:underline">
+                                                        Change
+                                                        <input type="file" accept="image/x-icon,image/png" className="hidden" onChange={e => handleImageUpload(e, 'favicon')} />
+                                                    </label>
+                                                    <button type="button" onClick={() => setForm({ ...form, favicon: '' })} className="text-xs text-red-500 font-medium hover:underline">
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <label className="btn-secondary btn-sm cursor-pointer whitespace-nowrap inline-flex">
+                                                Upload Icon
+                                                <input type="file" accept="image/x-icon,image/png" className="hidden" onChange={e => handleImageUpload(e, 'favicon')} />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* OG Image */}
+                            <div>
+                                <label className="label">OG Image (Social Share)</label>
+                                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    <div className="w-24 h-24 bg-white dark:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-600 overflow-hidden relative group shrink-0">
+                                        {form.og_image ? (
+                                            <a href={form.og_image.startsWith('http') ? form.og_image : `${mediaBaseUrl}${form.og_image}`} target="_blank" rel="noopener noreferrer" className="cursor-zoom-in w-full h-full block">
+                                                <img
+                                                    src={form.og_image.startsWith('http') ? form.og_image : `${mediaBaseUrl}${form.og_image}`}
+                                                    alt="OG Image"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </a>
+                                        ) : (
+                                            <span className="text-xs text-slate-400">Image</span>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        {form.og_image ? (
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-xs text-slate-500 truncate">{form.og_image.split('/').pop()}</span>
+                                                <div className="flex gap-2">
+                                                    <label className="text-xs text-indigo-600 font-medium cursor-pointer hover:underline">
+                                                        Change
+                                                        <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'og_image')} />
+                                                    </label>
+                                                    <button type="button" onClick={() => setForm({ ...form, og_image: '' })} className="text-xs text-red-500 font-medium hover:underline">
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <label className="btn-secondary btn-sm cursor-pointer whitespace-nowrap inline-flex">
+                                                Upload Image
+                                                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'og_image')} />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Analytics & Integrations */}
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm my-6">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            Analytics & Integrations
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="label">Google Analytics Measurement ID</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={form.ga_id || ''}
+                                    onChange={e => setForm({ ...form, ga_id: e.target.value })}
+                                    placeholder="G-XXXXXXXXXX"
+                                />
+                                <span className="text-xs text-slate-500 mt-1 block">Format: G-XXXXXXXXXX</span>
+                            </div>
+                            <div>
+                                <label className="label">Meta Pixel ID</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={form.pixel_id || ''}
+                                    onChange={e => setForm({ ...form, pixel_id: e.target.value })}
+                                    placeholder="123456789012345"
+                                />
+                                <span className="text-xs text-slate-500 mt-1 block">Your Pixel ID number</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Custom Scripts */}
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                            </svg>
+                            Custom Scripts
+                        </h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="label">Header Scripts (Before &lt;/head&gt;)</label>
+                                <textarea
+                                    className="input font-mono text-sm h-32"
+                                    value={form.header_scripts || ''}
+                                    onChange={e => setForm({ ...form, header_scripts: e.target.value })}
+                                    placeholder="<script>...</script>"
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Footer Scripts (Before &lt;/body&gt;)</label>
+                                <textarea
+                                    className="input font-mono text-sm h-32"
+                                    value={form.footer_scripts || ''}
+                                    onChange={e => setForm({ ...form, footer_scripts: e.target.value })}
+                                    placeholder="<script>...</script>"
+                                />
                             </div>
                         </div>
                     </div>
                 </div>
+            )}
 
-                {/* Save Button */}
-                <div className="flex justify-end pt-4">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={saving}
-                        className="btn-primary w-full md:w-auto"
-                    >
-                        {saving ? (
-                            <>
-                                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                </svg>
-                                Saving Changes...
-                            </>
-                        ) : (
-                            <>
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                Save Theme Settings
-                            </>
-                        )}
-                    </button>
-                </div>
+            {/* Save Button */}
+            <div className="col-span-1 lg:col-span-2 flex justify-end pt-4">
+                <button
+                    onClick={handleSubmit}
+                    disabled={saving}
+                    className="btn-primary w-full md:w-auto"
+                >
+                    {saving ? (
+                        <>
+                            <svg className="w-5 h-5 animate-spin mr-2" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            Saving Changes...
+                        </>
+                    ) : (
+                        <>
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Save Theme Settings
+                        </>
+                    )}
+                </button>
             </div>
         </div>
     );
