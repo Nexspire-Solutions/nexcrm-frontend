@@ -35,6 +35,7 @@ export default function CustomerDetail() {
     const { id } = useParams();
     const [customer, setCustomer] = useState(null);
     const [activities, setActivities] = useState([]);
+    const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const [newNote, setNewNote] = useState('');
@@ -110,6 +111,7 @@ export default function CustomerDetail() {
                 activitiesAPI.getByEntity('customer', id).catch(() => ({ data: [] }))
             ]);
             setCustomer(customerRes.data || customerRes); // Adjust based on API structure
+            setOrders((customerRes.data || customerRes)?.orders || []);
             setActivities(activitiesRes.data || []);
         } catch (error) {
             console.error('Failed to load customer:', error);
@@ -188,6 +190,7 @@ export default function CustomerDetail() {
             {/* Tabs */}
             <div className="tabs">
                 <button onClick={() => setActiveTab('overview')} className={activeTab === 'overview' ? 'tab-active' : 'tab'}>Overview</button>
+                <button onClick={() => setActiveTab('orders')} className={activeTab === 'orders' ? 'tab-active' : 'tab'}>Orders ({orders.length})</button>
                 <button onClick={() => setActiveTab('activity')} className={activeTab === 'activity' ? 'tab-active' : 'tab'}>Activity</button>
                 <button onClick={() => setActiveTab('notes')} className={activeTab === 'notes' ? 'tab-active' : 'tab'}>Notes</button>
             </div>
@@ -198,17 +201,23 @@ export default function CustomerDetail() {
                     {activeTab === 'overview' && (
                         <>
                             {/* Info Cards */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                                 <div className="stat-card">
                                     <p className="text-sm text-slate-500 dark:text-slate-400">Total Value</p>
                                     <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                                        Rs.{(customer.totalValue || 0).toLocaleString()}
+                                        ₹{(parseFloat(customer.totalValue) || parseFloat(customer.total_value) || 0).toLocaleString()}
                                     </p>
                                 </div>
                                 <div className="stat-card">
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Projects Count</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Orders</p>
                                     <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                                        {customer.projectsCount || customer.projects_count || 0}
+                                        {parseInt(customer.ordersCount) || parseInt(customer.orders_count) || orders.length || 0}
+                                    </p>
+                                </div>
+                                <div className="stat-card">
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Projects</p>
+                                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                                        {parseInt(customer.projectsCount) || parseInt(customer.projects_count) || 0}
                                     </p>
                                 </div>
                             </div>
@@ -238,6 +247,60 @@ export default function CustomerDetail() {
                                 </div>
                             </div>
                         </>
+                    )}
+
+                    {activeTab === 'orders' && (
+                        <div className="card p-6">
+                            <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">Order History</h3>
+                            {orders.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <svg className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                    </svg>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">No orders yet</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="text-xs text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                                            <tr>
+                                                <th className="pb-3 font-medium">Order #</th>
+                                                <th className="pb-3 font-medium">Status</th>
+                                                <th className="pb-3 font-medium text-right">Total</th>
+                                                <th className="pb-3 font-medium text-right">Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                            {orders.map(order => (
+                                                <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                                    <td className="py-3 font-medium text-slate-900 dark:text-white">
+                                                        {order.order_number || `#${order.id}`}
+                                                    </td>
+                                                    <td className="py-3">
+                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${order.status === 'completed' || order.status === 'delivered'
+                                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                : order.status === 'pending'
+                                                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                    : order.status === 'cancelled'
+                                                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                            }`}>
+                                                            {order.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 text-right font-medium text-slate-900 dark:text-white">
+                                                        ₹{(parseFloat(order.total) || 0).toLocaleString()}
+                                                    </td>
+                                                    <td className="py-3 text-right text-slate-500 dark:text-slate-400">
+                                                        {new Date(order.created_at).toLocaleDateString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     {activeTab === 'activity' && (

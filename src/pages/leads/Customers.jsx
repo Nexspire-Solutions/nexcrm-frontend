@@ -52,11 +52,11 @@ export default function Customers() {
     const stats = {
         total: customers.length,
         active: customers.filter(c => c.status === 'active').length,
-        totalValue: customers.reduce((sum, c) => sum + (c.totalValue || c.total_value || 0), 0),
+        totalValue: customers.reduce((sum, c) => sum + (parseFloat(c.totalValue) || parseFloat(c.total_value) || 0), 0),
         // For e-commerce show orders, for others show projects
         activity: isEcommerce
-            ? customers.reduce((sum, c) => sum + (c.ordersCount || c.orders_count || 0), 0)
-            : customers.reduce((sum, c) => sum + (c.projectsCount || c.projects_count || 0), 0)
+            ? customers.reduce((sum, c) => sum + (parseInt(c.ordersCount) || parseInt(c.orders_count) || 0), 0)
+            : customers.reduce((sum, c) => sum + (parseInt(c.projectsCount) || parseInt(c.projects_count) || 0), 0)
     };
 
     const handleViewCustomer = (customer) => {
@@ -163,7 +163,9 @@ export default function Customers() {
                             </svg>
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{(stats.totalValue / 1000).toFixed(0)}K</p>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                                ₹{stats.totalValue >= 1000 ? `${(stats.totalValue / 1000).toFixed(0)}K` : stats.totalValue.toFixed(0)}
+                            </p>
                             <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Total Revenue</p>
                         </div>
                     </div>
@@ -289,7 +291,7 @@ export default function Customers() {
                             <div className="pt-4 border-t border-slate-100 dark:border-slate-700 grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">Total Value</p>
-                                    <p className="font-semibold text-slate-900 dark:text-white">₹{(customer.totalValue || 0).toLocaleString()}</p>
+                                    <p className="font-semibold text-slate-900 dark:text-white">₹{(parseFloat(customer.totalValue) || parseFloat(customer.total_value) || 0).toLocaleString()}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -357,7 +359,7 @@ export default function Customers() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
-                                            ₹{(customer.totalValue || 0).toLocaleString()}
+                                            ₹{(parseFloat(customer.totalValue) || parseFloat(customer.total_value) || 0).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
                                             {isEcommerce
