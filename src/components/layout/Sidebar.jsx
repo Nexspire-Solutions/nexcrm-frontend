@@ -381,9 +381,13 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             icon: Icons.legal,
             visible: hasPermission('cases', 'read'),
             items: [
+                { name: 'Dashboard', path: '/legal-dashboard', icon: Icons.dashboard },
                 { name: 'Cases', path: '/cases', icon: Icons.legal },
-                { name: 'Documents', path: '/documents', icon: Icons.orders },
-                { name: 'Billing', path: '/billing', icon: Icons.chart }
+                { name: 'Clients', path: '/legal-clients', icon: Icons.users },
+                { name: 'Lawyers', path: '/lawyers', icon: Icons.employees },
+                { name: 'Time Tracking', path: '/time-tracking', icon: Icons.calendar },
+                { name: 'Invoices', path: '/legal-invoices', icon: Icons.chart },
+                { name: 'Tasks', path: '/legal-tasks', icon: Icons.activity }
             ]
         },
         manufacturing: {
