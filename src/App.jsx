@@ -63,6 +63,11 @@ import ReportsPage from './pages/ecommerce/ReportsPage';
 import Properties from './pages/industry/realestate/Properties';
 import Viewings from './pages/industry/realestate/Viewings';
 import Listings from './pages/industry/realestate/Listings';
+import RealEstateDashboard from './pages/industry/realestate/RealEstateDashboard';
+import InquiryList from './pages/industry/realestate/InquiryList';
+import Transactions from './pages/industry/realestate/Transactions';
+import AgentList from './pages/industry/realestate/AgentList';
+import PropertyForm from './pages/industry/realestate/PropertyForm';
 
 // Healthcare
 import Patients from './pages/industry/healthcare/Patients';
@@ -97,6 +102,11 @@ import Trainers from './pages/industry/fitness/Trainers';
 // Legal
 import Cases from './pages/industry/legal/Cases';
 import Billing from './pages/industry/legal/Billing';
+import LegalDashboard from './pages/industry/legal/LegalDashboard';
+import LegalClients from './pages/industry/legal/LegalClients';
+import Lawyers from './pages/industry/legal/Lawyers';
+import TimeTracking from './pages/industry/legal/TimeTracking';
+import LegalInvoices from './pages/industry/legal/LegalInvoices';
 
 // Manufacturing
 import Production from './pages/industry/manufacturing/Production';
@@ -206,9 +216,19 @@ function AppRoutes() {
 
           {/* Industry Modules */}
           {/* Real Estate */}
+          <Route path="realestate-dashboard" element={<RealEstateDashboard />} />
           <Route path="properties" element={<Properties />} />
+          <Route path="properties/new" element={<PropertyForm />} />
+          <Route path="properties/:id" element={<PropertyForm />} />
+          <Route path="properties/:id/edit" element={<PropertyForm />} />
           <Route path="viewings" element={<Viewings />} />
           <Route path="listings" element={<Listings />} />
+          <Route path="property-inquiries" element={<InquiryList />} />
+          <Route path="property-inquiries/:id" element={<InquiryList />} />
+          <Route path="transactions" element={<Transactions />} />
+          <Route path="transactions/:id" element={<Transactions />} />
+          <Route path="agents" element={<AgentList />} />
+          <Route path="agents/:id" element={<AgentList />} />
 
           {/* Healthcare */}
           <Route path="patients" element={<Patients />} />
@@ -241,7 +261,20 @@ function AppRoutes() {
           <Route path="trainers" element={<Trainers />} />
 
           {/* Legal */}
+          <Route path="legal-dashboard" element={<LegalDashboard />} />
           <Route path="cases" element={<Cases />} />
+          <Route path="cases/new" element={<Cases />} />
+          <Route path="cases/:id" element={<Cases />} />
+          <Route path="legal-clients" element={<LegalClients />} />
+          <Route path="legal-clients/new" element={<LegalClients />} />
+          <Route path="legal-clients/:id" element={<LegalClients />} />
+          <Route path="lawyers" element={<Lawyers />} />
+          <Route path="lawyers/new" element={<Lawyers />} />
+          <Route path="lawyers/:id" element={<Lawyers />} />
+          <Route path="time-tracking" element={<TimeTracking />} />
+          <Route path="legal-invoices" element={<LegalInvoices />} />
+          <Route path="legal-invoices/new" element={<LegalInvoices />} />
+          <Route path="legal-invoices/:id" element={<LegalInvoices />} />
           <Route path="billing" element={<Billing />} />
 
           {/* Manufacturing */}
