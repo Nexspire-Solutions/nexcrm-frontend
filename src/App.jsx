@@ -63,6 +63,10 @@ import ReportsPage from './pages/ecommerce/ReportsPage';
 import Properties from './pages/industry/realestate/Properties';
 import Viewings from './pages/industry/realestate/Viewings';
 import Listings from './pages/industry/realestate/Listings';
+import RealEstateDashboard from './pages/industry/realestate/RealEstateDashboard';
+import InquiryList from './pages/industry/realestate/InquiryList';
+import Transactions from './pages/industry/realestate/Transactions';
+import AgentList from './pages/industry/realestate/AgentList';
 
 // Healthcare
 import Patients from './pages/industry/healthcare/Patients';
@@ -206,9 +210,16 @@ function AppRoutes() {
 
           {/* Industry Modules */}
           {/* Real Estate */}
+          <Route path="realestate-dashboard" element={<RealEstateDashboard />} />
           <Route path="properties" element={<Properties />} />
           <Route path="viewings" element={<Viewings />} />
           <Route path="listings" element={<Listings />} />
+          <Route path="property-inquiries" element={<InquiryList />} />
+          <Route path="property-inquiries/:id" element={<InquiryList />} />
+          <Route path="transactions" element={<Transactions />} />
+          <Route path="transactions/:id" element={<Transactions />} />
+          <Route path="agents" element={<AgentList />} />
+          <Route path="agents/:id" element={<AgentList />} />
 
           {/* Healthcare */}
           <Route path="patients" element={<Patients />} />
