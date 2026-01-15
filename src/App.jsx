@@ -102,6 +102,11 @@ import Trainers from './pages/industry/fitness/Trainers';
 // Legal
 import Cases from './pages/industry/legal/Cases';
 import Billing from './pages/industry/legal/Billing';
+import LegalDashboard from './pages/industry/legal/LegalDashboard';
+import LegalClients from './pages/industry/legal/LegalClients';
+import Lawyers from './pages/industry/legal/Lawyers';
+import TimeTracking from './pages/industry/legal/TimeTracking';
+import LegalInvoices from './pages/industry/legal/LegalInvoices';
 
 // Manufacturing
 import Production from './pages/industry/manufacturing/Production';
@@ -256,7 +261,20 @@ function AppRoutes() {
           <Route path="trainers" element={<Trainers />} />
 
           {/* Legal */}
+          <Route path="legal-dashboard" element={<LegalDashboard />} />
           <Route path="cases" element={<Cases />} />
+          <Route path="cases/new" element={<Cases />} />
+          <Route path="cases/:id" element={<Cases />} />
+          <Route path="legal-clients" element={<LegalClients />} />
+          <Route path="legal-clients/new" element={<LegalClients />} />
+          <Route path="legal-clients/:id" element={<LegalClients />} />
+          <Route path="lawyers" element={<Lawyers />} />
+          <Route path="lawyers/new" element={<Lawyers />} />
+          <Route path="lawyers/:id" element={<Lawyers />} />
+          <Route path="time-tracking" element={<TimeTracking />} />
+          <Route path="legal-invoices" element={<LegalInvoices />} />
+          <Route path="legal-invoices/new" element={<LegalInvoices />} />
+          <Route path="legal-invoices/:id" element={<LegalInvoices />} />
           <Route path="billing" element={<Billing />} />
 
           {/* Manufacturing */}
