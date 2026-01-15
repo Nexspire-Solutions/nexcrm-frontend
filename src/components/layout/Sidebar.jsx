@@ -445,7 +445,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             { name: 'Team Chat', path: '/communications/chat', icon: Icons.chat },
             { name: 'Chatbot', path: '/communications/chatbot', icon: Icons.chatbot },
             { name: 'Push Notifications', path: '/communications/notifications', icon: Icons.notification },
-            { name: 'SMTP Settings', path: '/settings/smtp', icon: Icons.settings, visible: user?.role === 'admin' } // Keep admin check for SMTP for now or add specific permission
+            { name: 'SMTP Settings', path: '/settings/smtp', icon: Icons.settings, visible: user?.role === 'admin' }
         ]
     };
 
@@ -457,6 +457,16 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         items: [
             { name: 'Workflows', path: '/automation/workflows', icon: Icons.chart },
             { name: 'Execution History', path: '/automation/history', icon: Icons.activity }
+        ]
+    };
+
+    // Settings group (admin only)
+    const settingsGroup = {
+        name: 'Settings',
+        icon: Icons.settings,
+        visible: user?.role === 'admin',
+        items: [
+            { name: 'Payment Settings', path: '/settings/payment', icon: Icons.orders }
         ]
     };
 
@@ -473,6 +483,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     const canViewSales = salesGroup.visible;
     const canViewCommunications = communicationsGroup.visible;
     const canViewAutomation = automationGroup.visible;
+    const canViewSettings = settingsGroup.visible;
 
     const NavItem = ({ item, isSubItem = false }) => (
         <NavLink
@@ -604,6 +615,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
                     {/* Automation Group */}
                     {canViewAutomation && <NavGroup group={automationGroup} />}
+
+                    {/* Settings Group (Admin Only) */}
+                    {canViewSettings && <NavGroup group={settingsGroup} />}
                 </nav>
 
                 {/* Footer */}

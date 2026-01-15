@@ -112,6 +112,7 @@ import Staff from './pages/industry/salon/Staff';
 
 // Settings
 import ThemeEditor from './pages/settings/ThemeEditor';
+import PaymentSettings from './pages/settings/PaymentSettings';
 
 // Admin
 import SmtpSettings from './pages/admin/SmtpSettings';
@@ -260,6 +261,7 @@ function AppRoutes() {
           {/* Settings - Admin Only */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="settings/theme-editor" element={<ThemeEditor />} />
+            <Route path="settings/payment" element={<PaymentSettings />} />
             <Route path="settings/smtp" element={<SmtpSettings />} />
           </Route>
         </Route>

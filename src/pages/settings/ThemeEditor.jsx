@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import { FiSave, FiRefreshCw, FiImage, FiDroplet, FiType, FiExternalLink, FiGlobe, FiDollarSign } from 'react-icons/fi';
+import { FiSave, FiRefreshCw, FiImage, FiDroplet, FiType, FiExternalLink, FiGlobe, FiDollarSign, FiTruck, FiMapPin } from 'react-icons/fi';
 
 const ThemeEditor = () => {
     const [settings, setSettings] = useState({
@@ -19,6 +20,7 @@ const ThemeEditor = () => {
         support_phone: '',
         // E-commerce settings
         tax_rate: '10',
+        shipping_mode: 'simple', // 'simple' or 'zone_based'
         shipping_fee: '5.99',
         free_shipping_threshold: '50'
     });
@@ -332,56 +334,149 @@ const ThemeEditor = () => {
                         E-commerce Settings
                     </h2>
 
-                    <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Tax Rate (%)
+                    {/* Shipping Mode Toggle */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                            <FiTruck className="inline mr-2" />
+                            Shipping Calculation Mode
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <label className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${settings.shipping_mode === 'simple'
+                                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                    : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'
+                                }`}>
+                                <input
+                                    type="radio"
+                                    name="shipping_mode"
+                                    value="simple"
+                                    checked={settings.shipping_mode === 'simple'}
+                                    onChange={(e) => handleChange('shipping_mode', e.target.value)}
+                                    className="sr-only"
+                                />
+                                <div className="flex items-center gap-3">
+                                    <FiDollarSign className={settings.shipping_mode === 'simple' ? 'text-indigo-500' : 'text-slate-400'} size={24} />
+                                    <div>
+                                        <div className="font-medium text-slate-800 dark:text-white">Simple (Flat Rate)</div>
+                                        <div className="text-sm text-slate-500">Fixed shipping fee for all orders</div>
+                                    </div>
+                                </div>
                             </label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                max="100"
-                                value={settings.tax_rate}
-                                onChange={(e) => handleChange('tax_rate', e.target.value)}
-                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                placeholder="10"
-                            />
-                            <p className="text-xs text-slate-500 mt-1">Applied to all orders</p>
-                        </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Shipping Fee ({settings.currency_symbol})
+                            <label className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${settings.shipping_mode === 'zone_based'
+                                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                    : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'
+                                }`}>
+                                <input
+                                    type="radio"
+                                    name="shipping_mode"
+                                    value="zone_based"
+                                    checked={settings.shipping_mode === 'zone_based'}
+                                    onChange={(e) => handleChange('shipping_mode', e.target.value)}
+                                    className="sr-only"
+                                />
+                                <div className="flex items-center gap-3">
+                                    <FiMapPin className={settings.shipping_mode === 'zone_based' ? 'text-green-500' : 'text-slate-400'} size={24} />
+                                    <div>
+                                        <div className="font-medium text-slate-800 dark:text-white">Zone-Based</div>
+                                        <div className="text-sm text-slate-500">Charges vary by delivery location</div>
+                                    </div>
+                                </div>
                             </label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={settings.shipping_fee}
-                                onChange={(e) => handleChange('shipping_fee', e.target.value)}
-                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                placeholder="5.99"
-                            />
-                            <p className="text-xs text-slate-500 mt-1">Standard shipping cost</p>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Free Shipping Above ({settings.currency_symbol})
-                            </label>
-                            <input
-                                type="number"
-                                step="1"
-                                min="0"
-                                value={settings.free_shipping_threshold}
-                                onChange={(e) => handleChange('free_shipping_threshold', e.target.value)}
-                                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                placeholder="50"
-                            />
-                            <p className="text-xs text-slate-500 mt-1">Free shipping threshold</p>
                         </div>
                     </div>
+
+                    {/* Simple mode settings */}
+                    {settings.shipping_mode === 'simple' ? (
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Tax Rate (%)
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="100"
+                                    value={settings.tax_rate}
+                                    onChange={(e) => handleChange('tax_rate', e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="10"
+                                />
+                                <p className="text-xs text-slate-500 mt-1">Applied to all orders</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Shipping Fee ({settings.currency_symbol})
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={settings.shipping_fee}
+                                    onChange={(e) => handleChange('shipping_fee', e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="5.99"
+                                />
+                                <p className="text-xs text-slate-500 mt-1">Standard shipping cost</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Free Shipping Above ({settings.currency_symbol})
+                                </label>
+                                <input
+                                    type="number"
+                                    step="1"
+                                    min="0"
+                                    value={settings.free_shipping_threshold}
+                                    onChange={(e) => handleChange('free_shipping_threshold', e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="50"
+                                />
+                                <p className="text-xs text-slate-500 mt-1">Free shipping threshold</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border border-green-200 dark:border-green-800">
+                            <div className="flex items-start gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center flex-shrink-0">
+                                    <FiMapPin className="text-white" size={24} />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-slate-800 dark:text-white mb-2">Zone-Based Shipping Active</h3>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                                        Shipping charges are calculated based on delivery zones. Configure your zones, rates, and delivery areas in the Shipping Management page.
+                                    </p>
+                                    <Link
+                                        to="/shipping"
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                    >
+                                        <FiTruck size={16} />
+                                        Manage Shipping Zones
+                                    </Link>
+                                </div>
+                            </div>
+
+                            {/* Tax rate still applies */}
+                            <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-700">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Tax Rate (%)
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="100"
+                                    value={settings.tax_rate}
+                                    onChange={(e) => handleChange('tax_rate', e.target.value)}
+                                    className="w-32 px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="10"
+                                />
+                                <p className="text-xs text-slate-500 mt-1">Tax is still applied to all orders</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Preview Card */}
