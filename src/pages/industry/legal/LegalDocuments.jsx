@@ -22,6 +22,7 @@ export default function LegalDocuments() {
     const [showTemplateModal, setShowTemplateModal] = useState(false);
     const [showGenerateModal, setShowGenerateModal] = useState(false);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [showEditDocumentModal, setShowEditDocumentModal] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [selectedDocument, setSelectedDocument] = useState(null);
 
@@ -31,6 +32,9 @@ export default function LegalDocuments() {
     });
     const [generateForm, setGenerateForm] = useState({
         template_id: '', case_id: '', client_id: '', title: '', custom_variables: {}
+    });
+    const [editDocForm, setEditDocForm] = useState({
+        title: '', content: ''
     });
 
     // Data for dropdowns
@@ -186,6 +190,38 @@ export default function LegalDocuments() {
         }
     };
 
+    const openEditDocument = (doc) => {
+        setSelectedDocument(doc);
+        setEditDocForm({
+            title: doc.title,
+            content: doc.content
+        });
+        setShowEditDocumentModal(true);
+    };
+
+    const handleUpdateDocument = async (e) => {
+        e.preventDefault();
+        try {
+            await apiClient.put(`/legal-documents/${selectedDocument.id}`, editDocForm);
+            toast.success('Document updated successfully');
+            setShowEditDocumentModal(false);
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to update document');
+        }
+    };
+
+    const handleDeleteDocument = async (id) => {
+        if (!confirm('Are you sure you want to delete this document?')) return;
+        try {
+            await apiClient.delete(`/legal-documents/${id}`);
+            toast.success('Document deleted');
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to delete document');
+        }
+    };
+
     const getCategoryName = (catId) => {
         return categories.find(c => c.id === catId)?.name || catId;
     };
@@ -312,6 +348,20 @@ export default function LegalDocuments() {
                                                     title="View & Print"
                                                 >
                                                     <FiEye className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => openEditDocument(doc)}
+                                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-indigo-600"
+                                                    title="Edit Content"
+                                                >
+                                                    <FiEdit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteDocument(doc.id)}
+                                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-red-600"
+                                                    title="Delete"
+                                                >
+                                                    <FiTrash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </td>
@@ -525,6 +575,51 @@ export default function LegalDocuments() {
                                 <div dangerouslySetInnerHTML={{ __html: selectedDocument.content }} />
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Document Content Modal */}
+            {showEditDocumentModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Edit Generated Document</h2>
+                            <button onClick={() => setShowEditDocumentModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                                <FiX className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateDocument} className="flex-1 flex flex-col overflow-hidden">
+                            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Document Title</label>
+                                    <input
+                                        type="text"
+                                        value={editDocForm.title}
+                                        onChange={(e) => setEditDocForm({ ...editDocForm, title: e.target.value })}
+                                        className="input w-full"
+                                        required
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-sm font-medium mb-1">Document Content (HTML)</label>
+                                    <textarea
+                                        value={editDocForm.content}
+                                        onChange={(e) => setEditDocForm({ ...editDocForm, content: e.target.value })}
+                                        className="input w-full font-mono text-sm h-[400px]"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
+                                <button type="button" onClick={() => setShowEditDocumentModal(false)} className="btn-secondary">
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-primary">
+                                    <FiCheck className="w-4 h-4" /> Save Changes
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
