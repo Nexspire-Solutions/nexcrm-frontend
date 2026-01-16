@@ -101,10 +101,13 @@ import Trainers from './pages/industry/fitness/Trainers';
 
 // Legal
 import Cases from './pages/industry/legal/Cases';
+import CaseForm from './pages/industry/legal/CaseForm';
 import Billing from './pages/industry/legal/Billing';
 import LegalDashboard from './pages/industry/legal/LegalDashboard';
 import LegalClients from './pages/industry/legal/LegalClients';
+import ClientForm from './pages/industry/legal/ClientForm';
 import Lawyers from './pages/industry/legal/Lawyers';
+import LawyerForm from './pages/industry/legal/LawyerForm';
 import TimeTracking from './pages/industry/legal/TimeTracking';
 import LegalInvoices from './pages/industry/legal/LegalInvoices';
 
@@ -263,18 +266,16 @@ function AppRoutes() {
           {/* Legal */}
           <Route path="legal-dashboard" element={<LegalDashboard />} />
           <Route path="cases" element={<Cases />} />
-          <Route path="cases/new" element={<Cases />} />
-          <Route path="cases/:id" element={<Cases />} />
+          <Route path="cases/new" element={<CaseForm />} />
+          <Route path="cases/:id/edit" element={<CaseForm />} />
           <Route path="legal-clients" element={<LegalClients />} />
-          <Route path="legal-clients/new" element={<LegalClients />} />
-          <Route path="legal-clients/:id" element={<LegalClients />} />
+          <Route path="legal-clients/new" element={<ClientForm />} />
+          <Route path="legal-clients/:id/edit" element={<ClientForm />} />
           <Route path="lawyers" element={<Lawyers />} />
-          <Route path="lawyers/new" element={<Lawyers />} />
-          <Route path="lawyers/:id" element={<Lawyers />} />
+          <Route path="lawyers/new" element={<LawyerForm />} />
+          <Route path="lawyers/:id/edit" element={<LawyerForm />} />
           <Route path="time-tracking" element={<TimeTracking />} />
           <Route path="legal-invoices" element={<LegalInvoices />} />
-          <Route path="legal-invoices/new" element={<LegalInvoices />} />
-          <Route path="legal-invoices/:id" element={<LegalInvoices />} />
           <Route path="billing" element={<Billing />} />
 
           {/* Manufacturing */}
