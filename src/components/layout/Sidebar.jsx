@@ -333,7 +333,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'Viewings', path: '/viewings', icon: Icons.calendar },
                 { name: 'Transactions', path: '/transactions', icon: Icons.chart },
                 { name: 'Agents', path: '/agents', icon: Icons.employees },
-                { name: 'Listings', path: '/listings', icon: Icons.orders }
+                { name: 'Listings', path: '/listings', icon: Icons.orders },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
         healthcare: {
@@ -343,7 +344,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Patients', path: '/patients', icon: Icons.users },
                 { name: 'Appointments', path: '/appointments', icon: Icons.calendar },
-                { name: 'Prescriptions', path: '/prescriptions', icon: Icons.orders }
+                { name: 'Prescriptions', path: '/prescriptions', icon: Icons.orders },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
         hospitality: {
@@ -353,7 +355,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Rooms', path: '/rooms', icon: Icons.hotel },
                 { name: 'Reservations', path: '/reservations', icon: Icons.calendar },
-                { name: 'Housekeeping', path: '/housekeeping', icon: Icons.activity }
+                { name: 'Housekeeping', path: '/housekeeping', icon: Icons.activity },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
         education: {
@@ -363,7 +366,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Courses', path: '/courses', icon: Icons.book },
                 { name: 'Students', path: '/students', icon: Icons.users },
-                { name: 'Enrollments', path: '/enrollments', icon: Icons.orders }
+                { name: 'Enrollments', path: '/enrollments', icon: Icons.orders },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
         fitness: {
@@ -373,7 +377,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Members', path: '/members', icon: Icons.users },
                 { name: 'Classes', path: '/classes', icon: Icons.calendar },
-                { name: 'Trainers', path: '/trainers', icon: Icons.employees }
+                { name: 'Trainers', path: '/trainers', icon: Icons.employees },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
         legal: {
@@ -387,7 +392,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'Lawyers', path: '/lawyers', icon: Icons.employees },
                 { name: 'Time Tracking', path: '/time-tracking', icon: Icons.calendar },
                 { name: 'Invoices', path: '/legal-invoices', icon: Icons.chart },
-                { name: 'Tasks', path: '/legal-tasks', icon: Icons.activity }
+                { name: 'Tasks', path: '/legal-tasks', icon: Icons.activity },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
         manufacturing: {
@@ -397,7 +403,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Production', path: '/production', icon: Icons.factory },
                 { name: 'Work Orders', path: '/work-orders', icon: Icons.orders },
-                { name: 'Inventory', path: '/inventory', icon: Icons.inventory }
+                { name: 'Inventory', path: '/inventory', icon: Icons.inventory },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
         logistics: {
@@ -407,7 +414,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Shipments', path: '/shipments', icon: Icons.truck },
                 { name: 'Tracking', path: '/tracking', icon: Icons.activity },
-                { name: 'Vehicles', path: '/vehicles', icon: Icons.truck }
+                { name: 'Vehicles', path: '/vehicles', icon: Icons.truck },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
         restaurant: {
@@ -417,7 +425,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Menu', path: '/menu', icon: Icons.products },
                 { name: 'Orders', path: '/kitchen-orders', icon: Icons.orders },
-                { name: 'Tables', path: '/tables', icon: Icons.calendar }
+                { name: 'Tables', path: '/tables', icon: Icons.calendar },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
         salon: {
@@ -427,7 +436,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Bookings', path: '/bookings', icon: Icons.calendar },
                 { name: 'Services', path: '/salon-services', icon: Icons.activity },
-                { name: 'Staff', path: '/staff', icon: Icons.employees }
+                { name: 'Staff', path: '/staff', icon: Icons.employees },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
         services: {
@@ -443,7 +453,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'Packages', path: '/service-packages', icon: Icons.products },
                 { name: 'Memberships', path: '/membership-plans', icon: Icons.card },
                 { name: 'Clients', path: '/clients', icon: Icons.users },
-                { name: 'Reports', path: '/services-reports', icon: Icons.chart }
+                { name: 'Reports', path: '/services-reports', icon: Icons.chart },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
         general: {
@@ -452,7 +463,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             roles: ['admin', 'manager', 'sales_operator'],
             items: [
                 { name: 'Analytics', path: '/analytics', icon: Icons.chart },
-                { name: 'Reports', path: '/reports', icon: Icons.orders }
+                { name: 'Reports', path: '/reports', icon: Icons.orders },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         }
     };
