@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiPlus, FiSearch, FiFileText, FiDollarSign, FiSend, FiEye, FiClock, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
-import apiClient from '../../../utils/apiClient';
+import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 import ProHeader from '../../../components/common/ProHeader';
 
@@ -155,8 +155,8 @@ export default function LegalInvoices() {
                         key={status}
                         onClick={() => setFilterStatus(status)}
                         className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${filterStatus === status
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
                             }`}
                     >
                         {status === '' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}

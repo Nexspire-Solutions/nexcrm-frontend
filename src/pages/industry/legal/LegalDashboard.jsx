@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiFileText, FiUsers, FiClock, FiDollarSign, FiCalendar, FiAlertCircle, FiTrendingUp, FiChevronRight, FiPlus, FiBriefcase, FiCheckCircle } from 'react-icons/fi';
-import apiClient from '../../../utils/apiClient';
+import apiClient from '../../../api/axios';
 import ProHeader from '../../../components/common/ProHeader';
 
 export default function LegalDashboard() {
@@ -222,8 +222,8 @@ export default function LegalDashboard() {
                                         </p>
                                     </div>
                                     <span className={`px-2 py-1 rounded text-xs font-medium ${task.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                                            task.priority === 'high' ? 'bg-amber-100 text-amber-700' :
-                                                'bg-slate-100 text-slate-700'
+                                        task.priority === 'high' ? 'bg-amber-100 text-amber-700' :
+                                            'bg-slate-100 text-slate-700'
                                         }`}>
                                         {task.priority}
                                     </span>

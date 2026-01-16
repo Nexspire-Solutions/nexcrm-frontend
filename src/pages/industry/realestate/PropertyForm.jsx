@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FiChevronLeft, FiUpload, FiX, FiPlus, FiMapPin, FiHome, FiDollarSign, FiInfo } from 'react-icons/fi';
-import apiClient from '../../../utils/apiClient';
+import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 
 const PropertyForm = () => {
@@ -245,8 +245,8 @@ const PropertyForm = () => {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${activeTab === tab.id
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                             }`}
                     >
                         <tab.icon className="w-4 h-4" />
@@ -784,8 +784,8 @@ const PropertyForm = () => {
                                                 type="button"
                                                 onClick={() => toggleAmenity(amenity)}
                                                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${formData.amenities.includes(amenity)
-                                                        ? 'bg-indigo-600 text-white'
-                                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                                                     }`}
                                             >
                                                 {amenity}

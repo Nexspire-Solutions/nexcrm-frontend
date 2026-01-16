@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiPlus, FiSearch, FiUser, FiPhone, FiMail, FiAward, FiBriefcase, FiClock, FiDollarSign, FiStar, FiTrendingUp } from 'react-icons/fi';
-import apiClient from '../../../utils/apiClient';
+import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 import ProHeader from '../../../components/common/ProHeader';
 
@@ -155,9 +155,9 @@ export default function Lawyers() {
                         {leaderboard.slice(0, 5).map((lawyer, idx) => (
                             <div key={lawyer.id} className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${idx === 0 ? 'bg-amber-400 text-white' :
-                                        idx === 1 ? 'bg-slate-400 text-white' :
-                                            idx === 2 ? 'bg-amber-700 text-white' :
-                                                'bg-slate-200 text-slate-600'
+                                    idx === 1 ? 'bg-slate-400 text-white' :
+                                        idx === 2 ? 'bg-amber-700 text-white' :
+                                            'bg-slate-200 text-slate-600'
                                     }`}>
                                     {idx + 1}
                                 </div>
@@ -249,8 +249,8 @@ export default function Lawyers() {
                                     {formatCurrency(lawyer.hourly_rate)}/hr
                                 </span>
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${lawyer.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
-                                        lawyer.status === 'on_leave' ? 'bg-amber-100 text-amber-700' :
-                                            'bg-slate-100 text-slate-700'
+                                    lawyer.status === 'on_leave' ? 'bg-amber-100 text-amber-700' :
+                                        'bg-slate-100 text-slate-700'
                                     }`}>
                                     {lawyer.status}
                                 </span>

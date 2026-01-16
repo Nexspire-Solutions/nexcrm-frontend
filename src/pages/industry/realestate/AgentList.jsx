@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { FiPlus, FiSearch, FiStar, FiPhone, FiMail, FiMapPin, FiCalendar, FiTrendingUp, FiAward, FiEdit, FiX } from 'react-icons/fi';
-import apiClient from '../../../utils/apiClient';
+import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
@@ -110,13 +110,13 @@ const AgentList = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {leaderboard.slice(0, 3).map((agent, index) => (
                             <div key={agent.id} className={`p-4 rounded-xl ${index === 0 ? 'bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-800' :
-                                    index === 1 ? 'bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800/50 dark:to-gray-800/50 border border-slate-200 dark:border-slate-700' :
-                                        'bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border border-orange-200 dark:border-orange-800'
+                                index === 1 ? 'bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800/50 dark:to-gray-800/50 border border-slate-200 dark:border-slate-700' :
+                                    'bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border border-orange-200 dark:border-orange-800'
                                 }`}>
                                 <div className="flex items-center gap-3">
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${index === 0 ? 'bg-amber-500 text-white' :
-                                            index === 1 ? 'bg-slate-400 text-white' :
-                                                'bg-orange-400 text-white'
+                                        index === 1 ? 'bg-slate-400 text-white' :
+                                            'bg-orange-400 text-white'
                                         }`}>
                                         {index + 1}
                                     </div>
@@ -201,7 +201,7 @@ const AgentList = () => {
 
                                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                                     <span className={`px-2 py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                            'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                        'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                                         }`}>
                                         {agent.status}
                                     </span>

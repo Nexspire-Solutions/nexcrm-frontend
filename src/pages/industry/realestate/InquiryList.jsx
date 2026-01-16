@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { FiSearch, FiFilter, FiPlus, FiPhone, FiMail, FiCalendar, FiUser, FiHome, FiMoreVertical, FiX, FiChevronDown } from 'react-icons/fi';
-import apiClient from '../../../utils/apiClient';
+import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -149,8 +149,8 @@ const InquiryList = () => {
                             key={stat.status}
                             onClick={() => setFilters(prev => ({ ...prev, status: stat.status === filters.status ? '' : stat.status }))}
                             className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filters.status === stat.status
-                                    ? 'bg-indigo-600 text-white'
-                                    : getStatusColor(stat.status)
+                                ? 'bg-indigo-600 text-white'
+                                : getStatusColor(stat.status)
                                 }`}
                         >
                             {stat.status?.replace(/_/g, ' ')} ({stat.count})
