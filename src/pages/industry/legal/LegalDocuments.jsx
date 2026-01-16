@@ -137,7 +137,7 @@ export default function LegalDocuments() {
             <head>
                 <title>${selectedDocument?.title || 'Legal Document'}</title>
                 <style>
-                    body { font-family: Georgia, serif; margin: 0; padding: 20px; }
+                    body { font-family: Georgia, serif; margin: 0; padding: 20px; color: #0f172a; }
                     @media print {
                         body { margin: 0; }
                         @page { margin: 2cm; }
@@ -214,8 +214,8 @@ export default function LegalDocuments() {
                 <button
                     onClick={() => setActiveTab('documents')}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'documents'
-                            ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                         }`}
                 >
                     <FiFileText className="inline w-4 h-4 mr-2" />
@@ -224,8 +224,8 @@ export default function LegalDocuments() {
                 <button
                     onClick={() => setActiveTab('templates')}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'templates'
-                            ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                         }`}
                 >
                     <FiFolder className="inline w-4 h-4 mr-2" />
@@ -519,7 +519,7 @@ export default function LegalDocuments() {
                         <div className="flex-1 overflow-y-auto p-6 bg-slate-100 dark:bg-slate-900">
                             <div
                                 ref={printRef}
-                                className="bg-white dark:bg-white rounded-lg shadow-lg p-8 max-w-3xl mx-auto"
+                                className="bg-white dark:bg-white text-slate-900 rounded-lg shadow-lg p-8 max-w-3xl mx-auto"
                                 style={{ minHeight: '11in' }}
                             >
                                 <div dangerouslySetInnerHTML={{ __html: selectedDocument.content }} />
