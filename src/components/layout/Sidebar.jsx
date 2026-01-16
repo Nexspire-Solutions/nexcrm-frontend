@@ -384,7 +384,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         legal: {
             name: 'Law Firm',
             icon: Icons.legal,
-            visible: hasPermission('cases', 'read'),
+            visible: true, // Always visible for legal tenants
+            roles: ['admin', 'manager', 'sales_operator'],
             items: [
                 { name: 'Dashboard', path: '/legal-dashboard', icon: Icons.dashboard },
                 { name: 'Cases', path: '/cases', icon: Icons.legal },
