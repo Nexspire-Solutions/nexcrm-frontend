@@ -3,11 +3,14 @@ import ProHeader from '../../../components/common/ProHeader';
 import ProTable from '../../../components/common/ProTable';
 import ProCard from '../../../components/common/ProCard';
 import StatusBadge from '../../../components/common/StatusBadge';
+import { FiPlus, FiEye } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../../../api/axios';
 
 export default function Cases() {
     const [cases, setCases] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchCases();
@@ -26,11 +29,20 @@ export default function Cases() {
     };
 
     const columns = [
-        { header: 'Case #', accessor: 'caseNumber', className: 'font-medium' },
-        { header: 'Client', accessor: 'clientName', className: 'font-medium text-slate-900 dark:text-white' },
-        { header: 'Type', accessor: 'caseType' },
-        { header: 'Filed Date', accessor: 'filedDate', render: (row) => row.filedDate ? new Date(row.filedDate).toLocaleDateString() : '-' },
-        { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status || 'open'} variant={row.status === 'closed' ? 'success' : row.status === 'pending' ? 'warning' : 'info'} /> },
+        { header: 'Case #', accessor: 'case_number', className: 'font-medium' },
+        { header: 'Client', accessor: 'client_name', className: 'font-medium text-slate-900 dark:text-white' },
+        { header: 'Type', accessor: 'case_type' },
+        { header: 'Filed Date', accessor: 'filing_date', render: (row) => row.filing_date ? new Date(row.filing_date).toLocaleDateString() : '-' },
+        { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status || 'open'} variant={row.status === 'closed' ? 'success' : 'info'} /> },
+        {
+            header: 'Actions',
+            align: 'right',
+            render: (row) => (
+                <button onClick={() => navigate(`/cases/${row.id}`)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                    <FiEye className="w-4 h-4 text-slate-600" />
+                </button>
+            )
+        }
     ];
 
     if (isLoading) {
@@ -48,7 +60,11 @@ export default function Cases() {
                 title="Cases"
                 subtitle="Manage legal cases"
                 breadcrumbs={[{ label: 'Dashboard', to: '/' }, { label: 'Legal' }, { label: 'Cases' }]}
-                actions={<button className="btn-primary">New Case</button>}
+                actions={
+                    <button onClick={() => navigate('/cases/new')} className="btn-primary flex items-center gap-2">
+                        <FiPlus className="w-4 h-4" /> New Case
+                    </button>
+                }
             />
 
             {cases.length === 0 ? (

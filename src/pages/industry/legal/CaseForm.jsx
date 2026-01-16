@@ -79,7 +79,7 @@ export default function CaseForm() {
     const loadDropdownData = async () => {
         try {
             const [clientsRes, lawyersRes] = await Promise.all([
-                apiClient.get('/legal-clients?status=active&limit=100'),
+                apiClient.get('/cases/clients/all'),
                 apiClient.get('/lawyers?status=active')
             ]);
             setClients(clientsRes.data.data || []);

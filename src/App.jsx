@@ -112,6 +112,8 @@ import TimeTracking from './pages/industry/legal/TimeTracking';
 import LegalInvoices from './pages/industry/legal/LegalInvoices';
 import LegalDocuments from './pages/industry/legal/LegalDocuments';
 import LegalTasks from './pages/industry/legal/LegalTasks';
+import LegalClientDetail from './pages/industry/legal/LegalClientDetail';
+import CaseDetail from './pages/industry/legal/CaseDetail';
 
 // Manufacturing
 import Production from './pages/industry/manufacturing/Production';
@@ -272,7 +274,9 @@ function AppRoutes() {
           <Route path="cases/:id/edit" element={<CaseForm />} />
           <Route path="legal-clients" element={<LegalClients />} />
           <Route path="legal-clients/new" element={<ClientForm />} />
+          <Route path="legal-clients/:id" element={<LegalClientDetail />} />
           <Route path="legal-clients/:id/edit" element={<ClientForm />} />
+          <Route path="cases/:id" element={<CaseDetail />} />
           <Route path="lawyers" element={<Lawyers />} />
           <Route path="lawyers/new" element={<LawyerForm />} />
           <Route path="lawyers/:id/edit" element={<LawyerForm />} />
