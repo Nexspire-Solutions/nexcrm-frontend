@@ -111,6 +111,7 @@ import LawyerForm from './pages/industry/legal/LawyerForm';
 import TimeTracking from './pages/industry/legal/TimeTracking';
 import LegalInvoices from './pages/industry/legal/LegalInvoices';
 import LegalDocuments from './pages/industry/legal/LegalDocuments';
+import LegalTasks from './pages/industry/legal/LegalTasks';
 
 // Manufacturing
 import Production from './pages/industry/manufacturing/Production';
@@ -278,6 +279,7 @@ function AppRoutes() {
           <Route path="time-tracking" element={<TimeTracking />} />
           <Route path="legal-invoices" element={<LegalInvoices />} />
           <Route path="legal-documents" element={<LegalDocuments />} />
+          <Route path="legal-tasks" element={<LegalTasks />} />
           <Route path="billing" element={<Billing />} />
 
           {/* Manufacturing */}
