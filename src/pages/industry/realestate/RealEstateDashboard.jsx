@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { FiHome, FiUsers, FiCalendar, FiDollarSign, FiTrendingUp, FiAlertCircle, FiEye, FiPhone, FiClock, FiArrowRight } from 'react-icons/fi';
-import apiClient from '../../api/axios';
+import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
