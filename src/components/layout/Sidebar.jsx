@@ -261,7 +261,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             name: 'Dashboard',
             path: '/dashboard',
             icon: Icons.dashboard,
-            visible: hasPermission('dashboard', 'read')
+            // Hide generic dashboard for industries with their own (legal, realestate, services)
+            visible: hasPermission('dashboard', 'read') && !['legal', 'realestate', 'services'].includes(currentIndustry)
         },
         {
             name: 'Employees',
