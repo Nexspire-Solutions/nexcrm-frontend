@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiPlus, FiSearch, FiUsers, FiPhone, FiMail, FiMoreVertical, FiEdit, FiTrash2, FiEye, FiDollarSign, FiBriefcase } from 'react-icons/fi';
-import apiClient from '../../../utils/apiClient';
+import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 import ProHeader from '../../../components/common/ProHeader';
 
