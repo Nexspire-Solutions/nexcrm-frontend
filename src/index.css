@@ -618,11 +618,18 @@
 
 .input-floating input,
 .input-floating textarea {
-  @apply peer w-full px-4 py-3 pt-6 text-sm bg-white border-2 border-slate-200 rounded-xl text-slate-900 placeholder-transparent outline-none transition-all focus:border-indigo-500 focus:ring-0 dark:bg-slate-800 dark:border-slate-700 dark:text-white;
+  @apply w-full px-4 py-3 pt-6 text-sm bg-white border-2 border-slate-200 rounded-xl text-slate-900 placeholder-transparent outline-none transition-all focus:border-indigo-500 focus:ring-0 dark:bg-slate-800 dark:border-slate-700 dark:text-white;
 }
 
 .input-floating label {
-  @apply absolute left-4 top-2 text-xs font-medium text-slate-500 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-indigo-500;
+  @apply absolute left-4 top-4 text-sm font-medium text-slate-500 transition-all pointer-events-none;
+}
+
+.input-floating input:focus~label,
+.input-floating input:not(:placeholder-shown)~label,
+.input-floating textarea:focus~label,
+.input-floating textarea:not(:placeholder-shown)~label {
+  @apply top-2 text-xs text-indigo-500 font-semibold;
 }
 
 /* Premium Stat Card */
