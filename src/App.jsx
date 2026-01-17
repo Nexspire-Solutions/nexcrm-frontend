@@ -109,6 +109,7 @@ import LegalClients from './pages/industry/legal/LegalClients';
 import ClientForm from './pages/industry/legal/ClientForm';
 import Lawyers from './pages/industry/legal/Lawyers';
 import LawyerForm from './pages/industry/legal/LawyerForm';
+import LawyerDetail from './pages/industry/legal/LawyerDetail';
 import TimeTracking from './pages/industry/legal/TimeTracking';
 import LegalInvoices from './pages/industry/legal/LegalInvoices';
 import LegalDocuments from './pages/industry/legal/LegalDocuments';
@@ -289,6 +290,7 @@ function AppRoutes() {
           <Route path="cases/:id" element={<CaseDetail />} />
           <Route path="lawyers" element={<Lawyers />} />
           <Route path="lawyers/new" element={<LawyerForm />} />
+          <Route path="lawyers/:id" element={<LawyerDetail />} />
           <Route path="lawyers/:id/edit" element={<LawyerForm />} />
           <Route path="time-tracking" element={<TimeTracking />} />
           <Route path="legal-invoices" element={<LegalInvoices />} />
