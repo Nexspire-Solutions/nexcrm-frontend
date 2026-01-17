@@ -10,11 +10,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import apiClient from '../../api/axios';
+import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
-import ProHeader from '../../components/common/ProHeader';
-import ProCard from '../../components/common/ProCard';
-import Modal from '../../components/common/Modal';
+import ProHeader from '../../../components/common/ProHeader';
+import ProCard from '../../../components/common/ProCard';
+import Modal from '../../../components/common/Modal';
 import { FiBriefcase, FiMessageCircle, FiBarChart2, FiEdit2, FiTrash2, FiPlus, FiSave, FiSettings } from 'react-icons/fi';
 
 const LegalCMSManagement = () => {
@@ -176,8 +176,8 @@ const LegalCMSManagement = () => {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${activeTab === tab.id
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
+                            : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
                             }`}
                     >
                         <tab.icon size={16} />
