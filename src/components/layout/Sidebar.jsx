@@ -396,7 +396,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'Invoices', path: '/legal-invoices', icon: Icons.chart },
                 { name: 'Documents', path: '/legal-documents', icon: Icons.legal },
                 { name: 'Tasks', path: '/legal-tasks', icon: Icons.activity },
-                { name: 'CMS', path: '/cms', icon: Icons.cms }
+                { name: 'Storefront CMS', path: '/legal-cms', icon: Icons.cms }
             ]
         },
         manufacturing: {

@@ -46,12 +46,25 @@ export default function LawyerDetail() {
         return `₹${parseFloat(amount).toLocaleString('en-IN')}`;
     };
 
-    const parseJSON = (str) => {
-        try {
-            return typeof str === 'string' ? JSON.parse(str) : (str || []);
-        } catch {
-            return [];
+    const parseJSON = (data) => {
+        // Return empty array for null/undefined
+        if (data === null || data === undefined) return [];
+
+        // If already an array, return it
+        if (Array.isArray(data)) return data;
+
+        // If it's a string, try to parse it
+        if (typeof data === 'string') {
+            try {
+                const parsed = JSON.parse(data);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
         }
+
+        // For any other type, return empty array
+        return [];
     };
 
     if (loading) {
@@ -144,8 +157,8 @@ export default function LawyerDetail() {
                                     <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">Senior Advocate</span>
                                 )}
                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${lawyer.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
-                                        lawyer.status === 'on_leave' ? 'bg-amber-100 text-amber-700' :
-                                            'bg-slate-100 text-slate-700'
+                                    lawyer.status === 'on_leave' ? 'bg-amber-100 text-amber-700' :
+                                        'bg-slate-100 text-slate-700'
                                     }`}>
                                     {lawyer.status}
                                 </span>
@@ -214,8 +227,8 @@ export default function LawyerDetail() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2 px-5 py-4 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${activeTab === tab.id
-                                            ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30'
-                                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                                        ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30'
+                                        : 'border-transparent text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
                                     <tab.icon className="w-4 h-4" />
