@@ -20,6 +20,9 @@ export default function TimeTracking() {
     const [timerSeconds, setTimerSeconds] = useState(0);
     const [timerCase, setTimerCase] = useState(null);
     const [timerDescription, setTimerDescription] = useState('');
+    const [lawyers, setLawyers] = useState([]);
+    const [currentLawyer, setCurrentLawyer] = useState(null);
+    const [timerLawyer, setTimerLawyer] = useState(null);
     const timerRef = useRef(null);
 
     const [filters, setFilters] = useState({
@@ -29,6 +32,7 @@ export default function TimeTracking() {
 
     const [formData, setFormData] = useState({
         case_id: '',
+        lawyer_id: '',
         entry_date: new Date().toISOString().split('T')[0],
         hours: '',
         description: '',
@@ -39,6 +43,7 @@ export default function TimeTracking() {
     useEffect(() => {
         fetchEntries();
         fetchCases();
+        fetchLawyers();
     }, [filters]);
 
     useEffect(() => {
@@ -71,6 +76,25 @@ export default function TimeTracking() {
         }
     };
 
+    const fetchLawyers = async () => {
+        try {
+            const response = await apiClient.get('/lawyers?status=active');
+            const lawyerList = response.data.data || [];
+            setLawyers(lawyerList);
+
+            // Find current user's lawyer profile
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const profile = lawyerList.find(l => l.user_id === user.id);
+            if (profile) {
+                setCurrentLawyer(profile);
+                setTimerLawyer(profile.id);
+                setFormData(prev => ({ ...prev, lawyer_id: profile.id }));
+            }
+        } catch (error) {
+            console.error('Failed to fetch lawyers');
+        }
+    };
+
     const startTimer = () => {
         if (!timerCase) {
             toast.error('Please select a case first');
@@ -99,6 +123,7 @@ export default function TimeTracking() {
         try {
             await apiClient.post('/time-entries', {
                 case_id: timerCase,
+                lawyer_id: timerLawyer,
                 entry_date: new Date().toISOString().split('T')[0],
                 hours,
                 description: timerDescription,
@@ -121,7 +146,15 @@ export default function TimeTracking() {
             await apiClient.post('/time-entries', formData);
             toast.success('Time entry added');
             setShowModal(false);
-            setFormData({ case_id: '', entry_date: new Date().toISOString().split('T')[0], hours: '', description: '', activity_type: 'other', billable: true });
+            setFormData({
+                case_id: '',
+                lawyer_id: currentLawyer?.id || '',
+                entry_date: new Date().toISOString().split('T')[0],
+                hours: '',
+                description: '',
+                activity_type: 'other',
+                billable: true
+            });
             fetchEntries();
         } catch (error) {
             toast.error('Failed to add entry');
@@ -194,6 +227,16 @@ export default function TimeTracking() {
                             <option value="">Select Case</option>
                             {cases.map(c => (
                                 <option key={c.id} value={c.id} className="text-slate-900">{c.case_number} - {c.title}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={timerLawyer || ''}
+                            onChange={(e) => setTimerLawyer(e.target.value)}
+                            className="bg-white/20 border-0 rounded-lg px-4 py-2 text-white placeholder-white/70 w-48"
+                        >
+                            <option value="">Select Lawyer</option>
+                            {lawyers.map(l => (
+                                <option key={l.id} value={l.id} className="text-slate-900">{l.firstName} {l.lastName}</option>
                             ))}
                         </select>
                         <input
@@ -373,6 +416,15 @@ export default function TimeTracking() {
                                     <option value="">Select Case</option>
                                     {cases.map(c => (
                                         <option key={c.id} value={c.id}>{c.case_number} - {c.title}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="label">Lawyer *</label>
+                                <select value={formData.lawyer_id} onChange={(e) => setFormData({ ...formData, lawyer_id: e.target.value })} className="select w-full" required>
+                                    <option value="">Select Lawyer</option>
+                                    {lawyers.map(l => (
+                                        <option key={l.id} value={l.id}>{l.firstName} {l.lastName}</option>
                                     ))}
                                 </select>
                             </div>

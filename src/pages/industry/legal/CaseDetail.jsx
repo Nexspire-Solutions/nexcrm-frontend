@@ -9,7 +9,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     FiBriefcase, FiUser, FiClock, FiFileText,
     FiPlus, FiEdit, FiTrash2, FiMapPin, FiCalendar,
-    FiMessageSquare, FiDollarSign, FiChevronRight, FiAlertCircle
+    FiMessageSquare, FiDollarSign, FiChevronRight, FiAlertCircle,
+    FiX, FiCheck, FiEye, FiDownload
 } from 'react-icons/fi';
 import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
@@ -24,6 +25,18 @@ export default function CaseDetail() {
     const [caseData, setCaseData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
+
+    // Hearing modal state
+    const [showHearingModal, setShowHearingModal] = useState(false);
+    const [hearingForm, setHearingForm] = useState({
+        hearing_date: '',
+        hearing_time: '',
+        court_name: '',
+        court_room: '',
+        hearing_type: 'hearing',
+        purpose: ''
+    });
+    const [savingHearing, setSavingHearing] = useState(false);
 
     useEffect(() => {
         fetchCaseData();
@@ -45,6 +58,34 @@ export default function CaseDetail() {
     const formatCurrency = (amount) => {
         if (!amount) return '₹0';
         return `₹${parseFloat(amount).toLocaleString('en-IN')}`;
+    };
+
+    const handleAddHearing = async (e) => {
+        e.preventDefault();
+        if (!hearingForm.hearing_date) {
+            toast.error('Please select a hearing date');
+            return;
+        }
+
+        setSavingHearing(true);
+        try {
+            await apiClient.post(`/cases/${id}/hearings`, hearingForm);
+            toast.success('Hearing added successfully');
+            setShowHearingModal(false);
+            setHearingForm({
+                hearing_date: '',
+                hearing_time: '',
+                court_name: '',
+                court_room: '',
+                hearing_type: 'hearing',
+                purpose: ''
+            });
+            fetchCaseData();
+        } catch (error) {
+            toast.error('Failed to add hearing');
+        } finally {
+            setSavingHearing(false);
+        }
     };
 
     if (loading) {
@@ -75,18 +116,80 @@ export default function CaseDetail() {
         { header: 'Time', accessor: 'hearing_time' },
         { header: 'Type', accessor: 'hearing_type' },
         { header: 'Purpose', accessor: 'purpose' },
-        { header: 'Court/Room', render: (row) => `${row.court_name || '-'} / ${row.court_room || '-'}` }
+        { header: 'Court/Room', render: (row) => `${row.court_name || '-'} / ${row.court_room || '-'}` },
+        {
+            header: 'Status',
+            render: (row) => (
+                <StatusBadge
+                    status={row.status}
+                    variant={row.status === 'completed' ? 'success' : row.status === 'cancelled' ? 'danger' : 'info'}
+                />
+            )
+        }
     ];
 
     const documentColumns = [
-        { header: 'File Name', accessor: 'file_name', className: 'font-medium' },
+        {
+            header: 'Document',
+            render: (row) => (
+                <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${row.source === 'generated' ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                        <FiFileText className={`w-4 h-4 ${row.source === 'generated' ? 'text-purple-600' : 'text-blue-600'}`} />
+                    </div>
+                    <div>
+                        <p className="font-medium text-slate-900 dark:text-white">{row.file_name}</p>
+                        <p className="text-xs text-slate-500">{row.source === 'generated' ? 'Generated' : 'Uploaded'}</p>
+                    </div>
+                </div>
+            )
+        },
         { header: 'Type', accessor: 'document_type' },
-        { header: 'Uploaded', render: (row) => new Date(row.created_at).toLocaleDateString() },
+        { header: 'Date', render: (row) => new Date(row.created_at).toLocaleDateString() },
         {
             header: 'Actions', align: 'right', render: (row) => (
-                <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                    <FiFileText className="w-4 h-4 text-slate-400" />
-                </button>
+                <div className="flex justify-end gap-1">
+                    {row.source === 'generated' ? (
+                        <Link to={`/legal-documents`} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" title="View">
+                            <FiEye className="w-4 h-4 text-slate-400" />
+                        </Link>
+                    ) : row.file_path ? (
+                        <a href={row.file_path} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" title="Download">
+                            <FiDownload className="w-4 h-4 text-slate-400" />
+                        </a>
+                    ) : null}
+                </div>
+            )
+        }
+    ];
+
+    const invoiceColumns = [
+        { header: 'Invoice #', accessor: 'invoice_number', className: 'font-medium' },
+        { header: 'Amount', render: (row) => formatCurrency(row.total_amount) },
+        { header: 'Paid', render: (row) => formatCurrency(row.amount_paid) },
+        { header: 'Due Date', render: (row) => row.due_date ? new Date(row.due_date).toLocaleDateString() : '-' },
+        {
+            header: 'Status',
+            render: (row) => (
+                <StatusBadge
+                    status={row.status}
+                    variant={row.status === 'paid' ? 'success' : row.status === 'overdue' ? 'danger' : 'warning'}
+                />
+            )
+        }
+    ];
+
+    const timeEntryColumns = [
+        { header: 'Date', render: (row) => new Date(row.entry_date).toLocaleDateString() },
+        { header: 'Hours', accessor: 'hours' },
+        { header: 'Description', accessor: 'description', className: 'max-w-xs truncate' },
+        { header: 'Lawyer', accessor: 'lawyer_name' },
+        { header: 'Amount', render: (row) => formatCurrency(row.amount) },
+        {
+            header: 'Billed',
+            render: (row) => (
+                <span className={`px-2 py-1 text-xs rounded-full ${row.billed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                    {row.billed ? 'Yes' : 'No'}
+                </span>
             )
         }
     ];
@@ -183,14 +286,22 @@ export default function CaseDetail() {
                                 <span className="text-slate-500">Fee Type</span>
                                 <span className="font-medium text-slate-900 dark:text-white capitalize">{caseData.fee_type || 'fixed'}</span>
                             </div>
-                            <div className="flex justify-between items-center text-sm py-1 border-b border-slate-100 dark:border-slate-800 pb-4">
+                            <div className="flex justify-between items-center text-sm py-1">
                                 <span className="text-slate-500">Estimated Fee</span>
                                 <span className="font-bold text-slate-900 dark:text-white">{formatCurrency(caseData.estimated_fee)}</span>
                             </div>
-                            <div className="pt-2">
-                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/10 rounded-xl">
+                            <div className="flex justify-between items-center text-sm py-1">
+                                <span className="text-slate-500">Unbilled Hours</span>
+                                <span className="font-medium text-amber-600">{caseData.unbilled_hours || 0} hrs</span>
+                            </div>
+                            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/10 rounded-xl mb-2">
                                     <p className="text-xs text-indigo-600 font-medium mb-1">Total Billed</p>
                                     <p className="text-xl font-bold text-indigo-700">{formatCurrency(caseData.total_billed || 0)}</p>
+                                </div>
+                                <div className="p-3 bg-green-50 dark:bg-green-900/10 rounded-xl">
+                                    <p className="text-xs text-green-600 font-medium mb-1">Total Paid</p>
+                                    <p className="text-xl font-bold text-green-700">{formatCurrency(caseData.total_paid || 0)}</p>
                                 </div>
                             </div>
                         </div>
@@ -211,8 +322,8 @@ export default function CaseDetail() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${activeTab === tab.id
-                                            ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30'
-                                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                        ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30'
+                                        : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                                         }`}
                                 >
                                     <tab.icon className="w-4 h-4" />
@@ -247,31 +358,165 @@ export default function CaseDetail() {
                             )}
 
                             {activeTab === 'hearings' && (
-                                <ProTable
-                                    columns={hearingColumns}
-                                    data={caseData.hearings || []}
-                                    emptyMessage="No hearings scheduled yet."
-                                />
+                                <div>
+                                    <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                                        <h3 className="font-semibold text-slate-900 dark:text-white">Court Hearings</h3>
+                                        <button
+                                            onClick={() => setShowHearingModal(true)}
+                                            className="btn-primary text-sm"
+                                        >
+                                            <FiPlus className="w-4 h-4" /> Add Hearing
+                                        </button>
+                                    </div>
+                                    <ProTable
+                                        columns={hearingColumns}
+                                        data={caseData.hearings || []}
+                                        emptyMessage="No hearings scheduled yet."
+                                    />
+                                </div>
                             )}
 
                             {activeTab === 'documents' && (
-                                <ProTable
-                                    columns={documentColumns}
-                                    data={caseData.documents || []}
-                                    emptyMessage="No documents uploaded to this case."
-                                />
+                                <div>
+                                    <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                                        <h3 className="font-semibold text-slate-900 dark:text-white">Case Documents</h3>
+                                        <Link to="/legal-documents" className="btn-secondary text-sm">
+                                            <FiPlus className="w-4 h-4" /> Generate Document
+                                        </Link>
+                                    </div>
+                                    <ProTable
+                                        columns={documentColumns}
+                                        data={caseData.documents || []}
+                                        emptyMessage="No documents uploaded to this case."
+                                    />
+                                </div>
                             )}
 
                             {activeTab === 'billing' && (
-                                <div className="py-20 text-center text-slate-500">
-                                    <FiDollarSign className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                                    <p>Billing history feature coming soon.</p>
+                                <div>
+                                    <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                                        <h3 className="font-semibold text-slate-900 dark:text-white">Invoices</h3>
+                                        <Link to={`/legal-invoices/new?case_id=${id}`} className="btn-primary text-sm">
+                                            <FiPlus className="w-4 h-4" /> Create Invoice
+                                        </Link>
+                                    </div>
+                                    <ProTable
+                                        columns={invoiceColumns}
+                                        data={caseData.invoices || []}
+                                        emptyMessage="No invoices created for this case."
+                                    />
+
+                                    <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="font-semibold text-slate-900 dark:text-white">Time Entries</h3>
+                                            <Link to={`/time-tracking?case_id=${id}`} className="text-sm text-indigo-600 hover:text-indigo-700">
+                                                View All
+                                            </Link>
+                                        </div>
+                                    </div>
+                                    <ProTable
+                                        columns={timeEntryColumns}
+                                        data={caseData.timeEntries || []}
+                                        emptyMessage="No time entries logged for this case."
+                                    />
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Add Hearing Modal */}
+            {showHearingModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-lg shadow-xl">
+                        <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Add Hearing</h2>
+                            <button onClick={() => setShowHearingModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                                <FiX className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleAddHearing} className="p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Hearing Date *</label>
+                                    <input
+                                        type="date"
+                                        value={hearingForm.hearing_date}
+                                        onChange={(e) => setHearingForm({ ...hearingForm, hearing_date: e.target.value })}
+                                        className="input w-full"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Time</label>
+                                    <input
+                                        type="time"
+                                        value={hearingForm.hearing_time}
+                                        onChange={(e) => setHearingForm({ ...hearingForm, hearing_time: e.target.value })}
+                                        className="input w-full"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Court Name</label>
+                                    <input
+                                        type="text"
+                                        value={hearingForm.court_name}
+                                        onChange={(e) => setHearingForm({ ...hearingForm, court_name: e.target.value })}
+                                        className="input w-full"
+                                        placeholder="e.g., District Court"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Court Room</label>
+                                    <input
+                                        type="text"
+                                        value={hearingForm.court_room}
+                                        onChange={(e) => setHearingForm({ ...hearingForm, court_room: e.target.value })}
+                                        className="input w-full"
+                                        placeholder="e.g., Room 101"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Hearing Type</label>
+                                <select
+                                    value={hearingForm.hearing_type}
+                                    onChange={(e) => setHearingForm({ ...hearingForm, hearing_type: e.target.value })}
+                                    className="input w-full"
+                                >
+                                    <option value="hearing">Hearing</option>
+                                    <option value="trial">Trial</option>
+                                    <option value="motion">Motion</option>
+                                    <option value="conference">Conference</option>
+                                    <option value="mediation">Mediation</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Purpose</label>
+                                <textarea
+                                    value={hearingForm.purpose}
+                                    onChange={(e) => setHearingForm({ ...hearingForm, purpose: e.target.value })}
+                                    className="input w-full"
+                                    rows={3}
+                                    placeholder="Brief description of hearing purpose..."
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3 pt-4">
+                                <button type="button" onClick={() => setShowHearingModal(false)} className="btn-secondary">
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-primary" disabled={savingHearing}>
+                                    {savingHearing ? 'Saving...' : <><FiCheck className="w-4 h-4" /> Add Hearing</>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

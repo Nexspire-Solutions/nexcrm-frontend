@@ -2,9 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { TenantConfigProvider } from './contexts/TenantConfigContext';
+import { TenantConfigProvider, useTenantConfig } from './contexts/TenantConfigContext';
 import { DashboardRefreshProvider } from './contexts/DashboardRefreshContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
+import { getDefaultDashboard } from './config/industryConfig';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/Login';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -114,6 +115,7 @@ import LegalDocuments from './pages/industry/legal/LegalDocuments';
 import LegalTasks from './pages/industry/legal/LegalTasks';
 import LegalClientDetail from './pages/industry/legal/LegalClientDetail';
 import CaseDetail from './pages/industry/legal/CaseDetail';
+import InvoiceForm from './pages/industry/legal/InvoiceForm';
 
 // Manufacturing
 import Production from './pages/industry/manufacturing/Production';
@@ -146,6 +148,14 @@ import Workflows from './pages/automation/Workflows';
 import WorkflowBuilder from './pages/automation/WorkflowBuilder';
 import ExecutionHistory from './pages/automation/ExecutionHistory';
 
+// Smart home redirect based on industry
+function SmartHomeRedirect() {
+  const { getIndustry } = useTenantConfig();
+  const industry = getIndustry();
+  const dashboardPath = getDefaultDashboard(industry);
+  return <Navigate to={dashboardPath} replace />;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -154,7 +164,7 @@ function AppRoutes() {
       {/* Protected Routes */}
       <Route element={<ProtectedRoute allowedRoles={['admin', 'manager', 'sales_operator', 'user']} />}>
         <Route path="/" element={<DashboardLayout />}>
-          <Route index element={<Navigate to="/dashboard" />} />
+          <Route index element={<SmartHomeRedirect />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />
@@ -282,6 +292,8 @@ function AppRoutes() {
           <Route path="lawyers/:id/edit" element={<LawyerForm />} />
           <Route path="time-tracking" element={<TimeTracking />} />
           <Route path="legal-invoices" element={<LegalInvoices />} />
+          <Route path="legal-invoices/new" element={<InvoiceForm />} />
+          <Route path="legal-invoices/:id/edit" element={<InvoiceForm />} />
           <Route path="legal-documents" element={<LegalDocuments />} />
           <Route path="legal-tasks" element={<LegalTasks />} />
           <Route path="billing" element={<Billing />} />
