@@ -66,6 +66,20 @@ export default function LawyerForm() {
         profile_photo: ''
     });
 
+    const safeParse = (data) => {
+        if (!data) return [];
+        if (Array.isArray(data)) return data;
+        if (typeof data === 'string') {
+            try {
+                const parsed = JSON.parse(data);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        }
+        return [];
+    };
+
     useEffect(() => {
         loadUsers();
         if (isEdit) {
@@ -91,9 +105,9 @@ export default function LawyerForm() {
                 ...formData,
                 ...lawyerData,
                 enrollment_date: lawyerData.enrollment_date?.split('T')[0] || '',
-                education: lawyerData.education || [],
-                certifications: lawyerData.certifications || [],
-                secondary_specializations: lawyerData.secondary_specializations || [],
+                education: safeParse(lawyerData.education),
+                certifications: safeParse(lawyerData.certifications),
+                secondary_specializations: safeParse(lawyerData.secondary_specializations),
                 profile_photo: lawyerData.profile_photo || ''
             });
             // Set image preview if profile photo exists
