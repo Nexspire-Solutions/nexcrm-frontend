@@ -341,7 +341,7 @@ export default function Properties() {
                                         <span className="text-indigo-600">{property.bathrooms || 0}</span> Baths
                                     </span>
                                     <span className="flex items-center gap-1">
-                                        <span className="text-indigo-600">{property.area || 0}</span> sqft
+                                        <span className="text-indigo-600">{property.carpet_area || 0}</span> sqft
                                     </span>
                                 </div>
                             </div>
@@ -382,7 +382,7 @@ export default function Properties() {
                                             </div>
                                             <div>
                                                 <p className="font-medium text-slate-900 dark:text-white">{property.title}</p>
-                                                <p className="text-sm text-slate-500 capitalize">{property.propertyType}</p>
+                                                <p className="text-sm text-slate-500 capitalize">{property.property_type}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -391,7 +391,7 @@ export default function Properties() {
                                     </td>
                                     <td className="px-4 py-3">
                                         <p className="font-semibold text-slate-900 dark:text-white">{formatPrice(property.price)}</p>
-                                        <p className="text-xs text-slate-500 capitalize">{property.priceType}</p>
+                                        <p className="text-xs text-slate-500 capitalize">{property.transaction_type}</p>
                                     </td>
                                     <td className="px-4 py-3">
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[property.status] || statusColors.draft}`}>
@@ -399,7 +399,7 @@ export default function Properties() {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 text-sm text-slate-600">
-                                        {property.bedrooms} Beds / {property.bathrooms} Baths / {property.area} sqft
+                                        {property.bedrooms} Beds / {property.bathrooms} Baths / {property.carpet_area || 0} sqft
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex justify-end gap-1">
