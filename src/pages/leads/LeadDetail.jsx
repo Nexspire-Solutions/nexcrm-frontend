@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { leadsAPI, activitiesAPI } from '../../api';
+import { useTenantConfig } from '../../contexts/TenantConfigContext';
+import { getIndustryRoutes } from '../../config/industryConfig';
 
 const activityIcons = {
     call: (
@@ -33,6 +35,9 @@ const activityIcons = {
 
 export default function LeadDetail() {
     const { id } = useParams();
+    const navigate = useNavigate();
+    const { getIndustry } = useTenantConfig();
+    const industryRoutes = getIndustryRoutes(getIndustry());
     const [lead, setLead] = useState(null);
     const [activities, setActivities] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -82,11 +87,17 @@ export default function LeadDetail() {
     };
 
     const handleConvert = async () => {
-        if (!window.confirm(`Are you sure you want to convert "${lead.contactName}" to a Client? This will mark the lead as Won.`)) return;
+        if (!window.confirm(`Are you sure you want to convert "${lead.contactName}" to a ${industryRoutes.entityLabel}? This will mark the lead as Won.`)) return;
         try {
-            await leadsAPI.convertToClient(id);
-            toast.success('Converted to Client successfully');
-            fetchLead();
+            const response = await leadsAPI.convertToClient(id);
+            toast.success(`Converted to ${industryRoutes.entityLabel} successfully`);
+            // Navigate to the client detail page returned by backend or use industry config
+            const redirectPath = response.data?.redirectPath || response.redirectPath;
+            if (redirectPath) {
+                navigate(redirectPath);
+            } else {
+                fetchLead();
+            }
         } catch (error) {
             console.error(error);
             toast.error('Failed to convert lead');
@@ -214,7 +225,7 @@ export default function LeadDetail() {
                         Already Converted
                     </button>
                 ) : (
-                    <button onClick={handleConvert} className="btn-primary">Convert to Client</button>
+                    <button onClick={handleConvert} className="btn-primary">{industryRoutes.convertButtonLabel}</button>
                 )}
             </div>
 
