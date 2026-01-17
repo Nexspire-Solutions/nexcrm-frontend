@@ -9,9 +9,9 @@
  * - Education and certifications
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiSave, FiX, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiSave, FiX, FiPlus, FiTrash2, FiCamera, FiUser } from 'react-icons/fi';
 import ProHeader from '../../../components/common/ProHeader';
 import ProCard from '../../../components/common/ProCard';
 import apiClient from '../../../api/axios';
@@ -41,6 +41,9 @@ export default function LawyerForm() {
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [users, setUsers] = useState([]);
+    const [profileImage, setProfileImage] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const fileInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
         user_id: '',
@@ -59,7 +62,8 @@ export default function LawyerForm() {
         certifications: [],
         languages: '',
         courts_practiced: '',
-        status: 'active'
+        status: 'active',
+        profile_photo: ''
     });
 
     useEffect(() => {
@@ -89,8 +93,13 @@ export default function LawyerForm() {
                 enrollment_date: lawyerData.enrollment_date?.split('T')[0] || '',
                 education: lawyerData.education || [],
                 certifications: lawyerData.certifications || [],
-                secondary_specializations: lawyerData.secondary_specializations || []
+                secondary_specializations: lawyerData.secondary_specializations || [],
+                profile_photo: lawyerData.profile_photo || ''
             });
+            // Set image preview if profile photo exists
+            if (lawyerData.profile_photo) {
+                setImagePreview(lawyerData.profile_photo);
+            }
         } catch (error) {
             toast.error('Failed to load lawyer profile');
             navigate('/lawyers');
@@ -105,6 +114,25 @@ export default function LawyerForm() {
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+    };
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('Image must be less than 5MB');
+                return;
+            }
+            setProfileImage(file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const removeImage = () => {
+        setProfileImage(null);
+        setImagePreview(null);
+        setFormData(prev => ({ ...prev, profile_photo: '' }));
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleAddEducation = () => {
@@ -163,18 +191,32 @@ export default function LawyerForm() {
 
         setSaving(true);
         try {
-            const payload = {
-                ...formData,
-                education: JSON.stringify(formData.education),
-                certifications: JSON.stringify(formData.certifications),
-                secondary_specializations: JSON.stringify(formData.secondary_specializations)
+            // Use FormData to support file upload
+            const formPayload = new FormData();
+
+            // Add all form fields
+            Object.keys(formData).forEach(key => {
+                if (key === 'education' || key === 'certifications' || key === 'secondary_specializations') {
+                    formPayload.append(key, JSON.stringify(formData[key]));
+                } else if (formData[key] !== null && formData[key] !== undefined) {
+                    formPayload.append(key, formData[key]);
+                }
+            });
+
+            // Add profile image if selected
+            if (profileImage) {
+                formPayload.append('profile_photo', profileImage);
+            }
+
+            const config = {
+                headers: { 'Content-Type': 'multipart/form-data' }
             };
 
             if (isEdit) {
-                await apiClient.put(`/lawyers/${id}`, payload);
+                await apiClient.put(`/lawyers/${id}`, formPayload, config);
                 toast.success('Lawyer profile updated successfully');
             } else {
-                await apiClient.post('/lawyers', payload);
+                await apiClient.post('/lawyers', formPayload, config);
                 toast.success('Lawyer profile created successfully');
             }
             navigate('/lawyers');
@@ -208,6 +250,59 @@ export default function LawyerForm() {
             />
 
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Profile Photo */}
+                <ProCard title="Profile Photo">
+                    <div className="flex items-center gap-6">
+                        <div className="relative">
+                            <div className="w-28 h-28 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-4 border-white dark:border-slate-700 shadow-lg">
+                                {imagePreview ? (
+                                    <img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    <FiUser className="w-12 h-12 text-slate-400" />
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute bottom-0 right-0 w-8 h-8 bg-indigo-600 hover:bg-indigo-700 rounded-full flex items-center justify-center text-white shadow-lg transition-colors"
+                            >
+                                <FiCamera className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="flex-1">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={handleImageChange}
+                                className="hidden"
+                            />
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                                Upload a professional photo for the storefront
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="px-4 py-2 text-sm bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                >
+                                    Choose Image
+                                </button>
+                                {imagePreview && (
+                                    <button
+                                        type="button"
+                                        onClick={removeImage}
+                                        className="px-4 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                                    >
+                                        Remove
+                                    </button>
+                                )}
+                            </div>
+                            <p className="text-xs text-slate-500 mt-2">Max 5MB. JPG, PNG or WebP.</p>
+                        </div>
+                    </div>
+                </ProCard>
+
                 {/* User Account Linking */}
                 <ProCard title="User Account">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

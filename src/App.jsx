@@ -117,6 +117,7 @@ import LegalTasks from './pages/industry/legal/LegalTasks';
 import LegalClientDetail from './pages/industry/legal/LegalClientDetail';
 import CaseDetail from './pages/industry/legal/CaseDetail';
 import InvoiceForm from './pages/industry/legal/InvoiceForm';
+import LegalCMSManagement from './pages/industry/legal/LegalCMSManagement';
 
 // Manufacturing
 import Production from './pages/industry/manufacturing/Production';
@@ -298,6 +299,7 @@ function AppRoutes() {
           <Route path="legal-invoices/:id/edit" element={<InvoiceForm />} />
           <Route path="legal-documents" element={<LegalDocuments />} />
           <Route path="legal-tasks" element={<LegalTasks />} />
+          <Route path="legal-cms" element={<LegalCMSManagement />} />
           <Route path="billing" element={<Billing />} />
 
           {/* Manufacturing */}
