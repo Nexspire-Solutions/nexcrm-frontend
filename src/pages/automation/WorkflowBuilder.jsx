@@ -504,18 +504,24 @@ export default function WorkflowBuilder() {
                             {/* Email Config */}
                             {selectedNode.type === 'action_send_email' && (
                                 <>
-                                    {emailTemplates.length > 0 && (
-                                        <div>
-                                            <label className="label">Email Template (Optional)</label>
-                                            <select className="select" value={selectedNode.data?.config?.template_id || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, template_id: e.target.value ? parseInt(e.target.value) : null })}>
-                                                <option value="">Custom Email</option>
-                                                {emailTemplates.map(t => (
-                                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                                ))}
-                                            </select>
-                                            <p className="text-xs text-slate-400 mt-1">Template overrides subject & body</p>
-                                        </div>
-                                    )}
+                                    <div>
+                                        <label className="label">Email Template</label>
+                                        <select
+                                            className="select"
+                                            value={selectedNode.data?.config?.template_id || ''}
+                                            onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, template_id: e.target.value ? parseInt(e.target.value) : null })}
+                                        >
+                                            <option value="">Custom Email (write below)</option>
+                                            {emailTemplates.map(t => (
+                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                            ))}
+                                        </select>
+                                        {emailTemplates.length === 0 ? (
+                                            <p className="text-xs text-amber-500 mt-1">No templates found. Create templates in Email Templates section.</p>
+                                        ) : (
+                                            <p className="text-xs text-slate-400 mt-1">Template overrides subject & body at runtime</p>
+                                        )}
+                                    </div>
                                     <div>
                                         <label className="label">Recipient</label>
                                         <input type="text" className="input" placeholder="{{trigger.email}}" value={selectedNode.data?.config?.recipientField || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, recipientField: e.target.value })} />
