@@ -94,6 +94,11 @@ import ServicesReports from './pages/industry/services/ServicesReports';
 import Rooms from './pages/industry/hospitality/Rooms';
 import Reservations from './pages/industry/hospitality/Reservations';
 import Housekeeping from './pages/industry/hospitality/Housekeeping';
+import Tours from './pages/industry/hospitality/Tours';
+import TourBookings from './pages/industry/hospitality/TourBookings';
+import Destinations from './pages/industry/hospitality/Destinations';
+import Guests from './pages/industry/hospitality/Guests';
+import HospitalityDashboard from './pages/industry/hospitality/HospitalityDashboard';
 
 // Fitness
 import Members from './pages/industry/fitness/Members';
@@ -273,6 +278,11 @@ function AppRoutes() {
           <Route path="rooms" element={<Rooms />} />
           <Route path="reservations" element={<Reservations />} />
           <Route path="housekeeping" element={<Housekeeping />} />
+          <Route path="hospitality-dashboard" element={<HospitalityDashboard />} />
+          <Route path="tours" element={<Tours />} />
+          <Route path="tour-bookings" element={<TourBookings />} />
+          <Route path="destinations" element={<Destinations />} />
+          <Route path="guests" element={<Guests />} />
 
           {/* Fitness */}
           <Route path="members" element={<Members />} />
