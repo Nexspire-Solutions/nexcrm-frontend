@@ -49,9 +49,9 @@ export const INDUSTRY_ROUTES = {
         entityLabel: 'Customer'
     },
     hospitality: {
-        defaultDashboard: '/reservations',
-        clientList: '/leads/customers',
-        clientDetail: (id) => `/leads/customers/${id}`,
+        defaultDashboard: '/hospitality-dashboard',
+        clientList: '/guests',
+        clientDetail: (id) => `/guests/${id}`,
         convertButtonLabel: 'Convert to Guest',
         entityLabel: 'Guest'
     },
