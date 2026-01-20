@@ -8,6 +8,7 @@ export default function Reservations() {
     const [guests, setGuests] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showGuestForm, setShowGuestForm] = useState(false);
     const [editingRes, setEditingRes] = useState(null);
     const [formData, setFormData] = useState({
         guestId: '',
@@ -19,6 +20,13 @@ export default function Reservations() {
         total_amount: '',
         special_requests: ''
     });
+    const [newGuest, setNewGuest] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        id_type: 'aadhar',
+        id_number: ''
+    });
 
     useEffect(() => {
         fetchData();
@@ -27,9 +35,9 @@ export default function Reservations() {
     const fetchData = async () => {
         try {
             const [resResponse, roomsResponse, guestsResponse] = await Promise.all([
-                apiClient.get('/reservations'),
-                apiClient.get('/rooms'),
-                apiClient.get('/guests').catch(() => apiClient.get('/clients'))
+                apiClient.get('/reservations').catch(() => ({ data: { data: [] } })),
+                apiClient.get('/rooms').catch(() => ({ data: { data: [] } })),
+                apiClient.get('/guests').catch(() => apiClient.get('/clients').catch(() => ({ data: { data: [] } })))
             ]);
             setReservations(resResponse.data?.data || []);
             setRooms(roomsResponse.data?.data || []);
@@ -67,21 +75,52 @@ export default function Reservations() {
                 special_requests: ''
             });
         }
+        setShowGuestForm(false);
         setShowModal(true);
     };
 
     const handleCloseModal = () => {
         setShowModal(false);
         setEditingRes(null);
+        setShowGuestForm(false);
+    };
+
+    const createGuest = async () => {
+        if (!newGuest.name) {
+            alert('Guest name is required');
+            return null;
+        }
+        try {
+            const response = await apiClient.post('/guests', newGuest);
+            const createdGuest = response.data?.data;
+            setGuests([...guests, createdGuest]);
+            setNewGuest({ name: '', email: '', phone: '', id_type: 'aadhar', id_number: '' });
+            setShowGuestForm(false);
+            return createdGuest.id;
+        } catch (error) {
+            console.error('Failed to create guest:', error);
+            alert(error.response?.data?.error || 'Failed to create guest');
+            return null;
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            let guestId = formData.guestId;
+
+            // If creating new guest, do that first
+            if (showGuestForm && newGuest.name) {
+                guestId = await createGuest();
+                if (!guestId) return; // Guest creation failed
+            }
+
+            const payload = { ...formData, guestId };
+
             if (editingRes) {
-                await apiClient.put(`/reservations/${editingRes.id}`, formData);
+                await apiClient.put(`/reservations/${editingRes.id}`, payload);
             } else {
-                await apiClient.post('/reservations', formData);
+                await apiClient.post('/reservations', payload);
             }
             handleCloseModal();
             fetchData();
@@ -132,7 +171,7 @@ export default function Reservations() {
 
     if (isLoading) {
         return (
-            <div className="space-y-6">
+            <div className="space-y-6 p-6">
                 <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48 animate-pulse"></div>
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-6">
                     {[1, 2, 3].map(i => (
@@ -144,7 +183,7 @@ export default function Reservations() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
             <div className="flex items-center justify-between">
                 <div>
                     <nav className="text-sm text-slate-500 dark:text-slate-400 mb-1">
@@ -220,35 +259,15 @@ export default function Reservations() {
                                         <td className="px-6 py-4 text-sm">
                                             <div className="flex gap-2">
                                                 {res.status === 'confirmed' && (
-                                                    <button
-                                                        onClick={() => handleCheckIn(res.id)}
-                                                        className="text-green-600 hover:text-green-700 font-medium"
-                                                    >
-                                                        Check In
-                                                    </button>
+                                                    <button onClick={() => handleCheckIn(res.id)} className="text-green-600 hover:text-green-700 font-medium">Check In</button>
                                                 )}
                                                 {res.status === 'checked_in' && (
-                                                    <button
-                                                        onClick={() => handleCheckOut(res.id)}
-                                                        className="text-blue-600 hover:text-blue-700 font-medium"
-                                                    >
-                                                        Check Out
-                                                    </button>
+                                                    <button onClick={() => handleCheckOut(res.id)} className="text-blue-600 hover:text-blue-700 font-medium">Check Out</button>
                                                 )}
                                                 {(res.status === 'pending' || res.status === 'confirmed') && (
-                                                    <button
-                                                        onClick={() => handleCancel(res.id)}
-                                                        className="text-red-600 hover:text-red-700 font-medium"
-                                                    >
-                                                        Cancel
-                                                    </button>
+                                                    <button onClick={() => handleCancel(res.id)} className="text-red-600 hover:text-red-700 font-medium">Cancel</button>
                                                 )}
-                                                <button
-                                                    onClick={() => handleOpenModal(res)}
-                                                    className="text-indigo-600 hover:text-indigo-700 font-medium"
-                                                >
-                                                    Edit
-                                                </button>
+                                                <button onClick={() => handleOpenModal(res)} className="text-indigo-600 hover:text-indigo-700 font-medium">Edit</button>
                                             </div>
                                         </td>
                                     </tr>
@@ -262,27 +281,101 @@ export default function Reservations() {
             {/* Reservation Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                                 {editingRes ? 'Edit Reservation' : 'New Reservation'}
                             </h2>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            {/* Guest Selection */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Guest</label>
-                                <select
-                                    value={formData.guestId}
-                                    onChange={e => setFormData({ ...formData, guestId: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                                >
-                                    <option value="">Select Guest (Optional)</option>
-                                    {guests.map(g => (
-                                        <option key={g.id} value={g.id}>{g.name || g.first_name} {g.last_name || ''}</option>
-                                    ))}
-                                </select>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Guest</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowGuestForm(!showGuestForm)}
+                                        className="text-sm text-indigo-600 hover:text-indigo-700"
+                                    >
+                                        {showGuestForm ? 'Select Existing' : '+ Add New Guest'}
+                                    </button>
+                                </div>
+
+                                {!showGuestForm ? (
+                                    <select
+                                        value={formData.guestId}
+                                        onChange={e => setFormData({ ...formData, guestId: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                    >
+                                        <option value="">Select Guest</option>
+                                        {guests.map(g => (
+                                            <option key={g.id} value={g.id}>{g.name || g.first_name} {g.last_name || ''} {g.phone ? `(${g.phone})` : ''}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Full Name *</label>
+                                                <input
+                                                    type="text"
+                                                    value={newGuest.name}
+                                                    onChange={e => setNewGuest({ ...newGuest, name: e.target.value })}
+                                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+                                                    placeholder="John Doe"
+                                                    required={showGuestForm}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Phone</label>
+                                                <input
+                                                    type="tel"
+                                                    value={newGuest.phone}
+                                                    onChange={e => setNewGuest({ ...newGuest, phone: e.target.value })}
+                                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+                                                    placeholder="+91 98765 43210"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Email</label>
+                                                <input
+                                                    type="email"
+                                                    value={newGuest.email}
+                                                    onChange={e => setNewGuest({ ...newGuest, email: e.target.value })}
+                                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+                                                    placeholder="guest@email.com"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">ID Number</label>
+                                                <div className="flex gap-2">
+                                                    <select
+                                                        value={newGuest.id_type}
+                                                        onChange={e => setNewGuest({ ...newGuest, id_type: e.target.value })}
+                                                        className="w-24 px-2 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+                                                    >
+                                                        <option value="aadhar">Aadhar</option>
+                                                        <option value="passport">Passport</option>
+                                                        <option value="driving">DL</option>
+                                                        <option value="voter">Voter ID</option>
+                                                    </select>
+                                                    <input
+                                                        type="text"
+                                                        value={newGuest.id_number}
+                                                        onChange={e => setNewGuest({ ...newGuest, id_number: e.target.value })}
+                                                        className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+                                                        placeholder="ID Number"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
+                            {/* Room Selection */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Room</label>
                                 <select
@@ -293,12 +386,13 @@ export default function Reservations() {
                                     <option value="">Select Room</option>
                                     {rooms.filter(r => r.status === 'available' || r.id == formData.roomId).map(r => (
                                         <option key={r.id} value={r.id}>
-                                            {r.room_number || r.name} - {r.roomType} (₹{r.price}/night)
+                                            {r.room_number || r.name || `Room ${r.id}`} - {r.roomType || 'Standard'} (₹{r.price || 0}/night)
                                         </option>
                                     ))}
                                 </select>
                             </div>
 
+                            {/* Dates */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Check-in Date</label>
@@ -322,6 +416,7 @@ export default function Reservations() {
                                 </div>
                             </div>
 
+                            {/* Guest count and amount */}
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Adults</label>
@@ -344,7 +439,7 @@ export default function Reservations() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Total (₹)</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Total Amount (₹)</label>
                                     <input
                                         type="number"
                                         value={formData.total_amount}
@@ -354,13 +449,14 @@ export default function Reservations() {
                                 </div>
                             </div>
 
+                            {/* Special Requests */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Special Requests</label>
                                 <textarea
                                     value={formData.special_requests}
                                     onChange={e => setFormData({ ...formData, special_requests: e.target.value })}
                                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                                    rows="3"
+                                    rows="2"
                                     placeholder="Any special requests or notes..."
                                 />
                             </div>

@@ -15,7 +15,8 @@ export default function ProCard({
     noPadding = false,
     premium = false,
     gradient = false,
-    glow = false
+    glow = false,
+    onClick = null
 }) {
     const baseClasses = `
         bg-white dark:bg-slate-800 rounded-2xl 
@@ -39,7 +40,12 @@ export default function ProCard({
     const glowClasses = glow ? 'glow' : '';
 
     return (
-        <div className={`${baseClasses} ${premiumClasses} ${gradientClasses} ${glowClasses} ${className}`}>
+        <div
+            className={`${baseClasses} ${premiumClasses} ${gradientClasses} ${glowClasses} ${className} ${onClick ? 'cursor-pointer' : ''}`}
+            onClick={onClick}
+            role={onClick ? 'button' : undefined}
+            tabIndex={onClick ? 0 : undefined}
+        >
             {(title || action) && (
                 <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between bg-gradient-to-r from-slate-50/50 to-transparent dark:from-slate-800/50">
                     <div>
