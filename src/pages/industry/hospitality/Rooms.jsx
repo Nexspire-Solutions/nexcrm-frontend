@@ -50,17 +50,19 @@ export default function Rooms() {
         if (room) {
             setEditingRoom(room);
             setFormData({
-                name: room.name || '',
-                room_number: room.room_number || '',
-                roomType: room.roomType || 'standard',
-                price: room.price || '',
-                capacity: room.capacity || 2,
-                floor: room.floor || 1,
-                bed_type: room.bed_type || '',
-                description: room.description || '',
+                // Handle different possible field names
+                name: room.name || room.room_name || '',
+                room_number: room.room_number || room.roomNumber || '',
+                roomType: room.roomType || room.room_type || room.type || 'standard',
+                price: room.price || room.base_price || room.rate || room.price_per_night || '',
+                capacity: room.capacity || room.max_guests || 2,
+                floor: room.floor || room.floor_number || 1,
+                bed_type: room.bed_type || room.bedType || '',
+                description: room.description || room.notes || '',
                 status: room.status || 'available'
             });
         } else {
+
             setEditingRoom(null);
             setFormData({
                 name: '',
@@ -153,22 +155,23 @@ export default function Rooms() {
                         <ProCard key={room.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleOpenModal(room)}>
                             <div className="flex justify-between items-start mb-4">
                                 <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl flex items-center justify-center">
-                                    <span className="text-xl font-bold text-indigo-600">{room.room_number || '#'}</span>
+                                    <span className="text-xl font-bold text-indigo-600">{room.room_number || room.roomNumber || '#'}</span>
                                 </div>
                                 <StatusBadge
                                     status={room.status || 'available'}
                                     variant={room.status === 'available' ? 'success' : room.status === 'occupied' ? 'error' : 'warning'}
                                 />
                             </div>
-                            <h3 className="font-bold text-slate-900 dark:text-white">{room.name || room.roomType || 'Room'}</h3>
+                            <h3 className="font-bold text-slate-900 dark:text-white">{room.name || room.room_name || room.roomType || room.room_type || 'Room'}</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                {ROOM_TYPES.find(t => t.id === room.roomType)?.name || 'Standard'} - Floor {room.floor || 1}
+                                {ROOM_TYPES.find(t => t.id === (room.roomType || room.room_type))?.name || room.roomType || room.room_type || 'Standard'} - Floor {room.floor || room.floor_number || 1}
                             </p>
                             <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                                <span className="text-sm text-slate-500">{room.capacity || 2} Guests</span>
-                                <span className="font-bold text-indigo-600">₹{(room.price || 0).toLocaleString()}/night</span>
+                                <span className="text-sm text-slate-500">{room.capacity || room.max_guests || 2} Guests</span>
+                                <span className="font-bold text-indigo-600">₹{(room.price || room.base_price || room.rate || room.price_per_night || 0).toLocaleString()}/night</span>
                             </div>
                         </ProCard>
+
                     ))}
                 </div>
             )}
