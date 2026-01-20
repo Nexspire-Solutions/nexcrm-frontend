@@ -352,7 +352,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         hospitality: {
             name: 'Hospitality',
             icon: Icons.hotel,
-            visible: hasPermission('rooms', 'read'),
+            visible: hasModule('rooms') || currentIndustry === 'hospitality',
             items: [
                 { name: 'Dashboard', path: '/hospitality-dashboard', icon: Icons.dashboard },
                 { name: 'Rooms', path: '/rooms', icon: Icons.hotel },
@@ -365,7 +365,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         travel: {
             name: 'Tour & Travels',
             icon: Icons.activity,
-            visible: hasPermission('tours', 'read'),
+            visible: hasModule('tours') || currentIndustry === 'travel',
             items: [
                 { name: 'Dashboard', path: '/hospitality-dashboard', icon: Icons.dashboard },
                 { name: 'Tours', path: '/tours', icon: Icons.activity },
