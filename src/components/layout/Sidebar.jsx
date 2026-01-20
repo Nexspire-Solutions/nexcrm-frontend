@@ -352,16 +352,26 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         hospitality: {
             name: 'Hospitality',
             icon: Icons.hotel,
-            visible: hasPermission('rooms', 'read') || hasPermission('tours', 'read'),
+            visible: hasPermission('rooms', 'read'),
             items: [
                 { name: 'Dashboard', path: '/hospitality-dashboard', icon: Icons.dashboard },
                 { name: 'Rooms', path: '/rooms', icon: Icons.hotel },
                 { name: 'Reservations', path: '/reservations', icon: Icons.calendar },
+                { name: 'Guests', path: '/guests', icon: Icons.customers },
+                { name: 'Housekeeping', path: '/housekeeping', icon: Icons.activity },
+                { name: 'CMS', path: '/cms', icon: Icons.cms }
+            ]
+        },
+        travel: {
+            name: 'Tour & Travels',
+            icon: Icons.activity,
+            visible: hasPermission('tours', 'read'),
+            items: [
+                { name: 'Dashboard', path: '/hospitality-dashboard', icon: Icons.dashboard },
                 { name: 'Tours', path: '/tours', icon: Icons.activity },
                 { name: 'Tour Bookings', path: '/tour-bookings', icon: Icons.orders },
                 { name: 'Destinations', path: '/destinations', icon: Icons.property },
-                { name: 'Guests', path: '/guests', icon: Icons.customers },
-                { name: 'Housekeeping', path: '/housekeeping', icon: Icons.activity },
+                { name: 'Travelers', path: '/guests', icon: Icons.customers },
                 { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },

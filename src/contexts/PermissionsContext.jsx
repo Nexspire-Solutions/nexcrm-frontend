@@ -12,20 +12,34 @@ const defaultPermissions = {
         automation: ['create', 'read', 'update', 'delete'],
         // Commerce
         products: ['create', 'read', 'update', 'delete'], orders: ['create', 'read', 'update', 'delete'],
-        // Add defaults for all typical admin access
+        // Real Estate & Healthcare
         properties: ['create', 'read', 'update', 'delete'], viewings: ['create', 'read', 'update', 'delete'],
-        patients: ['create', 'read', 'update', 'delete'], appointments: ['create', 'read', 'update', 'delete']
+        patients: ['create', 'read', 'update', 'delete'], appointments: ['create', 'read', 'update', 'delete'],
+        // Hospitality (Hotels)
+        rooms: ['create', 'read', 'update', 'delete'], reservations: ['create', 'read', 'update', 'delete'],
+        guests: ['create', 'read', 'update', 'delete'], housekeeping: ['create', 'read', 'update', 'delete'],
+        // Travel (Tours)
+        tours: ['create', 'read', 'update', 'delete'], tour_bookings: ['create', 'read', 'update', 'delete'],
+        destinations: ['create', 'read', 'update', 'delete']
     },
     manager: {
         dashboard: ['read'], employees: ['read', 'update'], users: [],
         inquiries: ['create', 'read', 'update'], leads: ['create', 'read', 'update'], communications: ['create', 'read', 'update'],
         automation: ['read'],
-        products: ['create', 'read', 'update'], orders: ['create', 'read', 'update']
+        products: ['create', 'read', 'update'], orders: ['create', 'read', 'update'],
+        // Hospitality & Travel
+        rooms: ['create', 'read', 'update'], reservations: ['create', 'read', 'update'],
+        guests: ['create', 'read', 'update'], housekeeping: ['create', 'read', 'update'],
+        tours: ['create', 'read', 'update'], tour_bookings: ['create', 'read', 'update'],
+        destinations: ['create', 'read', 'update']
     },
     sales_operator: {
         dashboard: ['read'], employees: [], users: [],
         inquiries: ['read', 'update'], leads: ['create', 'read', 'update'], communications: ['read'],
-        orders: ['read', 'update']
+        orders: ['read', 'update'],
+        // Hospitality & Travel (read only)
+        rooms: ['read'], reservations: ['read', 'update'], guests: ['read'],
+        tours: ['read'], tour_bookings: ['read', 'update']
     },
     user: {
         dashboard: ['read'], employees: [], users: [],

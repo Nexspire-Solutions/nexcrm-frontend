@@ -55,6 +55,13 @@ export const INDUSTRY_ROUTES = {
         convertButtonLabel: 'Convert to Guest',
         entityLabel: 'Guest'
     },
+    travel: {
+        defaultDashboard: '/hospitality-dashboard',
+        clientList: '/guests',
+        clientDetail: (id) => `/guests/${id}`,
+        convertButtonLabel: 'Convert to Traveler',
+        entityLabel: 'Traveler'
+    },
     education: {
         defaultDashboard: '/students',
         clientList: '/students',
