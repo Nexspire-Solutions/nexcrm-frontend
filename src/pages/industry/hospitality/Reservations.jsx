@@ -234,44 +234,58 @@ export default function Reservations() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                {reservations.map((res) => (
-                                    <tr key={res.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                        <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
-                                            {res.guest_name || `Guest #${res.guestId || 'N/A'}`}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                                            {res.room_name || res.room_number || `Room #${res.roomId || 'Unassigned'}`}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                                            {res.check_in_date?.split('T')[0]}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                                            {res.check_out_date?.split('T')[0]}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(res.status)}`}>
-                                                {res.status?.replace('_', ' ') || 'pending'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">
-                                            ₹{(res.total_amount || 0).toLocaleString()}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm">
-                                            <div className="flex gap-2">
-                                                {res.status === 'confirmed' && (
-                                                    <button onClick={() => handleCheckIn(res.id)} className="text-green-600 hover:text-green-700 font-medium">Check In</button>
-                                                )}
-                                                {res.status === 'checked_in' && (
-                                                    <button onClick={() => handleCheckOut(res.id)} className="text-blue-600 hover:text-blue-700 font-medium">Check Out</button>
-                                                )}
-                                                {(res.status === 'pending' || res.status === 'confirmed') && (
-                                                    <button onClick={() => handleCancel(res.id)} className="text-red-600 hover:text-red-700 font-medium">Cancel</button>
-                                                )}
-                                                <button onClick={() => handleOpenModal(res)} className="text-indigo-600 hover:text-indigo-700 font-medium">Edit</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {reservations.map((res) => {
+                                    // Get IDs with multiple field name support
+                                    const guestId = res.guest_id || res.guestId;
+                                    const roomId = res.room_id || res.roomId;
+                                    // Look up names from loaded data
+                                    const guest = guests.find(g => g.id == guestId);
+                                    const room = rooms.find(r => r.id == roomId);
+                                    const guestName = res.guest_name || (guest ? (guest.name || `${guest.first_name || ''} ${guest.last_name || ''}`.trim()) : null);
+                                    const roomName = res.room_name || res.room_number || (room ? (room.room_number || room.name) : null);
+                                    const amount = res.total || res.total_amount || res.subtotal || 0;
+
+                                    return (
+                                        <tr key={res.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                            <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
+                                                {guestName || `Guest #${guestId || 'N/A'}`}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                                                {roomName || `Room #${roomId || 'Unassigned'}`}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                                                {(res.check_in_date || res.checkInDate)?.split('T')[0] || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                                                {(res.check_out_date || res.checkOutDate)?.split('T')[0] || '-'}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(res.status)}`}>
+                                                    {res.status?.replace('_', ' ') || 'pending'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">
+                                                ₹{Number(amount).toLocaleString()}
+                                            </td>
+
+                                            <td className="px-6 py-4 text-sm">
+                                                <div className="flex gap-2">
+                                                    {res.status === 'confirmed' && (
+                                                        <button onClick={() => handleCheckIn(res.id)} className="text-green-600 hover:text-green-700 font-medium">Check In</button>
+                                                    )}
+                                                    {res.status === 'checked_in' && (
+                                                        <button onClick={() => handleCheckOut(res.id)} className="text-blue-600 hover:text-blue-700 font-medium">Check Out</button>
+                                                    )}
+                                                    {(res.status === 'pending' || res.status === 'confirmed') && (
+                                                        <button onClick={() => handleCancel(res.id)} className="text-red-600 hover:text-red-700 font-medium">Cancel</button>
+                                                    )}
+                                                    <button onClick={() => handleOpenModal(res)} className="text-indigo-600 hover:text-indigo-700 font-medium">Edit</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+
                             </tbody>
                         </table>
                     </div>
