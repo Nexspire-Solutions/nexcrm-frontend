@@ -101,7 +101,10 @@ export default function CampaignDetail() {
 
             {/* Analytics Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                <div
+                    className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-blue-500 transition-all"
+                    onClick={() => setFilterStatus('sent')}
+                >
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,7 +117,10 @@ export default function CampaignDetail() {
                         </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                <div
+                    className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-emerald-500 transition-all"
+                    onClick={() => setFilterStatus('opened')}
+                >
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
                             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,7 +134,10 @@ export default function CampaignDetail() {
                         </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                <div
+                    className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-purple-500 transition-all"
+                    onClick={() => setFilterStatus('clicked')}
+                >
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
                             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,7 +150,10 @@ export default function CampaignDetail() {
                         </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                <div
+                    className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-emerald-500 transition-all"
+                    onClick={() => setFilterStatus('opened')}
+                >
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
                             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,7 +166,10 @@ export default function CampaignDetail() {
                         </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                <div
+                    className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-purple-500 transition-all"
+                    onClick={() => setFilterStatus('clicked')}
+                >
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center">
                             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,8 +192,8 @@ export default function CampaignDetail() {
                         key={status}
                         onClick={() => setFilterStatus(status)}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filterStatus === status
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                             }`}
                     >
                         {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -209,6 +224,7 @@ export default function CampaignDetail() {
                                     <th>Sent At</th>
                                     <th>Opened At</th>
                                     <th>Clicked At</th>
+                                    <th>IP Address</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -252,6 +268,11 @@ export default function CampaignDetail() {
                                         </td>
                                         <td className="text-sm text-slate-500 dark:text-slate-400">
                                             {log.clicked_at ? new Date(log.clicked_at).toLocaleString() : '-'}
+                                        </td>
+                                        <td className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                                            {log.open_ip && <div title="Open IP">O: {log.open_ip}</div>}
+                                            {log.click_ip && <div title="Click IP">C: {log.click_ip}</div>}
+                                            {!log.open_ip && !log.click_ip && '-'}
                                         </td>
                                     </tr>
                                 ))}
