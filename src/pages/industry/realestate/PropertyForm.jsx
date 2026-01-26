@@ -3,9 +3,9 @@
  * Comprehensive property add/edit form with all fields
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FiChevronLeft, FiUpload, FiX, FiPlus, FiMapPin, FiHome, FiDollarSign, FiInfo } from 'react-icons/fi';
+import { FiChevronLeft, FiUpload, FiX, FiPlus, FiMapPin, FiHome, FiDollarSign, FiInfo, FiCamera, FiTrash2 } from 'react-icons/fi';
 import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 
@@ -15,8 +15,10 @@ const PropertyForm = () => {
     const isEditing = Boolean(id);
     const [loading, setLoading] = useState(isEditing);
     const [submitting, setSubmitting] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [activeTab, setActiveTab] = useState('basic');
     const [agents, setAgents] = useState([]);
+    const fileInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
         // Basic Info
@@ -25,6 +27,8 @@ const PropertyForm = () => {
         propertyType: 'apartment',
         priceType: 'sale',
         status: 'available',
+        is_featured: false,
+
 
         // Pricing
         price: '',
@@ -55,8 +59,10 @@ const PropertyForm = () => {
         age_of_property: '',
         furnishing: 'unfurnished',
         parking: '',
+        premium: false,
 
         // Construction
+
         construction_status: 'ready_to_move',
         possession_date: '',
 
@@ -151,8 +157,16 @@ const PropertyForm = () => {
             setFormData({
                 ...formData,
                 ...property,
-                images: property.images ? JSON.parse(property.images) : [],
-                amenities: property.amenities || []
+                propertyType: property.property_type || 'apartment',
+                priceType: property.transaction_type || 'sale',
+                maintenance_charge: property.maintenance_charges,
+                negotiable: !!property.price_negotiable,
+                area: property.built_up_area,
+                is_featured: !!property.is_featured,
+                premium: !!property.premium,
+                images: property.images ? (typeof property.images === 'string' ? JSON.parse(property.images) : property.images) : [],
+
+                amenities: typeof property.amenities === 'string' ? JSON.parse(property.amenities) : (property.amenities || []),
             });
         } catch (error) {
             toast.error('Failed to load property');
@@ -164,6 +178,47 @@ const PropertyForm = () => {
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleImageUpload = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        setUploading(true);
+        const toastId = toast.loading('Uploading images...');
+
+        try {
+            const uploadedUrls = [];
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('image', file);
+                const response = await apiClient.post('/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                if (response.data.success) {
+                    uploadedUrls.push(response.data.url);
+                }
+            }
+
+            setFormData(prev => ({
+                ...prev,
+                images: [...prev.images, ...uploadedUrls]
+            }));
+            toast.success(`${uploadedUrls.length} images uploaded`, { id: toastId });
+        } catch (error) {
+            console.error('Upload error:', error);
+            toast.error('Failed to upload images', { id: toastId });
+        } finally {
+            setUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    const removeImage = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            images: prev.images.filter((_, i) => i !== index)
+        }));
     };
 
     const toggleAmenity = (amenity) => {
@@ -187,8 +242,18 @@ const PropertyForm = () => {
             setSubmitting(true);
             const payload = {
                 ...formData,
-                images: JSON.stringify(formData.images),
-                features: JSON.stringify(formData.amenities)
+                property_type: formData.propertyType,
+                transaction_type: formData.priceType,
+                maintenance_charges: formData.maintenance_charge,
+                price_negotiable: formData.negotiable,
+                built_up_area: formData.area,
+                is_featured: formData.is_featured,
+                premium: formData.premium,
+                amenities: formData.amenities, // Backend will stringify
+
+                features: JSON.stringify(formData.amenities), // Backend uses this as 'features'
+                images: JSON.stringify(formData.images)
+
             };
 
             if (isEditing) {
@@ -200,7 +265,8 @@ const PropertyForm = () => {
             }
             navigate('/properties');
         } catch (error) {
-            toast.error(`Failed to ${isEditing ? 'update' : 'create'} property`);
+            const errorMsg = error.response?.data?.details || error.response?.data?.error || `Failed to ${isEditing ? 'update' : 'create'} property`;
+            toast.error(errorMsg);
         } finally {
             setSubmitting(false);
         }
@@ -337,29 +403,30 @@ const PropertyForm = () => {
                                         placeholder="Describe the property..."
                                     />
                                 </div>
-                            </div>
-                            <div className="flex gap-4">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.featured}
-                                        onChange={(e) => handleChange('featured', e.target.checked)}
-                                        className="w-4 h-4 text-indigo-600 rounded"
-                                    />
-                                    <span>Featured Property</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.premium}
-                                        onChange={(e) => handleChange('premium', e.target.checked)}
-                                        className="w-4 h-4 text-indigo-600 rounded"
-                                    />
-                                    <span>Premium Listing</span>
-                                </label>
+                                <div className="md:col-span-2">
+                                    <label className="flex items-center gap-2 cursor-pointer mt-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.is_featured}
+                                            onChange={(e) => handleChange('is_featured', e.target.checked)}
+                                            className="w-4 h-4 text-indigo-600 rounded border-slate-300 pointer-events-auto"
+                                        />
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Featured Property (Display on storefront homepage)</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer mt-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.premium}
+                                            onChange={(e) => handleChange('premium', e.target.checked)}
+                                            className="w-4 h-4 text-indigo-600 rounded border-slate-300 pointer-events-auto"
+                                        />
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Premium Listing (Highlight with special badge)</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     )}
+
 
                     {/* Location Tab */}
                     {activeTab === 'location' && (
@@ -722,19 +789,58 @@ const PropertyForm = () => {
                         </div>
                     )}
 
-                    {/* Media Tab */}
                     {activeTab === 'media' && (
                         <div className="space-y-6">
                             <div>
                                 <label className="label">Property Images</label>
-                                <p className="text-sm text-slate-500 mb-3">Add image URLs (one per line)</p>
-                                <textarea
-                                    value={formData.images.join('\n')}
-                                    onChange={(e) => handleChange('images', e.target.value.split('\n').filter(Boolean))}
-                                    className="input"
-                                    rows={4}
-                                    placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
+                                    {formData.images.map((url, index) => (
+                                        <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                            <img src={url} alt={`Property ${index + 1}`} className="w-full h-full object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(index)}
+                                                className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                            >
+                                                <FiX className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploading}
+                                        className="aspect-square rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-2 text-slate-500 hover:border-indigo-500 hover:text-indigo-500 transition-all bg-slate-50/50 dark:bg-slate-800/50"
+                                    >
+                                        {uploading ? (
+                                            <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                        ) : (
+                                            <>
+                                                <FiCamera className="w-6 h-6" />
+                                                <span className="text-xs font-medium">Add Photos</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                    className="hidden"
                                 />
+
+                                <div className="mt-4">
+                                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 block">Manual Image URLs</label>
+                                    <textarea
+                                        value={formData.images.join('\n')}
+                                        onChange={(e) => handleChange('images', e.target.value.split('\n').filter(Boolean))}
+                                        className="input text-sm font-mono"
+                                        rows={3}
+                                        placeholder="Enter external URLs (one per line)..."
+                                    />
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div>
