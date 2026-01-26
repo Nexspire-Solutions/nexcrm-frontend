@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiPlus, FiSearch, FiFilter, FiGrid, FiList, FiMoreVertical, FiEdit, FiTrash2, FiEye, FiMapPin, FiHome, FiStar, FiTrendingUp } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiFilter, FiGrid, FiList, FiMoreVertical, FiEdit, FiTrash2, FiEye, FiMapPin, FiHome, FiStar, FiTrendingUp, FiDownload, FiUpload } from 'react-icons/fi';
 import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 import ProHeader from '../../../components/common/ProHeader';
@@ -82,6 +82,41 @@ export default function Properties() {
         fetchProperties();
     };
 
+    const handleExport = async () => {
+        try {
+            const response = await apiClient.get('/properties/export', { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'properties_export.csv');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            toast.error('Failed to export properties');
+        }
+    };
+
+    const handleImport = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            toast.loading('Importing properties...', { id: 'import' });
+            await apiClient.post('/properties/import', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            toast.success('Properties imported successfully', { id: 'import' });
+            fetchProperties();
+            fetchStats();
+        } catch (error) {
+            toast.error('Failed to import properties', { id: 'import' });
+        }
+    };
+
     const formatPrice = (price) => {
         if (!price) return 'Price on Request';
         if (price >= 10000000) return `₹${(price / 10000000).toFixed(2)} Cr`;
@@ -135,9 +170,18 @@ export default function Properties() {
                     { label: 'Properties' }
                 ]}
                 actions={
-                    <Link to="/properties/new" className="btn-primary flex items-center gap-2">
-                        <FiPlus className="w-4 h-4" /> Add Property
-                    </Link>
+                    <div className="flex gap-2">
+                        <button onClick={handleExport} className="btn-secondary flex items-center gap-2">
+                            <FiDownload className="w-4 h-4" /> Export
+                        </button>
+                        <label className="btn-secondary flex items-center gap-2 cursor-pointer">
+                            <FiUpload className="w-4 h-4" /> Import
+                            <input type="file" accept=".csv" onChange={handleImport} className="hidden" />
+                        </label>
+                        <Link to="/properties/new" className="btn-primary flex items-center gap-2">
+                            <FiPlus className="w-4 h-4" /> Add Property
+                        </Link>
+                    </div>
                 }
             />
 
@@ -300,9 +344,14 @@ export default function Properties() {
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[property.status] || statusColors.draft}`}>
                                         {property.status}
                                     </span>
-                                    {property.featured && (
+                                    {property.is_featured && (
                                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
                                             Featured
+                                        </span>
+                                    )}
+                                    {property.premium && (
+                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                                            Premium
                                         </span>
                                     )}
                                 </div>
