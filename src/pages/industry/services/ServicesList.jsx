@@ -36,6 +36,11 @@ const Icons = {
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
+    ),
+    download: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
     )
 };
 
@@ -87,6 +92,18 @@ export default function ServicesList() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Frontend validation
+        if (!formData.name || !formData.price) {
+            alert('Name and Price are required');
+            return;
+        }
+
+        if (parseFloat(formData.price) < 0) {
+            alert('Price cannot be negative');
+            return;
+        }
+
         try {
             if (editingService) {
                 await apiClient.put(`/services/${editingService.id}`, formData);
@@ -100,6 +117,22 @@ export default function ServicesList() {
         } catch (error) {
             console.error('Failed to save service:', error);
             alert(error.response?.data?.error || 'Failed to save service');
+        }
+    };
+
+    const handleExport = async () => {
+        try {
+            const response = await apiClient.get('/services/export', { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `services-${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error('Export failed:', error);
+            alert('Failed to export services');
         }
     };
 
@@ -180,13 +213,22 @@ export default function ServicesList() {
                     { label: 'Service List' }
                 ]}
                 actions={
-                    <button
-                        onClick={() => { resetForm(); setEditingService(null); setShowModal(true); }}
-                        className="btn-primary flex items-center gap-2"
-                    >
-                        {Icons.plus}
-                        Add Service
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleExport}
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
+                        >
+                            {Icons.download}
+                            Export CSV
+                        </button>
+                        <button
+                            onClick={() => { resetForm(); setEditingService(null); setShowModal(true); }}
+                            className="btn-primary flex items-center gap-2"
+                        >
+                            {Icons.plus}
+                            Add Service
+                        </button>
+                    </div>
                 }
             />
 
@@ -339,19 +381,24 @@ export default function ServicesList() {
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                         Category
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={formData.category}
-                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                    <select
+                                        required
+                                        value={formData.category_id}
+                                        onChange={(e) => {
+                                            const cat = categories.find(c => c.id === parseInt(e.target.value));
+                                            setFormData({
+                                                ...formData,
+                                                category_id: e.target.value,
+                                                category: cat ? cat.name : ''
+                                            });
+                                        }}
                                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                                        placeholder="e.g., Massage"
-                                        list="category-suggestions"
-                                    />
-                                    <datalist id="category-suggestions">
-                                        {uniqueCategories.map(cat => (
-                                            <option key={cat} value={cat} />
+                                    >
+                                        <option value="">Select Category</option>
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
-                                    </datalist>
+                                    </select>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

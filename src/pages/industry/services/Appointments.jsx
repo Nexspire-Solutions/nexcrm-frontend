@@ -43,7 +43,33 @@ export default function Appointments() {
                 title="Appointments"
                 subtitle="Manage service appointments"
                 breadcrumbs={[{ label: 'Dashboard', to: '/' }, { label: 'Services' }, { label: 'Appointments' }]}
-                actions={<button className="btn-primary">New Appointment</button>}
+                actions={
+                    <div className="flex gap-3">
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const response = await apiClient.get('/appointments/export', { responseType: 'blob' });
+                                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    link.setAttribute('download', `appointments-${Date.now()}.csv`);
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    link.remove();
+                                } catch (error) {
+                                    alert('Failed to export appointments');
+                                }
+                            }}
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Export CSV
+                        </button>
+                        <button className="btn-primary">New Appointment</button>
+                    </div>
+                }
             />
 
             {appointments.length === 0 ? (
@@ -68,15 +94,15 @@ export default function Appointments() {
                                         </svg>
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-slate-900 dark:text-white">{apt.customerName || apt.name}</h3>
-                                        <p className="text-sm text-slate-500">{apt.service || 'General Service'}</p>
+                                        <h3 className="font-bold text-slate-900 dark:text-white">{apt.customer_name || 'Guest'}</h3>
+                                        <p className="text-sm text-slate-500">{apt.service_name || 'General Service'}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <p className="font-medium text-slate-900 dark:text-white">
-                                        {apt.date ? new Date(apt.date).toLocaleDateString() : '-'}
+                                        {apt.appointment_date ? new Date(apt.appointment_date).toLocaleDateString() : '-'}
                                     </p>
-                                    <p className="text-sm text-slate-500">{apt.time || '-'}</p>
+                                    <p className="text-sm text-slate-500">{apt.start_time || '-'}</p>
                                 </div>
                                 <StatusBadge
                                     status={apt.status || 'scheduled'}
