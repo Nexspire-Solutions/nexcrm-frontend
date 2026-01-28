@@ -150,6 +150,40 @@ export default function ServicesReports() {
         }
     };
 
+    const handleExport = async () => {
+        try {
+            const endDate = new Date();
+            let startDate = new Date();
+            switch (dateRange) {
+                case 'week': startDate.setDate(endDate.getDate() - 7); break;
+                case 'month': startDate.setMonth(endDate.getMonth() - 1); break;
+                case 'quarter': startDate.setMonth(endDate.getMonth() - 3); break;
+                case 'year': startDate.setFullYear(endDate.getFullYear() - 1); break;
+            }
+
+            const params = {
+                start_date: startDate.toISOString().split('T')[0],
+                end_date: endDate.toISOString().split('T')[0]
+            };
+
+            const response = await apiClient.get('/appointments/report-export', {
+                params,
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `service-report-${dateRange}-${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error('Export failed:', error);
+            alert('Failed to export report');
+        }
+    };
+
     const StatCard = ({ title, value, icon, color, subtitle }) => (
         <ProCard className="relative overflow-hidden">
             <div className={`absolute top-0 right-0 w-20 h-20 rounded-full -mr-6 -mt-6 opacity-20 ${color}`}></div>
@@ -190,19 +224,30 @@ export default function ServicesReports() {
                     { label: 'Reports' }
                 ]}
                 actions={
-                    <div className="flex border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-                        {['week', 'month', 'quarter', 'year'].map(range => (
-                            <button
-                                key={range}
-                                onClick={() => setDateRange(range)}
-                                className={`px-3 py-2 text-sm capitalize ${dateRange === range
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleExport}
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Export CSV
+                        </button>
+                        <div className="flex border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                            {['week', 'month', 'quarter', 'year'].map(range => (
+                                <button
+                                    key={range}
+                                    onClick={() => setDateRange(range)}
+                                    className={`px-3 py-2 text-sm capitalize ${dateRange === range
                                         ? 'bg-indigo-600 text-white'
                                         : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
-                                    }`}
-                            >
-                                {range}
-                            </button>
-                        ))}
+                                        }`}
+                                >
+                                    {range}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 }
             />
