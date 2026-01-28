@@ -78,6 +78,7 @@ import Prescriptions from './pages/industry/healthcare/Prescriptions';
 import Courses from './pages/industry/education/Courses';
 import Students from './pages/industry/education/Students';
 import Enrollments from './pages/industry/education/Enrollments';
+import Batches from './pages/industry/education/Batches';
 
 // Services
 import Appointments from './pages/industry/services/Appointments';
@@ -141,6 +142,7 @@ import Tables from './pages/industry/restaurant/Tables';
 import Bookings from './pages/industry/salon/Bookings';
 import SalonServices from './pages/industry/salon/SalonServices';
 import Staff from './pages/industry/salon/Staff';
+import EcomProducts from './pages/industry/ecommerce/Products';
 
 // Settings
 import ThemeEditor from './pages/settings/ThemeEditor';
@@ -220,7 +222,7 @@ function AppRoutes() {
 
           {/* E-Commerce - Permission Guarded */}
           <Route element={<ProtectedRoute requiredPermission={['products', 'read']} />}>
-            <Route path="products" element={<ProductsList />} />
+            <Route path="products" element={<EcomProducts />} />
           </Route>
           <Route element={<ProtectedRoute requiredPermission={['orders', 'read']} />}>
             <Route path="orders" element={<OrdersList />} />
@@ -256,12 +258,14 @@ function AppRoutes() {
 
           {/* Healthcare */}
           <Route path="patients" element={<Patients />} />
+          <Route path="appointments" element={<Appointments />} />
           <Route path="prescriptions" element={<Prescriptions />} />
 
           {/* Education */}
           <Route path="courses" element={<Courses />} />
           <Route path="students" element={<Students />} />
           <Route path="enrollments" element={<Enrollments />} />
+          <Route path="batches" element={<Batches />} />
 
           {/* Services */}
           <Route path="appointments" element={<Appointments />} />

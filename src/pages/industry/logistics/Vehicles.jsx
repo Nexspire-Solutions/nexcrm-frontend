@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import ProHeader from '../../../components/common/ProHeader';
+import ProTable from '../../../components/common/ProTable';
+import ProCard from '../../../components/common/ProCard';
+import StatusBadge from '../../../components/common/StatusBadge';
 import apiClient from '../../../api/axios';
 
 export default function Vehicles() {
@@ -12,89 +15,68 @@ export default function Vehicles() {
 
     const fetchVehicles = async () => {
         try {
-            const response = await apiClient.get('/vehicles');
-            setVehicles(response.data?.data || response.data || []);
+            const response = await apiClient.get('/logistics/vehicles');
+            setVehicles(response.data.data || []);
         } catch (error) {
             console.error('Failed to fetch vehicles:', error);
+            setVehicles([]);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const getStatusColor = (status) => {
-        const colors = {
-            available: 'text-green-500',
-            in_use: 'text-blue-500',
-            maintenance: 'text-yellow-500'
-        };
-        return colors[status] || colors.available;
-    };
+    const columns = [
+        { header: 'Vehicle ID', accessor: 'vehicle_number', className: 'font-medium' },
+        { header: 'Type', accessor: 'vehicle_type' },
+        { header: 'Driver', accessor: 'driver_name', className: 'font-medium text-slate-900 dark:text-white' },
+        { header: 'Current Location', accessor: 'current_location' },
+        { header: 'Last Update', accessor: 'updated_at', render: (row) => new Date(row.updated_at).toLocaleString() },
+        {
+            header: 'Status',
+            accessor: 'status',
+            render: (row) => (
+                <StatusBadge
+                    status={row.status}
+                    variant={
+                        row.status === 'active' ? 'success' :
+                            row.status === 'maintenance' ? 'warning' : 'neutral'
+                    }
+                />
+            )
+        },
+    ];
 
     if (isLoading) {
         return (
-            <div className="space-y-6">
-                <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48 animate-pulse"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="h-40 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse"></div>
-                    ))}
-                </div>
+            <div className="p-6 max-w-7xl mx-auto">
+                <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-48 animate-pulse mb-6"></div>
+                <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <nav className="text-sm text-slate-500 dark:text-slate-400 mb-1">
-                        <Link to="/dashboard" className="hover:text-indigo-600">Dashboard</Link>
-                        <span className="mx-2">/</span>
-                        <span>Fleet</span>
-                        <span className="mx-2">/</span>
-                        <span className="text-slate-900 dark:text-white">Vehicles</span>
-                    </nav>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Fleet Vehicles</h1>
-                </div>
-                <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add Vehicle
-                </button>
-            </div>
+        <div className="p-6 max-w-7xl mx-auto">
+            <ProHeader
+                title="Fleet Management"
+                subtitle="Track vehicles, drivers and real-time status"
+                breadcrumbs={[{ label: 'Dashboard', to: '/' }, { label: 'Logistics' }, { label: 'Vehicles' }]}
+                actions={<button className="btn-primary">Add Vehicle</button>}
+            />
 
             {vehicles.length === 0 ? (
-                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
-                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                <ProCard>
+                    <div className="text-center py-12">
+                        <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
+                        <p className="text-slate-500 dark:text-slate-400">No vehicles in fleet</p>
                     </div>
-                    <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">No vehicles found</h3>
-                    <p className="text-slate-500 dark:text-slate-400">Add vehicles to your fleet to get started.</p>
-                </div>
+                </ProCard>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {vehicles.map((vehicle) => (
-                        <div key={vehicle.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                                    <svg className={`w-6 h-6 ${getStatusColor(vehicle.status)}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-slate-900 dark:text-white">{vehicle.registration_number}</h3>
-                                    <p className="text-sm text-slate-500">{vehicle.type} • {vehicle.capacity} tons</p>
-                                </div>
-                            </div>
-                            <div className="text-sm text-slate-600 dark:text-slate-300">
-                                Driver: {vehicle.driver_name || 'Unassigned'}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                <ProCard noPadding>
+                    <ProTable columns={columns} data={vehicles} />
+                </ProCard>
             )}
         </div>
     );

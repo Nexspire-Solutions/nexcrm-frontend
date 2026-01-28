@@ -383,6 +383,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'Courses', path: '/courses', icon: Icons.book },
                 { name: 'Students', path: '/students', icon: Icons.users },
                 { name: 'Enrollments', path: '/enrollments', icon: Icons.orders },
+                { name: 'Batches', path: '/batches', icon: Icons.calendar },
                 { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
