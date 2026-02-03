@@ -36,6 +36,11 @@ const NodeIcons = {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
         </svg>
     ),
+    ai: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+    ),
 };
 
 // Enhanced node type definitions
@@ -63,7 +68,11 @@ const nodeTypeConfig = {
     // Data - Purple gradient
     data_get_lead: { label: 'Get Lead', icon: 'data', gradient: 'from-purple-500 to-violet-500', category: 'data', description: 'Fetch lead data' },
     data_get_customer: { label: 'Get Customer', icon: 'data', gradient: 'from-fuchsia-500 to-purple-500', category: 'data', description: 'Fetch customer data' },
-    data_transform: { label: 'Transform', icon: 'data', gradient: 'from-pink-500 to-fuchsia-500', category: 'data', description: 'Transform data' }
+    data_transform: { label: 'Transform', icon: 'data', gradient: 'from-pink-500 to-fuchsia-500', category: 'data', description: 'Transform data' },
+    // AI Content - Pink/Rose gradient
+    action_ai_agent: { label: 'AI Agent', icon: 'data', gradient: 'from-pink-500 to-rose-500', category: 'ai', description: 'Generate content with AI' },
+    action_fetch_image: { label: 'Fetch Image', icon: 'action', gradient: 'from-rose-500 to-orange-500', category: 'ai', description: 'Get image from Unsplash' },
+    action_post_blog: { label: 'Post Blog', icon: 'action', gradient: 'from-red-500 to-rose-500', category: 'ai', description: 'Publish to website blog' }
 };
 
 // Custom Node Component
@@ -329,7 +338,7 @@ export default function WorkflowBuilder() {
                         <h3 className="font-medium text-slate-700 dark:text-slate-300 text-sm">Add Node</h3>
                     </div>
                     <div className="flex-1 overflow-y-auto p-3 space-y-4">
-                        {['trigger', 'action', 'logic', 'data'].map(category => (
+                        {['trigger', 'action', 'logic', 'data', 'ai'].map(category => (
                             <div key={category}>
                                 <h4 className="text-xs font-semibold uppercase text-slate-400 mb-2 flex items-center gap-1.5">
                                     {NodeIcons[category]}
@@ -725,6 +734,128 @@ export default function WorkflowBuilder() {
                                         </div>
                                     </div>
                                 </div>
+                            )}
+
+                            {/* AI Agent Config */}
+                            {selectedNode.type === 'action_ai_agent' && (
+                                <>
+                                    <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-3 text-sm text-pink-700 dark:text-pink-300">
+                                        <p className="font-medium mb-1">AI Content Agent</p>
+                                        <p className="text-xs opacity-80">Uses AI to generate content. Output flows to next node.</p>
+                                    </div>
+                                    <div>
+                                        <label className="label">Agent Type</label>
+                                        <select className="select" value={selectedNode.data?.config?.agentType || 'topic_picker'} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, agentType: e.target.value })}>
+                                            <option value="topic_picker">Topic Picker</option>
+                                            <option value="blog_writer">Blog Writer</option>
+                                            <option value="custom">Custom Prompt</option>
+                                        </select>
+                                    </div>
+                                    {selectedNode.data?.config?.agentType === 'topic_picker' && (
+                                        <div>
+                                            <label className="label">Blog Niche</label>
+                                            <input type="text" className="input" placeholder="Technology, CRM, Business..." value={selectedNode.data?.config?.niche || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, niche: e.target.value })} />
+                                        </div>
+                                    )}
+                                    {selectedNode.data?.config?.agentType === 'blog_writer' && (
+                                        <>
+                                            <div>
+                                                <label className="label">Word Count</label>
+                                                <input type="number" className="input" placeholder="1000" value={selectedNode.data?.config?.wordCount || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, wordCount: parseInt(e.target.value) || 1000 })} />
+                                            </div>
+                                            <div>
+                                                <label className="label">Tone</label>
+                                                <select className="select" value={selectedNode.data?.config?.tone || 'professional'} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, tone: e.target.value })}>
+                                                    <option value="professional">Professional</option>
+                                                    <option value="casual">Casual</option>
+                                                    <option value="technical">Technical</option>
+                                                    <option value="friendly">Friendly</option>
+                                                </select>
+                                            </div>
+                                        </>
+                                    )}
+                                    {selectedNode.data?.config?.agentType === 'custom' && (
+                                        <>
+                                            <div>
+                                                <label className="label">Custom Prompt</label>
+                                                <textarea className="input" rows={4} placeholder="Write your AI prompt here. Use {{variable}} for data from previous nodes." value={selectedNode.data?.config?.prompt || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, prompt: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="label">System Message (Optional)</label>
+                                                <input type="text" className="input" placeholder="You are a helpful assistant..." value={selectedNode.data?.config?.systemMessage || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, systemMessage: e.target.value })} />
+                                            </div>
+                                        </>
+                                    )}
+                                    <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 mt-2">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">Outputs to Next Node:</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {selectedNode.data?.config?.agentType === 'topic_picker' && 'topic, keywords[], imageQuery, outline[]'}
+                                            {selectedNode.data?.config?.agentType === 'blog_writer' && 'title, excerpt, content, imageQuery'}
+                                            {selectedNode.data?.config?.agentType === 'custom' && 'aiResponse'}
+                                            {!selectedNode.data?.config?.agentType && 'topic, keywords[], imageQuery, outline[]'}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Fetch Image Config */}
+                            {selectedNode.type === 'action_fetch_image' && (
+                                <>
+                                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 text-sm text-orange-700 dark:text-orange-300">
+                                        <p className="font-medium mb-1">Unsplash Image</p>
+                                        <p className="text-xs opacity-80">Fetches a relevant image from Unsplash based on search query.</p>
+                                    </div>
+                                    <div>
+                                        <label className="label">Query Override (Optional)</label>
+                                        <input type="text" className="input" placeholder="Uses imageQuery from previous node if empty" value={selectedNode.data?.config?.query || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, query: e.target.value })} />
+                                        <p className="text-xs text-slate-400 mt-1">Leave empty to use AI-generated query</p>
+                                    </div>
+                                    <div>
+                                        <label className="label">Unsplash Access Key (Optional)</label>
+                                        <input type="password" className="input" placeholder="Uses env key if not set" value={selectedNode.data?.config?.unsplashKey || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, unsplashKey: e.target.value })} />
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 mt-2">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">Outputs:</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">image, imageCredit, imageLink</p>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Post Blog Config */}
+                            {selectedNode.type === 'action_post_blog' && (
+                                <>
+                                    <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-sm text-red-700 dark:text-red-300">
+                                        <p className="font-medium mb-1">Publish to Blog</p>
+                                        <p className="text-xs opacity-80">Posts the blog to NexSpire Solutions website.</p>
+                                    </div>
+                                    <div>
+                                        <label className="label">Category</label>
+                                        <input type="text" className="input" placeholder="General" value={selectedNode.data?.config?.category || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, category: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="label">Author</label>
+                                        <input type="text" className="input" placeholder="AI Writer" value={selectedNode.data?.config?.author || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, author: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="label">Publish Status</label>
+                                        <select className="select" value={selectedNode.data?.config?.status || 'draft'} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, status: e.target.value })}>
+                                            <option value="draft">Draft (Review First)</option>
+                                            <option value="published">Published (Auto-Publish)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="label">API URL (Optional)</label>
+                                        <input type="text" className="input" placeholder="http://localhost:3000" value={selectedNode.data?.config?.apiUrl || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, apiUrl: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="label">API Key (Optional)</label>
+                                        <input type="password" className="input" placeholder="Bearer token for authentication" value={selectedNode.data?.config?.apiKey || ''} onChange={(e) => updateNodeConfig(selectedNode.id, { ...selectedNode.data?.config, apiKey: e.target.value })} />
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 mt-2">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">Uses from previous nodes:</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">title, excerpt, content, image</p>
+                                    </div>
+                                </>
                             )}
                         </div>
 
