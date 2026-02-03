@@ -13,7 +13,7 @@ export default function RawMaterials() {
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
-        name: '', sku: '', category: '', quantity: 0, unit: 'pcs', unit_cost: 0, reorder_level: 10
+        name: '', sku: '', category: '', quantity: 0, unit: 'pcs'
     });
 
     useEffect(() => {
@@ -53,7 +53,7 @@ export default function RawMaterials() {
             }
             setShowForm(false);
             setEditingId(null);
-            setFormData({ name: '', sku: '', category: '', quantity: 0, unit: 'pcs', unit_cost: 0, reorder_level: 10 });
+            setFormData({ name: '', sku: '', category: '', quantity: 0, unit: 'pcs' });
             fetchMaterials();
             fetchStats();
         } catch (error) {
@@ -62,7 +62,13 @@ export default function RawMaterials() {
     };
 
     const handleEdit = (material) => {
-        setFormData(material);
+        setFormData({
+            name: material.name || '',
+            sku: material.sku || '',
+            category: material.category || '',
+            quantity: material.quantity || 0,
+            unit: material.unit || 'pcs'
+        });
         setEditingId(material.id);
         setShowForm(true);
     };
@@ -79,6 +85,54 @@ export default function RawMaterials() {
         }
     };
 
+    const handleExport = () => {
+        const csv = [
+            ['Name', 'SKU', 'Category', 'Quantity', 'Unit'],
+            ...materials.map(m => [m.name, m.sku || '', m.category || '', m.quantity, m.unit || ''])
+        ].map(row => row.join(',')).join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `raw_materials_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+    };
+
+    const handleImport = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const text = event.target.result;
+            const rows = text.split('\n').slice(1);
+            let imported = 0;
+            for (const row of rows) {
+                const [name, sku, category, quantity, unit] = row.split(',');
+                if (name?.trim()) {
+                    try {
+                        await apiClient.post('/materials', {
+                            name: name.trim(),
+                            sku: sku?.trim() || '',
+                            category: category?.trim() || '',
+                            quantity: parseInt(quantity) || 0,
+                            unit: unit?.trim() || 'pcs'
+                        });
+                        imported++;
+                    } catch (err) {
+                        console.error('Import row failed:', err);
+                    }
+                }
+            }
+            toast.success(`Imported ${imported} materials`);
+            fetchMaterials();
+            fetchStats();
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    };
+
     return (
         <div className="p-6">
             <div className="flex items-center justify-between mb-6">
@@ -86,20 +140,35 @@ export default function RawMaterials() {
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Raw Materials</h1>
                     <p className="text-slate-500 text-sm">Manage raw materials inventory</p>
                 </div>
-                <button
-                    onClick={() => { setShowForm(true); setEditingId(null); setFormData({ name: '', sku: '', category: '', quantity: 0, unit: 'pcs', unit_cost: 0, reorder_level: 10 }); }}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add Material
-                </button>
+                <div className="flex gap-2">
+                    <label className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Import
+                        <input type="file" accept=".csv" onChange={handleImport} className="hidden" />
+                    </label>
+                    <button onClick={handleExport} className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Export
+                    </button>
+                    <button
+                        onClick={() => { setShowForm(true); setEditingId(null); setFormData({ name: '', sku: '', category: '', quantity: 0, unit: 'pcs' }); }}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Material
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}
             {stats && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                         <p className="text-slate-500 text-sm">Total Materials</p>
                         <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total_materials || 0}</p>
@@ -107,14 +176,6 @@ export default function RawMaterials() {
                     <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                         <p className="text-slate-500 text-sm">Total Stock</p>
                         <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total_stock || 0}</p>
-                    </div>
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                        <p className="text-slate-500 text-sm">Low Stock Items</p>
-                        <p className="text-2xl font-bold text-amber-600">{stats.low_stock_count || 0}</p>
-                    </div>
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                        <p className="text-slate-500 text-sm">Total Value</p>
-                        <p className="text-2xl font-bold text-green-600">${(stats.total_value || 0).toLocaleString()}</p>
                     </div>
                 </div>
             )}
@@ -146,8 +207,6 @@ export default function RawMaterials() {
                                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">SKU</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Category</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Quantity</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Unit Cost</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Actions</th>
                             </tr>
                         </thead>
@@ -155,18 +214,9 @@ export default function RawMaterials() {
                             {materials.map((material) => (
                                 <tr key={material.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{material.name}</td>
-                                    <td className="px-4 py-3 text-slate-500">{material.sku}</td>
+                                    <td className="px-4 py-3 text-slate-500">{material.sku || '-'}</td>
                                     <td className="px-4 py-3 text-slate-500">{material.category || '-'}</td>
                                     <td className="px-4 py-3 text-slate-900 dark:text-white">{material.quantity} {material.unit}</td>
-                                    <td className="px-4 py-3 text-slate-500">${material.unit_cost || 0}</td>
-                                    <td className="px-4 py-3">
-                                        <span className={`px-2 py-1 text-xs rounded-full ${material.quantity <= material.reorder_level
-                                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                            }`}>
-                                            {material.quantity <= material.reorder_level ? 'Low Stock' : 'In Stock'}
-                                        </span>
-                                    </td>
                                     <td className="px-4 py-3">
                                         <div className="flex gap-2">
                                             <button onClick={() => handleEdit(material)} className="p-1.5 text-slate-400 hover:text-indigo-600">
@@ -204,7 +254,7 @@ export default function RawMaterials() {
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         required
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                                     />
                                 </div>
                                 <div>
@@ -213,7 +263,7 @@ export default function RawMaterials() {
                                         type="text"
                                         value={formData.sku}
                                         onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                                     />
                                 </div>
                                 <div>
@@ -222,7 +272,7 @@ export default function RawMaterials() {
                                         type="text"
                                         value={formData.category}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                                     />
                                 </div>
                                 <div>
@@ -231,7 +281,7 @@ export default function RawMaterials() {
                                         type="number"
                                         value={formData.quantity}
                                         onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                                     />
                                 </div>
                                 <div>
@@ -239,7 +289,7 @@ export default function RawMaterials() {
                                     <select
                                         value={formData.unit}
                                         onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                                     >
                                         <option value="pcs">Pieces</option>
                                         <option value="kg">Kilograms</option>
@@ -247,25 +297,6 @@ export default function RawMaterials() {
                                         <option value="m">Meters</option>
                                         <option value="units">Units</option>
                                     </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit Cost</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={formData.unit_cost}
-                                        onChange={(e) => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Reorder Level</label>
-                                    <input
-                                        type="number"
-                                        value={formData.reorder_level}
-                                        onChange={(e) => setFormData({ ...formData, reorder_level: parseInt(e.target.value) || 0 })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
-                                    />
                                 </div>
                             </div>
                             <div className="flex justify-end gap-3 pt-4">
