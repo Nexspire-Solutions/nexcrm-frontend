@@ -386,7 +386,7 @@ export default function WorkflowBuilder() {
                     {/* Canvas Container */}
                     <div
                         ref={canvasRef}
-                        className="w-full h-full overflow-auto"
+                        className="w-full h-full overflow-auto bg-slate-100 dark:bg-slate-900"
                         style={{
                             backgroundImage: 'radial-gradient(circle, rgba(148, 163, 184, 0.3) 1px, transparent 1px)',
                             backgroundSize: `${20 * zoom}px ${20 * zoom}px`
