@@ -131,6 +131,7 @@ import WorkOrders from './pages/industry/manufacturing/WorkOrders';
 import RawMaterials from './pages/industry/manufacturing/RawMaterials';
 import QualityControl from './pages/industry/manufacturing/QualityControl';
 import ManufacturingInventory from './pages/industry/manufacturing/ManufacturingInventory';
+import ManufacturingProducts from './pages/industry/manufacturing/Products';
 
 // Logistics
 import Shipments from './pages/industry/logistics/Shipments';
@@ -346,6 +347,7 @@ function AppRoutes() {
 
           {/* Manufacturing */}
           <Route path="production" element={<Production />} />
+          <Route path="manufactured-products" element={<ManufacturingProducts />} />
           <Route path="work-orders" element={<WorkOrders />} />
           <Route path="materials" element={<RawMaterials />} />
           <Route path="quality" element={<QualityControl />} />

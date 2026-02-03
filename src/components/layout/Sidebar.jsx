@@ -421,6 +421,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             visible: hasModule('production') || currentIndustry === 'manufacturing',
             items: [
                 { name: 'Production', path: '/production', icon: Icons.factory },
+                { name: 'Products', path: '/manufactured-products', icon: Icons.inventory },
                 { name: 'Work Orders', path: '/work-orders', icon: Icons.orders },
                 { name: 'Raw Materials', path: '/materials', icon: Icons.inventory },
                 { name: 'Quality Control', path: '/quality', icon: Icons.activity },
