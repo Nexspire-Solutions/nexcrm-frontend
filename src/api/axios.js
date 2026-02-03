@@ -49,27 +49,47 @@ const getTenant = () => {
     return null;
 };
 
-// Build API URL based on tenant
+// Build API URL based on tenant or custom domain
 const getApiUrl = () => {
     const tenant = getTenant();
+    const hostname = window.location.hostname;
 
     // Development mode
     if (import.meta.env.DEV) {
-        // Use environment variable if set
         if (import.meta.env.VITE_API_URL) {
             return import.meta.env.VITE_API_URL;
         }
-        // Default to localhost
         return 'http://localhost:3001/api';
     }
 
-    // Production - use tenant-specific API
-    // Pattern: tenant-crm-api.nexspiresolutions.co.in (matching Cloudflare tunnel)
-    if (tenant) {
+    // Check for custom API URL (set via meta tag or localStorage)
+    // This is used when accessing CRM via custom domain like crm.userbrand.com
+    const customApiMeta = document.querySelector('meta[name="nexcrm-api-url"]');
+    if (customApiMeta) {
+        return customApiMeta.getAttribute('content');
+    }
+    const customApiUrl = localStorage.getItem('nexcrm_custom_api_url');
+    if (customApiUrl) {
+        return customApiUrl;
+    }
+
+    // If on a known NexSpire subdomain, use standard pattern
+    if (hostname.endsWith('nexspiresolutions.co.in') && tenant) {
         return `https://${tenant}-crm-api.nexspiresolutions.co.in/api`;
     }
 
-    // Fallback
+    // Custom domain fallback: assume API is at api.{same root domain}
+    // e.g., crm.userbrand.com -> api.userbrand.com
+    if (!hostname.endsWith('nexspiresolutions.co.in')) {
+        // Extract root domain (e.g., "yourbrand.com" from "crm.yourbrand.com")
+        const parts = hostname.split('.');
+        if (parts.length >= 2) {
+            const rootDomain = parts.slice(-2).join('.');
+            return `https://api.${rootDomain}/api`;
+        }
+    }
+
+    // Final fallback
     return import.meta.env.VITE_API_URL || '/api';
 };
 

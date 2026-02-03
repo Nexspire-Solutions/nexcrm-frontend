@@ -418,10 +418,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         manufacturing: {
             name: 'Factory',
             icon: Icons.factory,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasModule('production') || currentIndustry === 'manufacturing',
             items: [
                 { name: 'Production', path: '/production', icon: Icons.factory },
                 { name: 'Work Orders', path: '/work-orders', icon: Icons.orders },
+                { name: 'Raw Materials', path: '/materials', icon: Icons.inventory },
+                { name: 'Quality Control', path: '/quality', icon: Icons.activity },
                 { name: 'Inventory', path: '/inventory', icon: Icons.inventory },
                 { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
@@ -429,7 +431,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         logistics: {
             name: 'Fleet',
             icon: Icons.truck,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasModule('shipments') || currentIndustry === 'logistics',
             items: [
                 { name: 'Shipments', path: '/shipments', icon: Icons.truck },
                 { name: 'Tracking', path: '/tracking', icon: Icons.activity },
@@ -440,7 +442,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         restaurant: {
             name: 'Kitchen',
             icon: Icons.restaurant,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasModule('menu') || currentIndustry === 'restaurant',
             items: [
                 { name: 'Menu', path: '/menu', icon: Icons.products },
                 { name: 'Orders', path: '/kitchen-orders', icon: Icons.orders },
@@ -451,7 +453,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         salon: {
             name: 'Salon',
             icon: Icons.scissors,
-            roles: ['admin', 'manager', 'sales_operator'],
+            visible: hasModule('salon_bookings') || currentIndustry === 'salon',
             items: [
                 { name: 'Bookings', path: '/bookings', icon: Icons.calendar },
                 { name: 'Services', path: '/salon-services', icon: Icons.activity },

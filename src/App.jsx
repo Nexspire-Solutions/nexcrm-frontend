@@ -151,6 +151,14 @@ import PaymentSettings from './pages/settings/PaymentSettings';
 // Admin
 import SmtpSettings from './pages/admin/SmtpSettings';
 import IndustryTest from './pages/admin/IndustryTest';
+// CMS Layout
+import CMSLayout from './components/layout/CMSLayout';
+
+// CMS Pages
+import MenuBuilder from './pages/cms/MenuBuilder';
+import SectionBuilder from './pages/cms/SectionBuilder';
+import BlogBuilder from './pages/cms/BlogBuilder';
+import MediaLibrary from './pages/cms/MediaLibrary';
 
 // Automation
 import Workflows from './pages/automation/Workflows';
@@ -170,7 +178,24 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
 
-      {/* Protected Routes */}
+      {/* CMS Builder Routes (Dedicated Layout) */}
+      <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
+        <Route path="/cms" element={<CMSLayout />}>
+          <Route index element={<Navigate to="/cms/header" replace />} />
+          <Route path="header" element={<MenuBuilder mode="header" />} />
+          <Route path="footer" element={<MenuBuilder mode="footer" />} />
+          <Route path="theme" element={<ThemeEditor />} />
+          <Route path="home" element={<SectionBuilder />} />
+          <Route path="banners" element={<CMSManagement activeTab="banners" />} />
+          <Route path="pages" element={<SectionBuilder />} /> {/* Re-use SectionBuilder for generic pages too */}
+          <Route path="blog" element={<BlogBuilder />} />
+          <Route path="media" element={<MediaLibrary />} />
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/cms/header" replace />} />
+        </Route>
+      </Route>
+
+      {/* Main CRM Routes (Dashboard Layout) */}
       <Route element={<ProtectedRoute allowedRoles={['admin', 'manager', 'sales_operator', 'user']} />}>
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<SmartHomeRedirect />} />
@@ -236,7 +261,7 @@ function AppRoutes() {
           <Route path="reviews" element={<ReviewsList />} />
           <Route path="coupons" element={<CouponsList />} />
           <Route path="shipping" element={<ShippingManagement />} />
-          <Route path="cms" element={<CMSManagement />} />
+
           <Route path="vendors" element={<VendorsList />} />
           <Route path="reports" element={<ReportsPage />} />
 
