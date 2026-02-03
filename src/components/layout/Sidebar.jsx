@@ -424,6 +424,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'Work Orders', path: '/work-orders', icon: Icons.orders },
                 { name: 'Raw Materials', path: '/materials', icon: Icons.inventory },
                 { name: 'Quality Control', path: '/quality', icon: Icons.activity },
+                { name: 'Inventory', path: '/inventory', icon: Icons.inventory },
                 { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },
