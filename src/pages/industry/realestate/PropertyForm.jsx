@@ -76,9 +76,7 @@ const PropertyForm = () => {
         virtual_tour_url: '',
         floor_plan_url: '',
 
-        // Listing Options
-        featured: false,
-        premium: false,
+        // Listing Options (is_featured and premium are already defined above)
 
         // Owner/Agent
         owner_name: '',

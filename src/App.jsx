@@ -128,6 +128,9 @@ import LegalCMSManagement from './pages/industry/legal/LegalCMSManagement';
 // Manufacturing
 import Production from './pages/industry/manufacturing/Production';
 import WorkOrders from './pages/industry/manufacturing/WorkOrders';
+import RawMaterials from './pages/industry/manufacturing/RawMaterials';
+import QualityControl from './pages/industry/manufacturing/QualityControl';
+import ManufacturingInventory from './pages/industry/manufacturing/ManufacturingInventory';
 
 // Logistics
 import Shipments from './pages/industry/logistics/Shipments';
@@ -344,6 +347,9 @@ function AppRoutes() {
           {/* Manufacturing */}
           <Route path="production" element={<Production />} />
           <Route path="work-orders" element={<WorkOrders />} />
+          <Route path="materials" element={<RawMaterials />} />
+          <Route path="quality" element={<QualityControl />} />
+          <Route path="manufacturing-inventory" element={<ManufacturingInventory />} />
 
           {/* Logistics */}
           <Route path="shipments" element={<Shipments />} />
