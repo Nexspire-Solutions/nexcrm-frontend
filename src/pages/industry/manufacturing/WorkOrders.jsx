@@ -6,19 +6,17 @@ export default function WorkOrders() {
     const [workOrders, setWorkOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [products, setProducts] = useState([]);
     const [formData, setFormData] = useState({
-        product_id: '',
+        task_title: '',
+        work_type: 'production',
         quantity: '',
         priority: 'normal',
-        planned_start: '',
         planned_end: '',
         notes: ''
     });
 
     useEffect(() => {
         fetchWorkOrders();
-        fetchProducts();
     }, []);
 
     const fetchWorkOrders = async () => {
@@ -32,21 +30,12 @@ export default function WorkOrders() {
         }
     };
 
-    const fetchProducts = async () => {
-        try {
-            const response = await apiClient.get('/production/products');
-            setProducts(response.data?.data || response.data || []);
-        } catch (error) {
-            console.error('Failed to fetch products:', error);
-        }
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             await apiClient.post('/work-orders', formData);
             setShowModal(false);
-            setFormData({ product_id: '', quantity: '', priority: 'normal', planned_start: '', planned_end: '', notes: '' });
+            setFormData({ task_title: '', work_type: 'production', quantity: '', priority: 'normal', planned_end: '', notes: '' });
             fetchWorkOrders();
         } catch (error) {
             console.error('Failed to create work order:', error);
@@ -56,8 +45,8 @@ export default function WorkOrders() {
 
     const handleExport = () => {
         const csv = [
-            ['Order #', 'Product', 'Quantity', 'Priority', 'Status', 'Planned Start', 'Planned End'],
-            ...workOrders.map(o => [o.order_number, o.product_name || '', o.quantity, o.priority, o.status, o.planned_start || '', o.planned_end || ''])
+            ['Order #', 'Task Title', 'Work Type', 'Quantity', 'Priority', 'Status', 'Due Date'],
+            ...workOrders.map(o => [o.order_number || `WO-${o.id}`, o.task_title || o.notes || '', o.work_type || '', o.quantity, o.priority, o.status, o.planned_end || ''])
         ].map(row => row.join(',')).join('\n');
 
         const blob = new Blob([csv], { type: 'text/csv' });
@@ -78,13 +67,14 @@ export default function WorkOrders() {
             const rows = text.split('\n').slice(1); // Skip header
             let imported = 0;
             for (const row of rows) {
-                const [, product_name, quantity, priority] = row.split(',');
-                if (quantity) {
+                const [, task_title, work_type, quantity, priority] = row.split(',');
+                if (task_title?.trim() || quantity) {
                     try {
                         await apiClient.post('/work-orders', {
-                            quantity: parseInt(quantity),
-                            priority: priority?.trim() || 'normal',
-                            notes: `Imported: ${product_name}`
+                            task_title: task_title?.trim() || 'Imported Task',
+                            work_type: work_type?.trim() || 'production',
+                            quantity: parseInt(quantity) || 1,
+                            priority: priority?.trim() || 'normal'
                         });
                         imported++;
                     } catch (err) {
@@ -179,8 +169,9 @@ export default function WorkOrders() {
                             <thead className="bg-slate-50 dark:bg-slate-700/50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Order #</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Product</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Quantity</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Task</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Type</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Qty</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Priority</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Status</th>
                                 </tr>
@@ -189,7 +180,8 @@ export default function WorkOrders() {
                                 {workOrders.map((order) => (
                                     <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                         <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">{order.order_number || `WO-${order.id}`}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{order.product_name || '-'}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{order.task_title || order.notes || order.product_name || '-'}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-500 capitalize">{order.work_type?.replace('_', ' ') || '-'}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{order.quantity}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 capitalize">{order.priority}</td>
                                         <td className="px-6 py-4">
@@ -219,67 +211,72 @@ export default function WorkOrders() {
                         </div>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product</label>
-                                <select
-                                    value={formData.product_id}
-                                    onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                                >
-                                    <option value="">Select Product</option>
-                                    {products.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantity *</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Task Title *</label>
                                 <input
-                                    type="number"
+                                    type="text"
                                     required
-                                    value={formData.quantity}
-                                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                                    value={formData.task_title || ''}
+                                    onChange={(e) => setFormData({ ...formData, task_title: e.target.value })}
+                                    placeholder="e.g., Assemble Widget A"
                                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Priority</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Work Type</label>
                                 <select
-                                    value={formData.priority}
-                                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                                    value={formData.work_type || 'production'}
+                                    onChange={(e) => setFormData({ ...formData, work_type: e.target.value })}
                                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                                 >
-                                    <option value="low">Low</option>
-                                    <option value="normal">Normal</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
+                                    <option value="production">Production</option>
+                                    <option value="assembly">Assembly</option>
+                                    <option value="quality_check">Quality Check</option>
+                                    <option value="packaging">Packaging</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="other">Other</option>
                                 </select>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Start Date</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantity *</label>
                                     <input
-                                        type="date"
-                                        value={formData.planned_start}
-                                        onChange={(e) => setFormData({ ...formData, planned_start: e.target.value })}
+                                        type="number"
+                                        required
+                                        value={formData.quantity}
+                                        onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">End Date</label>
-                                    <input
-                                        type="date"
-                                        value={formData.planned_end}
-                                        onChange={(e) => setFormData({ ...formData, planned_end: e.target.value })}
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Priority</label>
+                                    <select
+                                        value={formData.priority}
+                                        onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                                    />
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="normal">Normal</option>
+                                        <option value="high">High</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notes</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Due Date</label>
+                                <input
+                                    type="date"
+                                    value={formData.planned_end}
+                                    onChange={(e) => setFormData({ ...formData, planned_end: e.target.value })}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Work Instructions</label>
                                 <textarea
                                     value={formData.notes}
                                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                                     rows={3}
+                                    placeholder="Enter detailed work instructions..."
                                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                                 ></textarea>
                             </div>
