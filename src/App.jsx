@@ -124,6 +124,7 @@ import LegalClientDetail from './pages/industry/legal/LegalClientDetail';
 import CaseDetail from './pages/industry/legal/CaseDetail';
 import InvoiceForm from './pages/industry/legal/InvoiceForm';
 import LegalCMSManagement from './pages/industry/legal/LegalCMSManagement';
+import IndustryCMS from './pages/industry/IndustryCMS';
 
 // Manufacturing
 import Production from './pages/industry/manufacturing/Production';
@@ -367,6 +368,18 @@ function AppRoutes() {
           <Route path="bookings" element={<Bookings />} />
           <Route path="salon-services" element={<SalonServices />} />
           <Route path="staff" element={<Staff />} />
+          <Route path="salon-cms" element={<IndustryCMS industry="salon" />} />
+
+          {/* Industry CMS Routes */}
+          <Route path="healthcare-cms" element={<IndustryCMS industry="healthcare" />} />
+          <Route path="hospitality-cms" element={<IndustryCMS industry="hospitality" />} />
+          <Route path="realestate-cms" element={<IndustryCMS industry="realestate" />} />
+          <Route path="fitness-cms" element={<IndustryCMS industry="fitness" />} />
+          <Route path="restaurant-cms" element={<IndustryCMS industry="restaurant" />} />
+          <Route path="logistics-cms" element={<IndustryCMS industry="logistics" />} />
+          <Route path="manufacturing-cms" element={<IndustryCMS industry="manufacturing" />} />
+          <Route path="education-cms" element={<IndustryCMS industry="education" />} />
+          <Route path="travel-cms" element={<IndustryCMS industry="travel" />} />
 
           {/* Automation - Permission Guarded */}
           <Route element={<ProtectedRoute requiredPermission={['automation', 'read']} />}>
