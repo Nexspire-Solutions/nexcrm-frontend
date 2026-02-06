@@ -1,8 +1,11 @@
 import apiClient from './axios';
+import { detectTimezone } from '../utils/dateUtils';
 
 export const authAPI = {
     login: async (email, password) => {
-        const response = await apiClient.post('/auth/login', { email, password });
+        // Auto-detect browser timezone for Slack-style auto-detection
+        const timezone = detectTimezone();
+        const response = await apiClient.post('/auth/login', { email, password, timezone });
         return response.data;
     },
 
@@ -200,6 +203,28 @@ export const usersAPI = {
 
     resetPassword: async (id) => {
         const response = await apiClient.post(`/users/${id}/reset-password`);
+        return response.data;
+    },
+
+    // Timezone management
+    getTimezone: async () => {
+        const response = await apiClient.get('/users/me/timezone');
+        return response.data;
+    },
+
+    updateTimezone: async (timezone) => {
+        const response = await apiClient.put('/users/me/timezone', { timezone });
+        return response.data;
+    },
+
+    // Tenant timezone (admin)
+    getTenantTimezone: async () => {
+        const response = await apiClient.get('/users/tenant/timezone');
+        return response.data;
+    },
+
+    updateTenantTimezone: async (timezone) => {
+        const response = await apiClient.put('/users/tenant/timezone', { timezone });
         return response.data;
     },
 };

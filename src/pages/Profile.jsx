@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { usersAPI } from '../api';
+import { detectTimezone, COMMON_TIMEZONES } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
 
 export default function Profile() {
@@ -12,6 +14,41 @@ export default function Profile() {
         phone: user?.phone || '',
         role: user?.role || 'user',
     });
+
+    // Timezone state
+    const [timezone, setTimezone] = useState(user?.timezone || 'UTC');
+    const [timezones, setTimezones] = useState(COMMON_TIMEZONES);
+    const [savingTimezone, setSavingTimezone] = useState(false);
+    const detectedTimezone = detectTimezone();
+
+    useEffect(() => {
+        loadTimezone();
+    }, []);
+
+    const loadTimezone = async () => {
+        try {
+            const res = await usersAPI.getTimezone();
+            if (res.success) {
+                setTimezone(res.timezone);
+                if (res.timezones) setTimezones(res.timezones);
+            }
+        } catch (err) {
+            console.error('Failed to load timezone:', err);
+        }
+    };
+
+    const handleTimezoneChange = async (newTimezone) => {
+        setSavingTimezone(true);
+        try {
+            await usersAPI.updateTimezone(newTimezone);
+            setTimezone(newTimezone);
+            toast.success('Timezone updated');
+        } catch (err) {
+            toast.error('Failed to update timezone');
+        } finally {
+            setSavingTimezone(false);
+        }
+    };
 
     const handleSave = () => {
         // In production, this would call an API
@@ -164,6 +201,41 @@ export default function Profile() {
                 </div>
             </div>
 
+            {/* Preferences Section */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Preferences</h3>
+
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                        <div className="flex-1">
+                            <p className="font-medium text-slate-900 dark:text-white">Timezone</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                All dates and times will be displayed in this timezone
+                            </p>
+                            {detectedTimezone !== timezone && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                    Browser detected: {detectedTimezone}
+                                </p>
+                            )}
+                        </div>
+                        <div className="ml-4">
+                            <select
+                                value={timezone}
+                                onChange={(e) => handleTimezoneChange(e.target.value)}
+                                disabled={savingTimezone}
+                                className="input min-w-[200px]"
+                            >
+                                {timezones.map((tz) => (
+                                    <option key={tz.value || tz} value={tz.value || tz}>
+                                        {tz.label || tz}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Security Section */}
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Security</h3>
@@ -214,3 +286,4 @@ export default function Profile() {
         </div>
     );
 }
+
