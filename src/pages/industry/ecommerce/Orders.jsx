@@ -6,6 +6,7 @@ import StatusBadge from '../../../components/common/StatusBadge';
 import ProCard from '../../../components/common/ProCard';
 import Modal from '../../../components/common/Modal';
 import apiClient, { tenantUtils } from '../../../api/axios';
+import CreateOrderModal from './CreateOrderModal';
 import toast from 'react-hot-toast';
 
 const statusVariants = {
@@ -55,6 +56,7 @@ export default function OrderList() {
     const [statusFilter, setStatusFilter] = useState('');
     const [paymentFilter, setPaymentFilter] = useState('');
     const [dateFilter, setDateFilter] = useState('');
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     useEffect(() => {
         fetchOrders();
@@ -237,18 +239,29 @@ export default function OrderList() {
                 subtitle="Manage and track customer orders"
                 breadcrumbs={[{ label: 'Dashboard', to: '/' }, { label: 'E-Commerce' }, { label: 'Orders' }]}
                 actions={
-                    <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+                    <div className="flex gap-3 items-center">
+                        <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+                            >
+                                List
+                            </button>
+                            <button
+                                onClick={() => setViewMode('kanban')}
+                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'kanban' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+                            >
+                                Kanban
+                            </button>
+                        </div>
                         <button
-                            onClick={() => setViewMode('list')}
-                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+                            onClick={() => setShowCreateModal(true)}
+                            className="btn-primary flex items-center gap-2"
                         >
-                            List
-                        </button>
-                        <button
-                            onClick={() => setViewMode('kanban')}
-                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'kanban' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
-                        >
-                            Kanban
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Order
                         </button>
                     </div>
                 }
@@ -342,93 +355,107 @@ export default function OrderList() {
                 )}
             </div>
 
-            {filteredOrders.length === 0 ? (
-                <ProCard>
-                    <div className="text-center py-12">
-                        <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                        </svg>
-                        <p className="text-slate-500 dark:text-slate-400">
-                            {hasActiveFilters ? 'No orders match your filters' : 'No orders found'}
-                        </p>
-                        {hasActiveFilters && (
-                            <button
-                                onClick={clearFilters}
-                                className="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-                            >
-                                Clear all filters
-                            </button>
-                        )}
-                    </div>
-                </ProCard>
-            ) : viewMode === 'list' ? (
-                <ProCard noPadding>
-                    <ProTable
-                        columns={columns}
-                        data={filteredOrders}
-                        onRowClick={(row) => setSelectedOrder(row)}
-                    />
-                </ProCard>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {['pending', 'processing', 'shipped', 'delivered'].map(status => (
-                        <div
-                            key={status}
-                            onDragOver={(e) => handleDragOver(e, status)}
-                            onDragLeave={handleDragLeave}
-                            onDrop={(e) => handleDrop(e, status)}
-                            className={`bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border-2 min-h-[500px] transition-all duration-200 ${dragOverColumn === status
-                                ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 shadow-lg'
-                                : 'border-slate-200 dark:border-slate-700'
-                                }`}
-                        >
-                            <h3 className="text-sm font-bold uppercase text-slate-500 dark:text-slate-400 mb-4 flex justify-between items-center">
-                                {status}
-                                <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 py-0.5 px-2 rounded-full text-xs">
-                                    {filteredOrders.filter(o => o.status === status).length}
-                                </span>
-                            </h3>
-                            <div className="space-y-3">
-                                {filteredOrders.filter(o => o.status === status).map(order => (
-                                    <div
-                                        key={order.id}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, order)}
-                                        onDragEnd={handleDragEnd}
-                                        onClick={() => !draggingOrder && setSelectedOrder(order)}
-                                        className={`bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 cursor-grab active:cursor-grabbing hover:border-indigo-300 hover:shadow-md transition-all duration-200 ${draggingOrder?.id === order.id ? 'opacity-50 scale-95' : ''
-                                            }`}
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="font-medium text-slate-900 dark:text-white text-sm">{order.order_number}</span>
-                                            <span className="text-xs text-slate-500">{new Date(order.created_at).toLocaleDateString()}</span>
-                                        </div>
-                                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">{order.shipping_name}</p>
-                                        <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-700">
-                                            <span className="text-xs text-slate-500">{order.items?.length || 0} Items</span>
-                                            <span className="font-bold text-slate-900 dark:text-white text-sm">₹{(order.total || 0).toLocaleString()}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                                {filteredOrders.filter(o => o.status === status).length === 0 && (
-                                    <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-sm border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
-                                        <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                                        </svg>
-                                        {hasActiveFilters ? 'No matching orders' : 'Drop orders here'}
-                                    </div>
-                                )}
-                            </div>
+            {
+                filteredOrders.length === 0 ? (
+                    <ProCard>
+                        <div className="text-center py-12">
+                            <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                            <p className="text-slate-500 dark:text-slate-400">
+                                {hasActiveFilters ? 'No orders match your filters' : 'No orders found'}
+                            </p>
+                            {hasActiveFilters && (
+                                <button
+                                    onClick={clearFilters}
+                                    className="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                                >
+                                    Clear all filters
+                                </button>
+                            )}
                         </div>
-                    ))}
-                </div>
-            )}
+                    </ProCard>
+                ) : viewMode === 'list' ? (
+                    <ProCard noPadding>
+                        <ProTable
+                            columns={columns}
+                            data={filteredOrders}
+                            onRowClick={(row) => setSelectedOrder(row)}
+                        />
+                    </ProCard>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        {['pending', 'processing', 'shipped', 'delivered'].map(status => (
+                            <div
+                                key={status}
+                                onDragOver={(e) => handleDragOver(e, status)}
+                                onDragLeave={handleDragLeave}
+                                onDrop={(e) => handleDrop(e, status)}
+                                className={`bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border-2 min-h-[500px] transition-all duration-200 ${dragOverColumn === status
+                                    ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 shadow-lg'
+                                    : 'border-slate-200 dark:border-slate-700'
+                                    }`}
+                            >
+                                <h3 className="text-sm font-bold uppercase text-slate-500 dark:text-slate-400 mb-4 flex justify-between items-center">
+                                    {status}
+                                    <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 py-0.5 px-2 rounded-full text-xs">
+                                        {filteredOrders.filter(o => o.status === status).length}
+                                    </span>
+                                </h3>
+                                <div className="space-y-3">
+                                    {filteredOrders.filter(o => o.status === status).map(order => (
+                                        <div
+                                            key={order.id}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, order)}
+                                            onDragEnd={handleDragEnd}
+                                            onClick={() => !draggingOrder && setSelectedOrder(order)}
+                                            className={`bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 cursor-grab active:cursor-grabbing hover:border-indigo-300 hover:shadow-md transition-all duration-200 ${draggingOrder?.id === order.id ? 'opacity-50 scale-95' : ''
+                                                }`}
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className="font-medium text-slate-900 dark:text-white text-sm">{order.order_number}</span>
+                                                <span className="text-xs text-slate-500">{new Date(order.created_at).toLocaleDateString()}</span>
+                                            </div>
+                                            <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">{order.shipping_name}</p>
+                                            <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-700">
+                                                <span className="text-xs text-slate-500">{order.items?.length || 0} Items</span>
+                                                <span className="font-bold text-slate-900 dark:text-white text-sm">₹{(order.total || 0).toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {filteredOrders.filter(o => o.status === status).length === 0 && (
+                                        <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-sm border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
+                                            <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                            </svg>
+                                            {hasActiveFilters ? 'No matching orders' : 'Drop orders here'}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )
+            }
 
             {/* Order Detail Modal */}
-            {selectedOrder && (
-                <OrderDetailModal
-                    order={selectedOrder}
-                    onClose={() => setSelectedOrder(null)}
+            {
+                selectedOrder && (
+                    <OrderDetailModal
+                        order={selectedOrder}
+                        onClose={() => setSelectedOrder(null)}
+                    />
+                )
+            }
+            {/* Create Order Modal */}
+            {showCreateModal && (
+                <CreateOrderModal
+                    onClose={() => setShowCreateModal(false)}
+                    onOrderCreated={() => {
+                        fetchOrders();
+                        setShowCreateModal(false);
+                    }}
                 />
             )}
         </div>
