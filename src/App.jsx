@@ -147,8 +147,6 @@ import Tables from './pages/industry/restaurant/Tables';
 import Bookings from './pages/industry/salon/Bookings';
 import SalonServices from './pages/industry/salon/SalonServices';
 import Staff from './pages/industry/salon/Staff';
-import EcomProducts from './pages/industry/ecommerce/Products';
-
 // Settings
 import ThemeEditor from './pages/settings/ThemeEditor';
 import PaymentSettings from './pages/settings/PaymentSettings';
@@ -252,7 +250,7 @@ function AppRoutes() {
 
           {/* E-Commerce - Permission Guarded */}
           <Route element={<ProtectedRoute requiredPermission={['products', 'read']} />}>
-            <Route path="products" element={<EcomProducts />} />
+            <Route path="products" element={<ProductsList />} />
           </Route>
           <Route element={<ProtectedRoute requiredPermission={['orders', 'read']} />}>
             <Route path="orders" element={<OrdersList />} />
