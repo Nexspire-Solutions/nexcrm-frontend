@@ -22,6 +22,8 @@ export default function Products() {
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState(INITIAL_FORM);
 
+    console.log('Products render, showForm:', showForm);
+
     useEffect(() => {
         fetchProducts();
         fetchCategories();
@@ -122,6 +124,7 @@ export default function Products() {
     };
 
     const openAddForm = () => {
+        console.log('openAddForm clicked, setting showForm to true');
         setFormData(INITIAL_FORM);
         setEditingId(null);
         setShowForm(true);
@@ -175,7 +178,7 @@ export default function Products() {
                     </button>
                     <button
                         onClick={openAddForm}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+                        className="btn-primary flex items-center gap-2 shadow-sm"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -236,7 +239,7 @@ export default function Products() {
                         </div>
                         <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">No products found</h3>
                         <p className="text-slate-500 dark:text-slate-400 mb-4">Get started by adding your first product.</p>
-                        <button onClick={openAddForm} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        <button onClick={openAddForm} className="btn-primary flex items-center gap-2">
                             Add First Product
                         </button>
                     </div>
@@ -293,10 +296,10 @@ export default function Products() {
                                     </td>
                                     <td className="px-4 py-3">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.status === 'active'
-                                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                : product.status === 'archived'
-                                                    ? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
-                                                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                            : product.status === 'archived'
+                                                ? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                                                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
                                             }`}>
                                             {product.status || 'draft'}
                                         </span>
@@ -487,7 +490,7 @@ export default function Products() {
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    className="btn-primary flex items-center gap-2"
                                 >
                                     {saving && (
                                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
