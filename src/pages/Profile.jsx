@@ -5,7 +5,7 @@ import { detectTimezone, COMMON_TIMEZONES } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
 
 export default function Profile() {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
         firstName: user?.firstName || '',
@@ -14,6 +14,20 @@ export default function Profile() {
         phone: user?.phone || '',
         role: user?.role || 'user',
     });
+
+    // Update form data when user context updates
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => ({
+                ...prev,
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                email: user.email || '',
+                phone: user.phone || '',
+                role: user.role || 'user',
+            }));
+        }
+    }, [user]);
 
     // Timezone state
     const [timezone, setTimezone] = useState(user?.timezone || 'UTC');
@@ -59,11 +73,21 @@ export default function Profile() {
 
     const handleSave = async () => {
         try {
-            await usersAPI.updateProfile({
+            const updatedData = {
                 first_name: formData.firstName,
                 last_name: formData.lastName,
                 phone: formData.phone
+            };
+
+            await usersAPI.updateProfile(updatedData);
+
+            // Update local context immediately for UX
+            updateUser({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone
             });
+
             toast.success('Profile updated successfully');
             setIsEditing(false);
         } catch (err) {
