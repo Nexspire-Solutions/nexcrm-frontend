@@ -6,10 +6,12 @@ import Modal from '../../../components/common/Modal';
 import apiClient, { tenantUtils } from '../../../api/axios';
 import toast from 'react-hot-toast';
 import {
-    FiArrowLeft, FiPackage, FiTruck, FiUser, FiMapPin, FiPhone, FiMail,
+    FiPackage, FiTruck, FiUser, FiMapPin, FiPhone, FiMail,
     FiCreditCard, FiCalendar, FiEdit2, FiCheckCircle, FiXCircle, FiClock,
     FiFileText, FiShoppingBag, FiDollarSign
 } from 'react-icons/fi';
+import { useAuth } from '../../../../contexts/AuthContext';
+import { formatDateTime } from '../../../../utils/dateUtils';
 
 const statusVariants = {
     pending: 'warning',
@@ -42,6 +44,8 @@ export default function OrderDetail() {
     const [trackingNumber, setTrackingNumber] = useState('');
     const [internalNotes, setInternalNotes] = useState('');
 
+    const { user } = useAuth(); // Add useAuth hook
+
     useEffect(() => {
         fetchOrder();
     }, [id]);
@@ -59,46 +63,7 @@ export default function OrderDetail() {
             setLoading(false);
         }
     };
-
-    const handleStatusUpdate = async () => {
-        try {
-            const payload = { status: newStatus };
-            if (trackingNumber) payload.tracking_number = trackingNumber;
-            if (internalNotes) payload.internal_notes = internalNotes;
-
-            await apiClient.patch(`/orders/${id}/status`, payload);
-            toast.success('Order status updated');
-            setShowStatusModal(false);
-            setTrackingNumber('');
-            setInternalNotes('');
-            fetchOrder();
-        } catch (error) {
-            toast.error('Failed to update status');
-        }
-    };
-
-    const handlePaymentUpdate = async (paymentStatus) => {
-        try {
-            await apiClient.patch(`/orders/${id}/payment`, { payment_status: paymentStatus });
-            toast.success('Payment status updated');
-            setShowPaymentModal(false);
-            fetchOrder();
-        } catch (error) {
-            toast.error('Failed to update payment');
-        }
-    };
-
-    const formatDate = (date) => {
-        if (!date) return '-';
-        return new Date(date).toLocaleString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
+    // ...
     const formatCurrency = (amount) => {
         return `₹${(parseFloat(amount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
     };
@@ -197,7 +162,7 @@ export default function OrderDetail() {
                             Order #{order.order_number || order.orderNumber}
                         </h1>
                         <p className="text-sm text-slate-500">
-                            Placed on {formatDate(order.created_at)}
+                            Placed on {formatDateTime(order.created_at, user?.timezone)}
                         </p>
                     </div>
                 </div>
@@ -492,13 +457,13 @@ export default function OrderDetail() {
                                 {order.shipped_at && (
                                     <div className="flex items-center justify-between">
                                         <span className="text-slate-500">Shipped</span>
-                                        <span>{formatDate(order.shipped_at)}</span>
+                                        <span>{formatDateTime(order.shipped_at, user?.timezone)}</span>
                                     </div>
                                 )}
                                 {order.delivered_at && (
                                     <div className="flex items-center justify-between">
                                         <span className="text-slate-500">Delivered</span>
-                                        <span>{formatDate(order.delivered_at)}</span>
+                                        <span>{formatDateTime(order.delivered_at, user?.timezone)}</span>
                                     </div>
                                 )}
                             </div>

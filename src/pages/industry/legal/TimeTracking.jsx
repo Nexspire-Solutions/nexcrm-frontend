@@ -9,8 +9,11 @@ import { FiPlus, FiPlay, FiPause, FiClock, FiCalendar, FiDollarSign, FiFilter, F
 import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 import ProHeader from '../../../components/common/ProHeader';
+import { useAuth } from '../../../contexts/AuthContext';
+import { getTodayDate, getUserTimezone } from '../../../utils/dateUtils';
 
 export default function TimeTracking() {
+    const { user } = useAuth();
     const [entries, setEntries] = useState([]);
     const [cases, setCases] = useState([]);
     const [totals, setTotals] = useState({});
@@ -26,14 +29,14 @@ export default function TimeTracking() {
     const timerRef = useRef(null);
 
     const [filters, setFilters] = useState({
-        start_date: new Date(new Date().setDate(1)).toISOString().split('T')[0],
-        end_date: new Date().toISOString().split('T')[0]
+        start_date: getTodayDate(getUserTimezone(user)).substring(0, 8) + '01',
+        end_date: getTodayDate(getUserTimezone(user))
     });
 
     const [formData, setFormData] = useState({
         case_id: '',
         lawyer_id: '',
-        entry_date: new Date().toISOString().split('T')[0],
+        entry_date: getTodayDate(getUserTimezone(user)),
         hours: '',
         description: '',
         activity_type: 'other',
@@ -124,7 +127,7 @@ export default function TimeTracking() {
             await apiClient.post('/time-entries', {
                 case_id: timerCase,
                 lawyer_id: timerLawyer,
-                entry_date: new Date().toISOString().split('T')[0],
+                entry_date: getTodayDate(getUserTimezone(user)),
                 hours,
                 description: timerDescription,
                 activity_type: 'other',
@@ -149,7 +152,7 @@ export default function TimeTracking() {
             setFormData({
                 case_id: '',
                 lawyer_id: currentLawyer?.id || '',
-                entry_date: new Date().toISOString().split('T')[0],
+                entry_date: getTodayDate(getUserTimezone(user)),
                 hours: '',
                 description: '',
                 activity_type: 'other',
@@ -325,8 +328,8 @@ export default function TimeTracking() {
                         />
                     </div>
                     <button onClick={() => setFilters({
-                        start_date: new Date(new Date().setDate(1)).toISOString().split('T')[0],
-                        end_date: new Date().toISOString().split('T')[0]
+                        start_date: getTodayDate(getUserTimezone(user)).substring(0, 8) + '01',
+                        end_date: getTodayDate(getUserTimezone(user))
                     })} className="btn-secondary">This Month</button>
                 </div>
             </div>

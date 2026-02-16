@@ -280,9 +280,17 @@ export default function Profile() {
                                 All dates and times will be displayed in this timezone
                             </p>
                             {detectedTimezone !== timezone && (
-                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                    Browser detected: {detectedTimezone}
-                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                                        Browser detected: {detectedTimezone}
+                                    </p>
+                                    <button
+                                        onClick={() => handleTimezoneChange(detectedTimezone)}
+                                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium hover:underline"
+                                    >
+                                        Use detected
+                                    </button>
+                                </div>
                             )}
                         </div>
                         <div className="ml-4">

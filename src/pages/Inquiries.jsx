@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { inquiriesAPI } from '../api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
+import { formatDateTime } from '../utils/dateUtils';
 
 export default function Inquiries() {
     const [inquiries, setInquiries] = useState([]);
@@ -90,15 +92,7 @@ export default function Inquiries() {
         return styles[status] || styles.new;
     };
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
+    const { user } = useAuth(); // Add useAuth hook
 
     if (loading) {
         return (
@@ -192,7 +186,7 @@ export default function Inquiries() {
                                             </select>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
-                                            {formatDate(inquiry.createdAt)}
+                                            {formatDateTime(inquiry.createdAt, user?.timezone)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <div className="flex items-center gap-2">
@@ -287,7 +281,7 @@ export default function Inquiries() {
                                 </div>
                                 <div>
                                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Submitted</label>
-                                    <p className="mt-1 text-slate-900 dark:text-white">{formatDate(selectedInquiry.createdAt)}</p>
+                                    <p className="mt-1 text-slate-900 dark:text-white">{formatDateTime(selectedInquiry.createdAt, user?.timezone)}</p>
                                 </div>
                             </div>
                         </div>

@@ -4,6 +4,8 @@
  * 
  * All dates from the backend are UTC. This module converts them for display.
  */
+import { format, formatDistanceToNow } from 'date-fns';
+import { toZonedTime, format as formatTz, fromZonedTime } from 'date-fns-tz';
 
 /**
  * Detect browser's timezone
@@ -30,25 +32,21 @@ export function getUserTimezone(user) {
  * Format a UTC date for display in user's timezone
  * @param {string|Date} utcDate - UTC date string or Date object
  * @param {string} timezone - IANA timezone identifier
- * @param {Object} options - Intl.DateTimeFormat options
+ * @param {string} formatStr - Format string (date-fns format)
  * @returns {string} Formatted date string
  */
-export function formatDate(utcDate, timezone, options = {}) {
+export function formatDate(utcDate, timezone, formatStr = 'MMM d, yyyy') {
     if (!utcDate) return '-';
     try {
         const date = new Date(utcDate);
         if (isNaN(date.getTime())) return '-';
 
-        return date.toLocaleDateString('en-US', {
-            timeZone: timezone || 'UTC',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            ...options
-        });
+        const tz = timezone || 'UTC';
+        const zonedDate = toZonedTime(date, tz);
+        return formatTz(zonedDate, formatStr, { timeZone: tz });
     } catch (error) {
         console.warn('Date formatting error:', error);
-        return new Date(utcDate).toLocaleDateString();
+        return format(new Date(utcDate), formatStr);
     }
 }
 
@@ -106,9 +104,10 @@ export function formatTime(utcDate, timezone) {
 /**
  * Format relative time (e.g., "2 hours ago", "in 3 days")
  * @param {string|Date} utcDate - UTC date string
+ * @param {string} timezone - User's timezone (for absolute date fallback)
  * @returns {string} Relative time string
  */
-export function formatRelativeTime(utcDate) {
+export function formatRelativeTime(utcDate, timezone) {
     if (!utcDate) return '-';
 
     const date = new Date(utcDate);
@@ -126,7 +125,7 @@ export function formatRelativeTime(utcDate) {
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
     if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 
-    return formatDate(utcDate, 'UTC');
+    return formatDate(utcDate, timezone);
 }
 
 /**
@@ -137,9 +136,24 @@ export function formatRelativeTime(utcDate) {
  */
 export function localToUTC(localDateString, timezone) {
     if (!localDateString) return null;
-    // For simple date inputs, assume midnight in user's timezone
-    const date = new Date(localDateString);
-    return date.toISOString();
+    try {
+        const tz = timezone || 'UTC';
+        // Create a date object representing the local time in the specific timezone
+        const utcDate = fromZonedTime(localDateString, tz);
+        return utcDate.toISOString();
+    } catch (error) {
+        console.warn('localToUTC conversion error:', error);
+        return new Date(localDateString).toISOString();
+    }
+}
+
+/**
+ * Get current date in user's timezone (YYYY-MM-DD)
+ * @param {string} timezone - User's timezone
+ * @returns {string} Date string
+ */
+export function getTodayDate(timezone) {
+    return formatTz(new Date(), 'yyyy-MM-dd', { timeZone: timezone || 'UTC' });
 }
 
 /**
@@ -168,5 +182,6 @@ export default {
     formatTime,
     formatRelativeTime,
     localToUTC,
+    getTodayDate,
     COMMON_TIMEZONES
 };

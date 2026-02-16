@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
 import EmailComposer from '../../components/common/EmailComposer';
+import { useAuth } from '../../contexts/AuthContext';
+import { formatDateTime, formatRelativeTime } from '../../utils/dateUtils';
 
 // Activity type configurations with SVG paths
 const ACTIVITY_TYPES = {
@@ -47,29 +49,8 @@ const STATUS_COLORS = {
     converted: 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400',
 };
 
-const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-};
-
-const getRelativeTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-};
-
 export default function InquiryDetail() {
+    const { user } = useAuth();
     const { id } = useParams();
     const navigate = useNavigate();
     const [inquiry, setInquiry] = useState(null);
@@ -294,9 +275,9 @@ export default function InquiryDetail() {
                     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Details</h3>
                         <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-slate-500 dark:text-slate-400">Received</span>
-                                <span className="text-slate-900 dark:text-white">{formatDate(inquiry.createdAt)}</span>
+                            <div>
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Submitted</label>
+                                <p className="mt-1 text-slate-900 dark:text-white">{formatDateTime(inquiry.createdAt, user?.timezone)}</p>
                             </div>
                         </div>
                     </div>
@@ -395,7 +376,7 @@ export default function InquiryDetail() {
                                                         <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
                                                             <div className="flex items-start justify-between mb-2">
                                                                 <span className="font-medium text-slate-900 dark:text-white">{activity.description || activity.summary}</span>
-                                                                <span className="text-xs text-slate-400">{getRelativeTime(activity.createdAt)}</span>
+                                                                <span className="text-xs text-slate-400 dark:text-slate-500">{formatRelativeTime(activity.createdAt, user?.timezone)}</span>
                                                             </div>
                                                             {activity.details && (
                                                                 <p className="text-sm text-slate-600 dark:text-slate-300">{activity.details}</p>

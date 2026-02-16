@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useTenantConfig } from '../../contexts/TenantConfigContext';
 import apiClient from '../../api/axios';
+import { useAuth } from '../../contexts/AuthContext';
+import { getTodayDate, getUserTimezone } from '../../utils/dateUtils';
 
 const AppointmentsList = () => {
+    const { user } = useAuth();
     const { hasModule } = useTenantConfig();
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(getTodayDate(getUserTimezone(user)));
     const [status, setStatus] = useState('');
     const [stats, setStats] = useState({});
 
