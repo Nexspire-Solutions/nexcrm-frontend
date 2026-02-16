@@ -13,12 +13,35 @@ export const AuthProvider = ({ children }) => {
             const savedToken = localStorage.getItem('token');
             const savedUser = localStorage.getItem('user');
 
-            console.log('[AuthContext] Initializing auth:', { hasToken: !!savedToken, hasUser: !!savedUser });
-
-            if (savedToken && savedUser) {
+            if (savedToken) {
+                // Set token immediately to allow API calls
                 setToken(savedToken);
-                setUser(JSON.parse(savedUser));
-                console.log('[AuthContext] Restored auth from localStorage');
+
+                try {
+                    console.log('[AuthContext] Verifying session...');
+                    const response = await authAPI.getCurrentUser();
+
+                    if (response.success && response.user) {
+                        setUser(response.user);
+                        localStorage.setItem('user', JSON.stringify(response.user));
+                        console.log('[AuthContext] Session verified, user data updated');
+                    } else {
+                        throw new Error('Invalid user data received');
+                    }
+                } catch (error) {
+                    console.error('[AuthContext] Session verification failed:', error);
+
+                    // If unauthorized, clear everything
+                    if (error.response?.status === 401) {
+                        logout();
+                    } else if (savedUser) {
+                        // If other error (e.g. network), fallback to saved user
+                        console.log('[AuthContext] Falling back to saved user data');
+                        setUser(JSON.parse(savedUser));
+                    } else {
+                        logout();
+                    }
+                }
             }
             setLoading(false);
         };
