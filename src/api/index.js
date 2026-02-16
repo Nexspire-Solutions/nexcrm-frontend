@@ -14,8 +14,14 @@ export const authAPI = {
         return response.data;
     },
 
+
     logout: async () => {
         const response = await apiClient.post('/auth/logout');
+        return response.data;
+    },
+
+    changePassword: async (currentPassword, newPassword) => {
+        const response = await apiClient.post('/auth/change-password', { currentPassword, newPassword });
         return response.data;
     },
 };
@@ -201,8 +207,14 @@ export const usersAPI = {
         return response.data;
     },
 
+
     resetPassword: async (id) => {
         const response = await apiClient.post(`/users/${id}/reset-password`);
+        return response.data;
+    },
+
+    updateProfile: async (data) => {
+        const response = await apiClient.put('/users/me/profile', data);
         return response.data;
     },
 

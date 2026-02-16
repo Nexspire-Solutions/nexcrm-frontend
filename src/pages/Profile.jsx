@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { usersAPI } from '../api';
+import { usersAPI, authAPI } from '../api';
 import { detectTimezone, COMMON_TIMEZONES } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
 
@@ -20,6 +20,13 @@ export default function Profile() {
     const [timezones, setTimezones] = useState(COMMON_TIMEZONES);
     const [savingTimezone, setSavingTimezone] = useState(false);
     const detectedTimezone = detectTimezone();
+
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
 
     useEffect(() => {
         loadTimezone();
@@ -50,14 +57,49 @@ export default function Profile() {
         }
     };
 
-    const handleSave = () => {
-        // In production, this would call an API
-        toast.success('Profile updated successfully');
-        setIsEditing(false);
+    const handleSave = async () => {
+        try {
+            await usersAPI.updateProfile({
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                phone: formData.phone
+            });
+            toast.success('Profile updated successfully');
+            setIsEditing(false);
+        } catch (err) {
+            console.error('Failed to update profile:', err);
+            toast.error(err.response?.data?.error || 'Failed to update profile');
+        }
     };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handlePasswordChange = (e) => {
+        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    };
+
+    const submitPasswordChange = async () => {
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            toast.error('New passwords do not match');
+            return;
+        }
+
+        if (passwordData.newPassword.length < 6) {
+            toast.error('Password must be at least 6 characters');
+            return;
+        }
+
+        try {
+            await authAPI.changePassword(passwordData.currentPassword, passwordData.newPassword);
+            toast.success('Password changed successfully');
+            setIsChangingPassword(false);
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (err) {
+            console.error('Failed to change password:', err);
+            toast.error(err.response?.data?.error || 'Failed to change password');
+        }
     };
 
     const getRoleLabel = (role) => {
@@ -171,6 +213,7 @@ export default function Profile() {
                                 value={formData.email}
                                 onChange={handleChange}
                                 className="input w-full"
+                                disabled // Email should not be editable by user freely usually, but keeping consistent with request if needed. Actually it's better to disable email edit or require verification. For now, disabled as it usually is unique ID.
                             />
                         ) : (
                             <p className="text-slate-900 dark:text-white">{formData.email || '—'}</p>
@@ -241,14 +284,75 @@ export default function Profile() {
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Security</h3>
 
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                        <div>
-                            <p className="font-medium text-slate-900 dark:text-white">Password</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Last changed: Never</p>
+                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <p className="font-medium text-slate-900 dark:text-white">Password</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Last changed: Never</p>
+                            </div>
+                            {!isChangingPassword && (
+                                <button
+                                    onClick={() => setIsChangingPassword(true)}
+                                    className="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition"
+                                >
+                                    Change Password
+                                </button>
+                            )}
                         </div>
-                        <button className="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition">
-                            Change Password
-                        </button>
+
+                        {isChangingPassword && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Current Password</label>
+                                    <input
+                                        type="password"
+                                        name="currentPassword"
+                                        value={passwordData.currentPassword}
+                                        onChange={handlePasswordChange}
+                                        className="input w-full"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">New Password</label>
+                                        <input
+                                            type="password"
+                                            name="newPassword"
+                                            value={passwordData.newPassword}
+                                            onChange={handlePasswordChange}
+                                            className="input w-full"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirm New Password</label>
+                                        <input
+                                            type="password"
+                                            name="confirmPassword"
+                                            value={passwordData.confirmPassword}
+                                            onChange={handlePasswordChange}
+                                            className="input w-full"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setIsChangingPassword(false);
+                                            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                                        }}
+                                        className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={submitPasswordChange}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition"
+                                    >
+                                        Update Password
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
