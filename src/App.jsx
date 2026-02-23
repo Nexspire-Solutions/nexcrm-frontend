@@ -162,6 +162,9 @@ import MenuBuilder from './pages/cms/MenuBuilder';
 import SectionBuilder from './pages/cms/SectionBuilder';
 import BlogBuilder from './pages/cms/BlogBuilder';
 import MediaLibrary from './pages/cms/MediaLibrary';
+import PlaceholderPage from './pages/cms/PlaceholderPage';
+import TemplatesGallery from './pages/cms/TemplatesGallery';
+import PageBuilder from './pages/cms/PageBuilder';
 
 // Automation
 import Workflows from './pages/automation/Workflows';
@@ -184,17 +187,21 @@ function AppRoutes() {
       {/* CMS Builder Routes (Dedicated Layout) */}
       <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
         <Route path="/cms" element={<CMSLayout />}>
-          <Route index element={<Navigate to="/cms/header" replace />} />
+          <Route index element={<Navigate to="/cms/home" replace />} />
+          <Route path="home" element={<PlaceholderPage />} />
           <Route path="header" element={<MenuBuilder mode="header" />} />
           <Route path="footer" element={<MenuBuilder mode="footer" />} />
           <Route path="theme" element={<ThemeEditor />} />
-          <Route path="home" element={<SectionBuilder />} />
           <Route path="banners" element={<CMSManagement activeTab="banners" />} />
-          <Route path="pages" element={<SectionBuilder />} /> {/* Re-use SectionBuilder for generic pages too */}
+          <Route path="sections" element={<SectionBuilder />} />
+          <Route path="pages" element={<CMSManagement activeTab="pages" />} />
           <Route path="blog" element={<BlogBuilder />} />
           <Route path="media" element={<MediaLibrary />} />
+          <Route path="templates" element={<TemplatesGallery />} />
+          <Route path="builder/:slug" element={<PageBuilder />} />
+          <Route path="builder" element={<PageBuilder />} />
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/cms/header" replace />} />
+          <Route path="*" element={<Navigate to="/cms/home" replace />} />
         </Route>
       </Route>
 

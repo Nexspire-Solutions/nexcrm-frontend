@@ -21,27 +21,29 @@ export default function CMSSidebar({ isOpen, setIsOpen }) {
         {
             title: 'Dashboard',
             items: [
-                { name: 'Home', path: '/cms/overview', icon: <FiHome /> },
+                { name: 'Home', path: '/cms/home', icon: <FiHome /> },
             ]
         },
         {
             title: 'Content',
             items: [
                 { name: 'Pages', path: '/cms/pages', icon: <FiLayout /> },
+                { name: 'Blog', path: '/cms/blog', icon: <FiEdit3 /> },
+                { name: 'Banners', path: '/cms/banners', icon: <FiImage /> },
             ]
         },
         {
             title: 'Appearance',
             items: [
-                { name: 'Themes', path: '/cms/templates', icon: <FiLayers /> },
-                { name: 'Menus', path: '/cms/menus', icon: <FiMenu /> },
-                { name: 'Website Builder', path: '/builder', icon: <FiPenTool /> },
+                { name: 'Themes', path: '/cms/theme', icon: <FiLayers /> },
+                { name: 'Header Menu', path: '/cms/header', icon: <FiMenu /> },
+                { name: 'Footer Menu', path: '/cms/footer', icon: <FiMenu /> },
             ]
         },
         {
             title: 'System',
             items: [
-                { name: 'Settings', path: '/cms/settings', icon: <FiSettings /> },
+                { name: 'Media Library', path: '/cms/media', icon: <FiImage /> },
             ]
         }
     ];
@@ -103,7 +105,7 @@ export default function CMSSidebar({ isOpen, setIsOpen }) {
             {/* Footer / User Profile */}
             <div className="absolute bottom-0 w-full p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
                 <button
-                    onClick={() => navigate('/cms/overview')}
+                    onClick={() => navigate('/cms/home')}
                     className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700 justify-center"
                 >
                     <FiHome className="text-lg" />

@@ -30,7 +30,7 @@ const PlaceholderPage = () => {
                     icon={FiLayout}
                     title="Page Builder"
                     desc="Visually build pages with drag & drop or direct code editing."
-                    onClick={() => navigate('/cms/builder')}
+                    onClick={() => navigate('/cms/templates')}
                 />
                 <QuickAction
                     icon={FiImage}
@@ -42,25 +42,25 @@ const PlaceholderPage = () => {
                     icon={FiSidebar}
                     title="Menus"
                     desc="Configure header and footer navigation links."
-                    onClick={() => navigate('/cms/menus')}
+                    onClick={() => navigate('/cms/header')}
                 />
                 <QuickAction
                     icon={FiSettings}
                     title="Settings"
                     desc="Global site settings, SEO defaults, and themes."
-                    onClick={() => navigate('/cms/settings')}
+                    onClick={() => navigate('/cms/theme')}
                 />
             </div>
 
             <div className="bg-gradient-to-r from-indigo-900 to-purple-900 rounded-2xl p-8 text-white">
                 <div className="max-w-2xl">
                     <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded text-white mb-4 inline-block">NEW FEATURE</span>
-                    <h2 className="text-2xl font-bold mb-4">Hybrid Builder is Live! 🚀</h2>
+                    <h2 className="text-2xl font-bold mb-4">Hybrid Builder is Live!</h2>
                     <p className="text-indigo-200 mb-6">
                         Experience the power of our new internal engine. Switch seamlessly between Visual Mode and Code Mode to build pixel-perfect layouts.
                     </p>
                     <button
-                        onClick={() => navigate('/cms/builder')}
+                        onClick={() => navigate('/cms/templates')}
                         className="bg-white text-indigo-900 px-6 py-2 rounded-lg font-bold hover:bg-indigo-50 transition-colors"
                     >
                         Try Builder Now

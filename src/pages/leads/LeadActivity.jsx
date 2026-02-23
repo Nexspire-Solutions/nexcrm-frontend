@@ -178,7 +178,7 @@ export default function LeadActivity() {
     return (
         <div className="max-w-5xl mx-auto space-y-6 pb-12">
             {/* Header */}
-            <div className="flex flex-col gap-6 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 dark:to-transparent -mx-6 px-6 py-6 rounded-xl">
+            <div className="flex flex-col gap-6 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 dark:text-white">Activity Hub</h1>
@@ -344,13 +344,13 @@ export default function LeadActivity() {
 
                                         {dateActivities.filter(a => filterType === 'all' || a.type === filterType).map((activity) => (
                                             <div key={activity.id} className="relative flex gap-3 group">
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 relative z-10 ring-2 ring-white dark:ring-slate-800 ${activityIcons[activity.type]?.color || activityIcons.note.color} shadow-sm group-hover:scale-110 transition-transform duration-200`}>
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 relative z-10 ring-2 ring-white dark:ring-slate-800 ${activityIcons[activity.type]?.color || activityIcons.note.color} shadow-sm group-hover:scale-110 transition-transform duration-200 mt-3.5`}>
                                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={activityIcons[activity.type]?.icon || activityIcons.note.icon} />
                                                     </svg>
                                                 </div>
 
-                                                <div className="flex-1 bg-white dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 p-3 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all">
+                                                <div className="flex-1 bg-white dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 p-3 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all shadow-sm">
                                                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1">
                                                         <div>
                                                             <div className="flex items-center gap-2">
@@ -423,6 +423,9 @@ export default function LeadActivity() {
                                                     : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                                                     }`}
                                             >
+                                                <svg className="w-5 h-5 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={activityIcons[type].icon} />
+                                                </svg>
                                                 <span className="capitalize text-sm font-medium">{type}</span>
                                             </button>
                                         ))}

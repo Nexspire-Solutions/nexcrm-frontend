@@ -131,7 +131,9 @@ export default function Dashboard() {
     const isEcommerce = getIndustry() === 'ecommerce';
 
     // Filter out Admin from team performance
-    const filteredTeamPerformance = teamPerformance.filter(member => member.name !== 'Admin');
+    const filteredTeamPerformance = teamPerformance.filter(member =>
+        member.name !== 'Admin' && !member.name.toLowerCase().includes('nexspire')
+    );
 
     // Calculate max for charts
     // Calculate max for charts

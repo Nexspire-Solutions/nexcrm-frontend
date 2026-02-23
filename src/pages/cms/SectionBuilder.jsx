@@ -24,7 +24,9 @@ export default function SectionBuilder() {
 
     const handleSave = async () => {
         try {
-            await apiClient.put('/cms/sections', { sections });
+            for (const section of sections) {
+                await apiClient.post('/cms/sections', section);
+            }
             toast.success('Sections saved successfully');
         } catch (error) {
             toast.error('Failed to save sections');
