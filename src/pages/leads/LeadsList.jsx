@@ -5,9 +5,18 @@ import toast from 'react-hot-toast';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import LeadsKanban from './LeadsKanban';
+import BulkImportModal from '../../components/common/BulkImportModal';
 import { useDashboardRefresh } from '../../contexts/DashboardRefreshContext';
 
-
+const CRM_FIELDS = [
+    { value: 'contactName', label: 'Contact Name (Required)' },
+    { value: 'email', label: 'Email' },
+    { value: 'phone', label: 'Phone' },
+    { value: 'company', label: 'Company' },
+    { value: 'leadSource', label: 'Lead Source' },
+    { value: 'estimatedValue', label: 'Estimated Value' },
+    { value: 'notes', label: 'Notes' },
+];
 
 const statusConfig = {
     new: { label: 'New', class: 'badge-primary' },
@@ -23,6 +32,7 @@ export default function LeadsList() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [showModal, setShowModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     const [editingLead, setEditingLead] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
@@ -262,6 +272,16 @@ export default function LeadsList() {
                             </svg>
                         </button>
                     </div>
+                    {/* Import Button */}
+                    <button
+                        onClick={() => setShowImportModal(true)}
+                        className="btn-secondary flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-800"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <span className="hidden sm:inline">Import</span>
+                    </button>
                     <button
                         onClick={openCreateModal}
                         className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow"
@@ -570,6 +590,16 @@ export default function LeadsList() {
                 confirmText="Delete"
                 cancelText="Cancel"
                 variant="danger"
+            />
+
+            <BulkImportModal
+                isOpen={showImportModal}
+                onClose={() => setShowImportModal(false)}
+                onSuccess={fetchLeads}
+                entityName="Leads"
+                fields={CRM_FIELDS}
+                requiredField="contactName"
+                onImport={(data) => leadsAPI.bulkImport(data)}
             />
         </div>
     );

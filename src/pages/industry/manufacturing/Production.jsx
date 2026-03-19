@@ -1,23 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import ProHeader from '../../../components/common/ProHeader';
 import ProTable from '../../../components/common/ProTable';
 import ProCard from '../../../components/common/ProCard';
 import StatusBadge from '../../../components/common/StatusBadge';
 import apiClient from '../../../api/axios';
+import toast from 'react-hot-toast';
+
+const initialFormData = {
+    product_id: '',
+    quantity: '',
+    priority: 'normal',
+    planned_start: '',
+    planned_end: '',
+    produced_quantity: '',
+    rejected_quantity: '',
+    notes: ''
+};
 
 export default function Production() {
     const [production, setProduction] = useState([]);
     const [products, setProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({
-        product_id: '',
-        quantity: '',
-        priority: 'normal',
-        planned_start: '',
-        planned_end: '',
-        notes: ''
-    });
+    const [editingOrder, setEditingOrder] = useState(null);
+    const [formData, setFormData] = useState(initialFormData);
 
     useEffect(() => {
         fetchProduction();
@@ -30,6 +36,7 @@ export default function Production() {
             setProduction(response.data.data || []);
         } catch (error) {
             console.error('Failed to fetch production:', error);
+            toast.error('Failed to load production orders');
             setProduction([]);
         } finally {
             setIsLoading(false);
@@ -38,23 +45,43 @@ export default function Production() {
 
     const fetchProducts = async () => {
         try {
-            const response = await apiClient.get('/production/products');
+            const response = await apiClient.get('/production/products', { params: { limit: 200 } });
             setProducts(response.data?.data || response.data || []);
         } catch (error) {
             console.error('Failed to fetch products:', error);
+            toast.error('Failed to load manufactured products');
         }
+    };
+
+    const resetForm = () => {
+        setEditingOrder(null);
+        setFormData(initialFormData);
+        setShowModal(false);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await apiClient.post('/production', formData);
-            setShowModal(false);
-            setFormData({ product_id: '', quantity: '', priority: 'normal', planned_start: '', planned_end: '', notes: '' });
+            const payload = {
+                ...formData,
+                quantity: Number(formData.quantity || 0),
+                produced_quantity: formData.produced_quantity === '' ? undefined : Number(formData.produced_quantity || 0),
+                rejected_quantity: formData.rejected_quantity === '' ? undefined : Number(formData.rejected_quantity || 0)
+            };
+
+            if (editingOrder) {
+                await apiClient.put(`/production/${editingOrder.id}`, payload);
+                toast.success('Production order updated');
+            } else {
+                await apiClient.post('/production', payload);
+                toast.success('Production order created');
+            }
+
+            resetForm();
             fetchProduction();
         } catch (error) {
             console.error('Failed to create order:', error);
-            alert('Failed to create production order');
+            toast.error(error.response?.data?.error || 'Failed to save production order');
         }
     };
 
@@ -78,16 +105,26 @@ export default function Production() {
 
         const reader = new FileReader();
         reader.onload = async (event) => {
-            const text = event.target.result;
+            const text = String(event.target?.result || '');
             const rows = text.split('\n').slice(1);
             let imported = 0;
             for (const row of rows) {
-                const [, , quantity, priority] = row.split(',');
-                if (quantity) {
+                const [, productValue, quantity, priority, plannedStart, plannedEnd, notes] = row.split(',');
+                const product = products.find((entry) => {
+                    const needle = productValue?.trim();
+                    if (!needle) return false;
+                    return String(entry.id) === needle || entry.name === needle || entry.sku === needle;
+                });
+
+                if (product && quantity) {
                     try {
                         await apiClient.post('/production', {
+                            product_id: product.id,
                             quantity: parseInt(quantity),
-                            priority: priority?.trim() || 'normal'
+                            priority: priority?.trim() || 'normal',
+                            planned_start: plannedStart?.trim() || '',
+                            planned_end: plannedEnd?.trim() || '',
+                            notes: notes?.trim() || ''
                         });
                         imported++;
                     } catch (err) {
@@ -95,18 +132,133 @@ export default function Production() {
                     }
                 }
             }
-            alert(`Imported ${imported} production orders`);
+
+            toast.success(`Imported ${imported} production orders`);
             fetchProduction();
         };
         reader.readAsText(file);
+        e.target.value = '';
+    };
+
+    const openCreateModal = () => {
+        setEditingOrder(null);
+        setFormData(initialFormData);
+        setShowModal(true);
+    };
+
+    const openEditModal = (order) => {
+        setEditingOrder(order);
+        setFormData({
+            product_id: String(order.product_id || ''),
+            quantity: order.quantity ?? '',
+            priority: order.priority || 'normal',
+            planned_start: order.planned_start ? String(order.planned_start).split('T')[0] : '',
+            planned_end: order.planned_end ? String(order.planned_end).split('T')[0] : '',
+            produced_quantity: order.produced_quantity ?? '',
+            rejected_quantity: order.rejected_quantity ?? '',
+            notes: order.notes || ''
+        });
+        setShowModal(true);
+    };
+
+    const updateStatus = async (order, nextStatus) => {
+        try {
+            const payload = { status: nextStatus };
+
+            if (nextStatus === 'completed') {
+                const producedQuantity = window.prompt('Produced quantity', order.produced_quantity ?? order.quantity ?? 0);
+                if (producedQuantity === null) return;
+                const rejectedQuantity = window.prompt('Rejected quantity', order.rejected_quantity ?? 0);
+                if (rejectedQuantity === null) return;
+
+                payload.produced_quantity = Number(producedQuantity || 0);
+                payload.rejected_quantity = Number(rejectedQuantity || 0);
+            }
+
+            await apiClient.patch(`/production/${order.id}/status`, payload);
+            toast.success(`Order moved to ${nextStatus.replace('_', ' ')}`);
+            fetchProduction();
+        } catch (error) {
+            console.error('Failed to update production status:', error);
+            toast.error(error.response?.data?.error || 'Failed to update production status');
+        }
     };
 
     const columns = [
-        { header: 'Order ID', accessor: 'id', className: 'font-medium' },
+        { header: 'Order #', accessor: 'order_number', render: (row) => row.order_number || `PO-${row.id}`, className: 'font-medium text-slate-900 dark:text-white' },
         { header: 'Product', accessor: 'product', render: (row) => row.product || row.product_name || '-', className: 'font-medium text-slate-900 dark:text-white' },
         { header: 'Quantity', accessor: 'quantity' },
-        { header: 'Due Date', accessor: 'dueDate', render: (row) => (row.dueDate || row.planned_end) ? new Date(row.dueDate || row.planned_end).toLocaleDateString() : '-' },
-        { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status || 'pending'} variant={row.status === 'completed' ? 'success' : row.status === 'in_progress' ? 'info' : 'warning'} /> },
+        {
+            header: 'Schedule',
+            accessor: 'planned_start',
+            render: (row) => (
+                <div className="text-sm">
+                    <div>{row.planned_start ? new Date(row.planned_start).toLocaleDateString('en-IN') : 'Not set'}</div>
+                    <div className="text-xs text-slate-500">{row.planned_end ? `to ${new Date(row.planned_end).toLocaleDateString('en-IN')}` : 'No end date'}</div>
+                </div>
+            )
+        },
+        {
+            header: 'Output',
+            accessor: 'produced_quantity',
+            render: (row) => (
+                <div className="text-sm">
+                    <div>Produced: {Number(row.produced_quantity || 0).toLocaleString('en-IN')}</div>
+                    <div className="text-xs text-slate-500">Rejected: {Number(row.rejected_quantity || 0).toLocaleString('en-IN')}</div>
+                </div>
+            )
+        },
+        { header: 'Priority', accessor: 'priority', render: (row) => <span className="capitalize">{row.priority || 'normal'}</span> },
+        {
+            header: 'Status',
+            accessor: 'status',
+            render: (row) => {
+                const variant = row.status === 'completed'
+                    ? 'success'
+                    : row.status === 'cancelled'
+                        ? 'error'
+                        : row.status === 'in_progress'
+                            ? 'info'
+                            : 'warning';
+                return <StatusBadge status={row.status || 'planned'} variant={variant} />;
+            }
+        },
+        {
+            header: 'Actions',
+            accessor: 'actions',
+            render: (row) => (
+                <div className="flex flex-wrap gap-2">
+                    <button onClick={() => openEditModal(row)} className="px-2 py-1 text-xs rounded-md border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700">
+                        Edit
+                    </button>
+                    {row.status === 'planned' && (
+                        <button onClick={() => updateStatus(row, 'in_progress')} className="px-2 py-1 text-xs rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200">
+                            Start
+                        </button>
+                    )}
+                    {row.status === 'in_progress' && (
+                        <>
+                            <button onClick={() => updateStatus(row, 'on_hold')} className="px-2 py-1 text-xs rounded-md bg-amber-100 text-amber-700 hover:bg-amber-200">
+                                Hold
+                            </button>
+                            <button onClick={() => updateStatus(row, 'completed')} className="px-2 py-1 text-xs rounded-md bg-green-100 text-green-700 hover:bg-green-200">
+                                Complete
+                            </button>
+                        </>
+                    )}
+                    {row.status === 'on_hold' && (
+                        <button onClick={() => updateStatus(row, 'in_progress')} className="px-2 py-1 text-xs rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200">
+                            Resume
+                        </button>
+                    )}
+                    {!['completed', 'cancelled'].includes(row.status) && (
+                        <button onClick={() => updateStatus(row, 'cancelled')} className="px-2 py-1 text-xs rounded-md bg-red-100 text-red-700 hover:bg-red-200">
+                            Cancel
+                        </button>
+                    )}
+                </div>
+            )
+        }
     ];
 
     if (isLoading) {
@@ -139,7 +291,7 @@ export default function Production() {
                             </svg>
                             Export
                         </button>
-                        <button onClick={() => setShowModal(true)} className="btn-primary">New Order</button>
+                        <button onClick={openCreateModal} className="btn-primary">New Order</button>
                     </div>
                 }
             />
@@ -151,7 +303,7 @@ export default function Production() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                         </svg>
                         <p className="text-slate-500 dark:text-slate-400 mb-4">No production orders found</p>
-                        <button onClick={() => setShowModal(true)} className="btn-primary">Create First Order</button>
+                        <button onClick={openCreateModal} className="btn-primary">Create First Order</button>
                     </div>
                 </ProCard>
             ) : (
@@ -165,8 +317,10 @@ export default function Production() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">New Production Order</h2>
-                            <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+                            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                                {editingOrder ? 'Edit Production Order' : 'New Production Order'}
+                            </h2>
+                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600">
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
@@ -182,7 +336,7 @@ export default function Production() {
                                 >
                                     <option value="">Select Product</option>
                                     {products.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                        <option key={p.id} value={p.id}>{p.name} {p.sku ? `(${p.sku})` : ''}</option>
                                     ))}
                                 </select>
                             </div>
@@ -229,6 +383,28 @@ export default function Production() {
                                     />
                                 </div>
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Produced Quantity</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={formData.produced_quantity}
+                                        onChange={(e) => setFormData({ ...formData, produced_quantity: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Rejected Quantity</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={formData.rejected_quantity}
+                                        onChange={(e) => setFormData({ ...formData, rejected_quantity: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                    />
+                                </div>
+                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notes</label>
                                 <textarea
@@ -239,11 +415,11 @@ export default function Production() {
                                 ></textarea>
                             </div>
                             <div className="flex justify-end gap-3 pt-4">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
+                                <button type="button" onClick={resetForm} className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
                                     Cancel
                                 </button>
                                 <button type="submit" className="btn-primary">
-                                    Create Order
+                                    {editingOrder ? 'Save Changes' : 'Create Order'}
                                 </button>
                             </div>
                         </form>

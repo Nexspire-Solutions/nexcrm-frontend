@@ -424,8 +424,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'Products', path: '/manufactured-products', icon: Icons.inventory },
                 { name: 'Work Orders', path: '/work-orders', icon: Icons.orders },
                 { name: 'Raw Materials', path: '/materials', icon: Icons.inventory },
+                { name: 'Suppliers', path: '/suppliers', icon: Icons.users },
+                { name: 'Material Ledger', path: '/material-movements', icon: Icons.activity },
                 { name: 'Quality Control', path: '/quality', icon: Icons.activity },
                 { name: 'Inventory', path: '/manufacturing-inventory', icon: Icons.inventory },
+                { name: 'Invoices', path: '/manufacturing-invoices', icon: Icons.chart },
                 { name: 'CMS', path: '/cms', icon: Icons.cms }
             ]
         },

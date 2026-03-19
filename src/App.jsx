@@ -130,9 +130,14 @@ import IndustryCMS from './pages/industry/IndustryCMS';
 import Production from './pages/industry/manufacturing/Production';
 import WorkOrders from './pages/industry/manufacturing/WorkOrders';
 import RawMaterials from './pages/industry/manufacturing/RawMaterials';
+import Suppliers from './pages/industry/manufacturing/Suppliers';
+import MaterialMovements from './pages/industry/manufacturing/MaterialMovements';
 import QualityControl from './pages/industry/manufacturing/QualityControl';
 import ManufacturingInventory from './pages/industry/manufacturing/ManufacturingInventory';
 import ManufacturingProducts from './pages/industry/manufacturing/Products';
+import ManufacturingInvoices from './pages/industry/manufacturing/ManufacturingInvoices';
+import ManufacturingInvoiceForm from './pages/industry/manufacturing/ManufacturingInvoiceForm';
+import ManufacturingInvoiceView from './pages/industry/manufacturing/ManufacturingInvoiceView';
 
 // Logistics
 import Shipments from './pages/industry/logistics/Shipments';
@@ -154,6 +159,7 @@ import PaymentSettings from './pages/settings/PaymentSettings';
 // Admin
 import SmtpSettings from './pages/admin/SmtpSettings';
 import IndustryTest from './pages/admin/IndustryTest';
+import InvoiceView from './pages/admin/InvoiceView';
 // CMS Layout
 import CMSLayout from './components/layout/CMSLayout';
 
@@ -356,8 +362,14 @@ function AppRoutes() {
           <Route path="manufactured-products" element={<ManufacturingProducts />} />
           <Route path="work-orders" element={<WorkOrders />} />
           <Route path="materials" element={<RawMaterials />} />
+          <Route path="suppliers" element={<Suppliers />} />
+          <Route path="material-movements" element={<MaterialMovements />} />
           <Route path="quality" element={<QualityControl />} />
           <Route path="manufacturing-inventory" element={<ManufacturingInventory />} />
+          <Route path="manufacturing-invoices" element={<ManufacturingInvoices />} />
+          <Route path="manufacturing-invoices/new" element={<ManufacturingInvoiceForm />} />
+          <Route path="manufacturing-invoices/:id/edit" element={<ManufacturingInvoiceForm />} />
+          <Route path="manufacturing-invoices/:id" element={<ManufacturingInvoiceView />} />
 
           {/* Logistics */}
           <Route path="shipments" element={<Shipments />} />
@@ -393,11 +405,12 @@ function AppRoutes() {
             <Route path="automation/history" element={<ExecutionHistory />} />
           </Route>
 
-          {/* Settings - Admin Only */}
+          {/* Settings & Admin routes */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="settings/theme-editor" element={<ThemeEditor />} />
             <Route path="settings/payment" element={<PaymentSettings />} />
             <Route path="settings/smtp" element={<SmtpSettings />} />
+            <Route path="invoices/:id" element={<InvoiceView />} />
           </Route>
         </Route>
       </Route>

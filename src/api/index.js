@@ -52,6 +52,11 @@ export const clientsAPI = {
         return response.data;
     },
 
+    bulkImport: async (clients) => {
+        const response = await apiClient.post('/clients/bulk-import', { clients });
+        return response.data;
+    },
+
     getStats: async () => {
         const response = await apiClient.get('/clients/stats');
         return response.data;
@@ -141,6 +146,13 @@ export const leadsAPI = {
 
     create: async (data) => {
         const response = await apiClient.post('/leads', transformLeadData(data));
+        return response.data;
+    },
+
+    bulkImport: async (leads) => {
+        // Transform array of camelCase leads to snake_case leads for API
+        const transformedLeads = leads.map(transformLeadData);
+        const response = await apiClient.post('/leads/bulk-import', { leads: transformedLeads });
         return response.data;
     },
 
@@ -639,7 +651,19 @@ export const workflowAPI = {
     getTemplates: async () => {
         const response = await apiClient.get('/workflows/meta/templates');
         return response.data;
+    }
+};
+
+// Invoices API - for managing invoices
+export const invoicesAPI = {
+    getAll: async () => {
+        const response = await apiClient.get('/invoices');
+        return response.data;
     },
+    getById: async (id) => {
+        const response = await apiClient.get(`/invoices/${id}`);
+        return response.data;
+    }
 };
 
 // Push Notifications API - for managing mobile push notifications

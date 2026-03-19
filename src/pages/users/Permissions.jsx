@@ -65,10 +65,13 @@ const allModules = [
     { id: 'cases', name: 'Cases', industries: ['legal'] },
     { id: 'documents', name: 'Documents', industries: ['legal', 'services'] },
     { id: 'billing', name: 'Billing', industries: ['legal', 'services'] },
+    { id: 'invoices', name: 'Invoices', industries: ['manufacturing', 'logistics', 'ecommerce', 'legal'] },
 
     // Operations
     { id: 'production', name: 'Production', industries: ['manufacturing'] },
     { id: 'work_orders', name: 'Work Orders', industries: ['manufacturing'] },
+    { id: 'suppliers', name: 'Suppliers', industries: ['manufacturing'] },
+    { id: 'material_movements', name: 'Material Movements', industries: ['manufacturing'] },
     { id: 'vehicles', name: 'Vehicles', industries: ['logistics'] },
     { id: 'tracking', name: 'Tracking', industries: ['logistics'] },
     { id: 'shipments', name: 'Shipments', industries: ['logistics'] },
