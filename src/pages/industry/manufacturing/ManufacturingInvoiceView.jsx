@@ -141,6 +141,53 @@ export default function ManufacturingInvoiceView() {
         }
     };
 
+    const handlePrint = () => {
+        const printArea = document.querySelector('.invoice-print-area');
+        if (!printArea) { window.print(); return; }
+
+        const printWindow = window.open('', '_blank', 'width=900,height=700');
+        if (!printWindow) { window.print(); return; }
+
+        // Collect all stylesheets from the current page
+        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+            .map(el => el.outerHTML)
+            .join('\n');
+
+        printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+    <title>${invoice?.invoice_number || 'Invoice'}</title>
+    ${styles}
+    <style>
+        body { margin: 0; padding: 20px; background: white; }
+        .invoice-doc { box-shadow: none; border: none; border-radius: 12px; max-width: 900px; margin: 0 auto; }
+        .invoice-header-band { background-color: #263B61 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .invoice-header-band * { color: white !important; }
+        .invoice-header-band .invoice-header-label { color: #c8cfe0 !important; }
+        .invoice-table-head { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .invoice-balance-due { color: #dc2626 !important; }
+        .invoice-balance-paid { color: #16a34a !important; }
+        .invoice-paid-text { color: #16a34a !important; }
+        @media print {
+            body { padding: 0; }
+            .invoice-doc { border-radius: 0; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body>
+    ${printArea.innerHTML}
+</body>
+</html>`);
+        printWindow.document.close();
+        printWindow.onload = () => {
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 300);
+        };
+    };
+
     if (loading) {
         return (
             <div className="p-6 max-w-6xl mx-auto">
@@ -192,7 +239,7 @@ export default function ManufacturingInvoiceView() {
                             <FiDownload className="w-4 h-4" />
                             PDF
                         </button>
-                        <button onClick={() => window.print()} className="btn-primary flex items-center gap-2">
+                        <button onClick={handlePrint} className="btn-primary flex items-center gap-2">
                             <FiPrinter className="w-4 h-4" />
                             Print
                         </button>
