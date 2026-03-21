@@ -358,18 +358,38 @@ function AppRoutes() {
           <Route path="billing" element={<Billing />} />
 
           {/* Manufacturing */}
-          <Route path="production" element={<Production />} />
-          <Route path="manufactured-products" element={<ManufacturingProducts />} />
-          <Route path="work-orders" element={<WorkOrders />} />
-          <Route path="materials" element={<RawMaterials />} />
-          <Route path="suppliers" element={<Suppliers />} />
-          <Route path="material-movements" element={<MaterialMovements />} />
-          <Route path="quality" element={<QualityControl />} />
-          <Route path="manufacturing-inventory" element={<ManufacturingInventory />} />
-          <Route path="manufacturing-invoices" element={<ManufacturingInvoices />} />
-          <Route path="manufacturing-invoices/new" element={<ManufacturingInvoiceForm />} />
-          <Route path="manufacturing-invoices/:id/edit" element={<ManufacturingInvoiceForm />} />
-          <Route path="manufacturing-invoices/:id" element={<ManufacturingInvoiceView />} />
+          <Route element={<ProtectedRoute requiredPermission={['production', 'read']} />}>
+            <Route path="production" element={<Production />} />
+          </Route>
+          <Route element={<ProtectedRoute requiredPermission={['manufactured_products', 'read']} />}>
+            <Route path="manufactured-products" element={<ManufacturingProducts />} />
+          </Route>
+          <Route element={<ProtectedRoute requiredPermission={['work_orders', 'read']} />}>
+            <Route path="work-orders" element={<WorkOrders />} />
+          </Route>
+          <Route element={<ProtectedRoute requiredPermission={['raw_materials', 'read']} />}>
+            <Route path="materials" element={<RawMaterials />} />
+          </Route>
+          <Route element={<ProtectedRoute requiredPermission={['suppliers', 'read']} />}>
+            <Route path="suppliers" element={<Suppliers />} />
+          </Route>
+          <Route element={<ProtectedRoute requiredPermission={['material_movements', 'read']} />}>
+            <Route path="material-movements" element={<MaterialMovements />} />
+          </Route>
+          <Route element={<ProtectedRoute requiredPermission={['quality_checks', 'read']} />}>
+            <Route path="quality" element={<QualityControl />} />
+          </Route>
+          <Route element={<ProtectedRoute requiredPermission={['manufacturing_inventory', 'read']} />}>
+            <Route path="manufacturing-inventory" element={<ManufacturingInventory />} />
+          </Route>
+          <Route element={<ProtectedRoute requiredPermission={['invoices', 'read']} />}>
+            <Route path="manufacturing-invoices" element={<ManufacturingInvoices />} />
+            <Route path="manufacturing-invoices/:id" element={<ManufacturingInvoiceView />} />
+          </Route>
+          <Route element={<ProtectedRoute requiredPermission={['invoices', 'create']} />}>
+            <Route path="manufacturing-invoices/new" element={<ManufacturingInvoiceForm />} />
+            <Route path="manufacturing-invoices/:id/edit" element={<ManufacturingInvoiceForm />} />
+          </Route>
 
           {/* Logistics */}
           <Route path="shipments" element={<Shipments />} />

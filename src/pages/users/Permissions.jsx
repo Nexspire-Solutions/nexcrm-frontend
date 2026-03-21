@@ -82,10 +82,14 @@ const allModules = [
     { id: 'case_documents', name: 'Case Documents',     industries: ['legal'] },
 
     // ─── Manufacturing ───────────────────────────────────────────────────
-    { id: 'production',         name: 'Production',         industries: ['manufacturing'] },
-    { id: 'work_orders',        name: 'Work Orders',         industries: ['manufacturing'] },
-    { id: 'suppliers',          name: 'Suppliers',           industries: ['manufacturing', 'ecommerce'] },
-    { id: 'material_movements', name: 'Material Movements',  industries: ['manufacturing'] },
+    { id: 'production',              name: 'Production Orders',    industries: ['manufacturing'] },
+    { id: 'manufactured_products',   name: 'Manufactured Products',industries: ['manufacturing'] },
+    { id: 'work_orders',             name: 'Work Orders',          industries: ['manufacturing'] },
+    { id: 'raw_materials',           name: 'Raw Materials',        industries: ['manufacturing'] },
+    { id: 'suppliers',               name: 'Suppliers',            industries: ['manufacturing', 'ecommerce'] },
+    { id: 'material_movements',      name: 'Material Movements',   industries: ['manufacturing'] },
+    { id: 'quality_checks',          name: 'Quality Control',      industries: ['manufacturing'] },
+    { id: 'manufacturing_inventory', name: 'Manufacturing Inventory', industries: ['manufacturing'] },
 
     // ─── Logistics / Transport ───────────────────────────────────────────
     { id: 'shipments',      name: 'Shipments',          industries: ['logistics', 'ecommerce'] },
