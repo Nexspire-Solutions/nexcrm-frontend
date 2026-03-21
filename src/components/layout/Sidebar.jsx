@@ -733,11 +733,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                             className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity"
                         >
                             <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-sm">
-                                {user?.firstName?.[0] || 'U'}
+                                {user?.first_name?.[0] || 'U'}
                             </div>
                             <div className="flex-1 min-w-0 text-left">
                                 <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                                    {user?.firstName || 'User'}
+                                    {user?.first_name || 'User'}
                                 </p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 capitalize truncate">
                                     {user?.role || 'user'}

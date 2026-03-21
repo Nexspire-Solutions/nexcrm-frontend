@@ -12,8 +12,8 @@ export default function Settings() {
 
     // Profile State
     const [profileData, setProfileData] = useState({
-        firstName: user?.firstName || '',
-        lastName: user?.lastName || '',
+        first_name: user?.first_name || '',
+        last_name: user?.last_name || '',
         email: user?.email || '',
         phone: user?.phone || ''
     });
@@ -147,7 +147,7 @@ export default function Settings() {
                             <form onSubmit={handleProfileUpdate} className="space-y-6">
                                 <div className="flex items-center gap-6 mb-8">
                                     <div className="w-24 h-24 rounded-full bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-3xl font-bold text-brand-600 dark:text-brand-400 border-4 border-white dark:border-slate-700 shadow-lg">
-                                        {profileData.firstName[0]}
+                                         {profileData.first_name[0]}
                                     </div>
                                     <button type="button" className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                                         Change Avatar
@@ -158,8 +158,8 @@ export default function Settings() {
                                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">First Name</label>
                                         <input
                                             type="text"
-                                            value={profileData.firstName}
-                                            onChange={e => setProfileData({ ...profileData, firstName: e.target.value })}
+                                            value={profileData.first_name}
+                                            onChange={e => setProfileData({ ...profileData, first_name: e.target.value })}
                                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
                                         />
                                     </div>
@@ -167,8 +167,8 @@ export default function Settings() {
                                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Last Name</label>
                                         <input
                                             type="text"
-                                            value={profileData.lastName}
-                                            onChange={e => setProfileData({ ...profileData, lastName: e.target.value })}
+                                            value={profileData.last_name}
+                                            onChange={e => setProfileData({ ...profileData, last_name: e.target.value })}
                                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
                                         />
                                     </div>

@@ -18,8 +18,8 @@ export default function EmployeeDetail() {
 
     // Form state for editing
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
+        first_name: '',
+        last_name: '',
         phone: '',
         department: '',
         position: '',
@@ -34,8 +34,8 @@ export default function EmployeeDetail() {
     useEffect(() => {
         if (employee) {
             setFormData({
-                firstName: employee.firstName || '',
-                lastName: employee.lastName || '',
+                first_name: employee.first_name || '',
+                last_name: employee.last_name || '',
                 phone: employee.phone || '',
                 department: employee.department || '',
                 position: employee.position || '',
@@ -69,7 +69,7 @@ export default function EmployeeDetail() {
     };
 
     const handleSaveEmployee = async () => {
-        if (!formData.firstName) {
+        if (!formData.first_name) {
             toast.error('First name is required');
             return;
         }
@@ -77,8 +77,8 @@ export default function EmployeeDetail() {
         setIsSaving(true);
         try {
             await usersAPI.update(id, {
-                firstName: formData.firstName,
-                lastName: formData.lastName,
+                first_name: formData.first_name,
+                last_name: formData.last_name,
                 phone: formData.phone,
                 department: formData.department,
                 position: formData.position,
@@ -142,7 +142,7 @@ export default function EmployeeDetail() {
         return <span className={styles[status] || 'badge-gray'}>{labels[status] || status || 'Active'}</span>;
     };
 
-    const displayName = employee.firstName ? `${employee.firstName} ${employee.lastName || ''}`.trim() : employee.name || 'Unknown';
+    const displayName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || 'Unknown';
     const initials = displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
     return (
@@ -284,9 +284,9 @@ export default function EmployeeDetail() {
                             <label className="label">First Name *</label>
                             <input
                                 type="text"
-                                name="firstName"
+                                name="first_name"
                                 className="input"
-                                value={formData.firstName}
+                                value={formData.first_name}
                                 onChange={handleInputChange}
                             />
                         </div>
@@ -294,9 +294,9 @@ export default function EmployeeDetail() {
                             <label className="label">Last Name</label>
                             <input
                                 type="text"
-                                name="lastName"
+                                name="last_name"
                                 className="input"
-                                value={formData.lastName}
+                                value={formData.last_name}
                                 onChange={handleInputChange}
                             />
                         </div>

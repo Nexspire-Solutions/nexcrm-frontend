@@ -72,11 +72,11 @@ export default function MobileNav({ isOpen, onClose }) {
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-3">
                         <div className="avatar avatar-md text-sm">
-                            {user?.firstName?.[0] || 'U'}
+                            {user?.first_name?.[0] || 'U'}
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                                {user?.firstName} {user?.lastName}
+                                {user?.first_name} {user?.last_name}
                             </p>
                             <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
                                 {user?.role || 'User'}

@@ -8,8 +8,8 @@ export default function Profile() {
     const { user, updateUser } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
-        firstName: user?.firstName || '',
-        lastName: user?.lastName || '',
+        first_name: user?.first_name || '',
+        last_name: user?.last_name || '',
         email: user?.email || '',
         phone: user?.phone || '',
         role: user?.role || 'user',
@@ -20,8 +20,8 @@ export default function Profile() {
         if (user) {
             setFormData(prev => ({
                 ...prev,
-                firstName: user.firstName || '',
-                lastName: user.lastName || '',
+                first_name: user.first_name || '',
+                last_name: user.last_name || '',
                 email: user.email || '',
                 phone: user.phone || '',
                 role: user.role || 'user',
@@ -74,8 +74,8 @@ export default function Profile() {
     const handleSave = async () => {
         try {
             const updatedData = {
-                first_name: formData.firstName,
-                last_name: formData.lastName,
+                first_name: formData.first_name,
+                last_name: formData.last_name,
                 phone: formData.phone
             };
 
@@ -83,8 +83,8 @@ export default function Profile() {
 
             // Update local context immediately for UX
             updateUser({
-                firstName: formData.firstName,
-                lastName: formData.lastName,
+                first_name: formData.first_name,
+                last_name: formData.last_name,
                 phone: formData.phone
             });
 
@@ -153,11 +153,11 @@ export default function Profile() {
                 <div className="relative px-6 pb-6">
                     <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12">
                         <div className="w-24 h-24 rounded-full bg-white dark:bg-slate-900 border-4 border-white dark:border-slate-900 flex items-center justify-center text-2xl font-bold text-indigo-600 dark:text-indigo-400 shadow-lg">
-                            {formData.firstName?.[0]}{formData.lastName?.[0]}
+                            {formData.first_name?.[0]}{formData.last_name?.[0]}
                         </div>
                         <div className="flex-1">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                                {formData.firstName} {formData.lastName}
+                                {formData.first_name} {formData.last_name}
                             </h2>
                             <p className="text-sm text-slate-500 dark:text-slate-400">{getRoleLabel(formData.role)}</p>
                         </div>
@@ -203,13 +203,13 @@ export default function Profile() {
                         {isEditing ? (
                             <input
                                 type="text"
-                                name="firstName"
-                                value={formData.firstName}
+                                name="first_name"
+                                value={formData.first_name}
                                 onChange={handleChange}
                                 className="input w-full"
                             />
                         ) : (
-                            <p className="text-slate-900 dark:text-white">{formData.firstName || '—'}</p>
+                            <p className="text-slate-900 dark:text-white">{formData.first_name || '—'}</p>
                         )}
                     </div>
 
@@ -218,13 +218,13 @@ export default function Profile() {
                         {isEditing ? (
                             <input
                                 type="text"
-                                name="lastName"
-                                value={formData.lastName}
+                                name="last_name"
+                                value={formData.last_name}
                                 onChange={handleChange}
                                 className="input w-full"
                             />
                         ) : (
-                            <p className="text-slate-900 dark:text-white">{formData.lastName || '—'}</p>
+                            <p className="text-slate-900 dark:text-white">{formData.last_name || '—'}</p>
                         )}
                     </div>
 

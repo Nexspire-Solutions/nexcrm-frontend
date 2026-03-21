@@ -10,83 +10,99 @@ const roles = [
     { id: 'user', name: 'User', description: 'Basic read access' }
 ];
 
-// Define modules with their associated industries
-// 'all' means available to everyone (Core modules)
-// specific strings match the industry keys
+/**
+ * All modules with their associated industries.
+ * 'all' = core module available to every tenant.
+ * Other strings must match the industry keys returned by getIndustry().
+ * Kept in sync with featureConfig.js INDUSTRY_MODULES.
+ */
 const allModules = [
-    // Core Modules
-    { id: 'dashboard', name: 'Dashboard', industries: ['all'] },
-    { id: 'employees', name: 'Employees', industries: ['all'] },
-    { id: 'users', name: 'Roles & Permissions', industries: ['all'] },
-    { id: 'inquiries', name: 'Inquiries', industries: ['all'] },
-    { id: 'leads', name: 'Leads', industries: ['all'] },
-    { id: 'communications', name: 'Communications', industries: ['all'] },
-    { id: 'automation', name: 'Automation', industries: ['all'] },
+    // ─── Core (all tenants) ───────────────────────────────────────────────
+    { id: 'dashboard',      name: 'Dashboard',          industries: ['all'] },
+    { id: 'employees',      name: 'Employees',          industries: ['all'] },
+    { id: 'users',          name: 'Roles & Permissions',industries: ['all'] },
+    { id: 'leads',          name: 'Leads',              industries: ['all'] },
+    { id: 'inquiries',      name: 'Inquiries',          industries: ['all'] },
+    { id: 'communications', name: 'Communications',     industries: ['all'] },
+    { id: 'automation',     name: 'Automation',         industries: ['all'] },
+    { id: 'documents',      name: 'Documents',          industries: ['all', 'legal', 'services'] },
+    { id: 'clients',        name: 'Clients',            industries: ['all', 'services', 'consulting', 'legal'] },
+    { id: 'invoices',       name: 'Invoices',           industries: ['manufacturing', 'logistics', 'ecommerce', 'legal', 'services'] },
 
-    // Commerce & Inventory
-    { id: 'products', name: 'Products', industries: ['ecommerce', 'retail'] },
-    { id: 'orders', name: 'Orders', industries: ['ecommerce', 'retail', 'manufacturing'] },
-    { id: 'inventory', name: 'Inventory', industries: ['ecommerce', 'retail', 'manufacturing', 'logistics'] },
-    { id: 'returns', name: 'Returns', industries: ['ecommerce', 'retail'] },
-    { id: 'shipping', name: 'Shipping', industries: ['ecommerce', 'logistics'] },
-    { id: 'vendors', name: 'Vendors', industries: ['ecommerce', 'retail', 'manufacturing'] },
-    { id: 'coupons', name: 'Coupons', industries: ['ecommerce'] },
-    { id: 'reviews', name: 'Reviews', industries: ['ecommerce'] },
-    { id: 'cms', name: 'CMS', industries: ['ecommerce'] },
+    // ─── E-Commerce / Retail ─────────────────────────────────────────────
+    { id: 'products',       name: 'Products',           industries: ['ecommerce', 'retail'] },
+    { id: 'orders',         name: 'Orders',             industries: ['ecommerce', 'retail', 'manufacturing', 'restaurant'] },
+    { id: 'inventory',      name: 'Inventory',          industries: ['ecommerce', 'retail', 'manufacturing', 'logistics'] },
+    { id: 'returns',        name: 'Returns',            industries: ['ecommerce', 'retail'] },
+    { id: 'shipping',       name: 'Shipping',           industries: ['ecommerce', 'logistics'] },
+    { id: 'vendors',        name: 'Vendors',            industries: ['ecommerce', 'retail', 'manufacturing'] },
+    { id: 'coupons',        name: 'Coupons',            industries: ['ecommerce'] },
+    { id: 'reviews',        name: 'Reviews',            industries: ['ecommerce'] },
+    { id: 'cms',            name: 'CMS / Storefront',   industries: ['ecommerce'] },
 
-    // Real Estate
-    { id: 'properties', name: 'Properties', industries: ['realestate'] },
-    { id: 'viewings', name: 'Viewings', industries: ['realestate'] },
-    { id: 'listings', name: 'Listings', industries: ['realestate'] },
+    // ─── Real Estate ─────────────────────────────────────────────────────
+    { id: 'properties',     name: 'Properties',         industries: ['realestate'] },
+    { id: 'listings',       name: 'Listings',           industries: ['realestate'] },
+    { id: 'viewings',       name: 'Viewings',           industries: ['realestate'] },
 
-    // Services & Booking
-    { id: 'appointments', name: 'Appointments', industries: ['healthcare', 'salon', 'services', 'consulting'] },
-    { id: 'services', name: 'Services', industries: ['salon', 'services', 'consulting'] },
-    { id: 'patients', name: 'Patients', industries: ['healthcare'] },
-    { id: 'prescriptions', name: 'Prescriptions', industries: ['healthcare'] },
-    { id: 'bookings', name: 'Bookings', industries: ['salon'] },
-    { id: 'clients', name: 'Clients', industries: ['services', 'consulting', 'legal'] },
+    // ─── Services / Consulting / Salon ───────────────────────────────────
+    { id: 'appointments',   name: 'Appointments',       industries: ['healthcare', 'salon', 'services', 'consulting', 'fitness'] },
+    { id: 'services',       name: 'Services',           industries: ['salon', 'services', 'consulting'] },
+    { id: 'bookings',       name: 'Bookings',           industries: ['salon', 'services', 'fitness', 'travel', 'hospitality'] },
+    { id: 'billing',        name: 'Billing',            industries: ['legal', 'services', 'healthcare'] },
 
-    // Education
-    { id: 'courses', name: 'Courses', industries: ['education'] },
-    { id: 'students', name: 'Students', industries: ['education'] },
-    { id: 'enrollments', name: 'Enrollments', industries: ['education'] },
+    // ─── Healthcare ──────────────────────────────────────────────────────
+    { id: 'patients',       name: 'Patients',           industries: ['healthcare'] },
+    { id: 'prescriptions',  name: 'Prescriptions',      industries: ['healthcare'] },
 
-    // Hospitality
-    { id: 'rooms', name: 'Rooms', industries: ['hospitality'] },
-    { id: 'reservations', name: 'Reservations', industries: ['hospitality'] },
-    { id: 'housekeeping', name: 'Housekeeping', industries: ['hospitality'] },
+    // ─── Education ───────────────────────────────────────────────────────
+    { id: 'courses',        name: 'Courses',            industries: ['education'] },
+    { id: 'students',       name: 'Students',           industries: ['education'] },
+    { id: 'enrollments',    name: 'Enrollments',        industries: ['education'] },
 
-    // Fitness
-    { id: 'members', name: 'Members', industries: ['fitness'] },
-    { id: 'classes', name: 'Classes', industries: ['fitness'] },
+    // ─── Hospitality (Hotels) ────────────────────────────────────────────
+    { id: 'rooms',          name: 'Rooms',              industries: ['hospitality'] },
+    { id: 'reservations',   name: 'Reservations',       industries: ['hospitality', 'restaurant'] },
+    { id: 'guests',         name: 'Guests',             industries: ['hospitality', 'travel'] },
+    { id: 'housekeeping',   name: 'Housekeeping',       industries: ['hospitality'] },
 
-    // Legal & Finance
-    { id: 'cases', name: 'Cases', industries: ['legal'] },
-    { id: 'documents', name: 'Documents', industries: ['legal', 'services'] },
-    { id: 'billing', name: 'Billing', industries: ['legal', 'services'] },
-    { id: 'invoices', name: 'Invoices', industries: ['manufacturing', 'logistics', 'ecommerce', 'legal'] },
+    // ─── Travel / Tours ──────────────────────────────────────────────────
+    { id: 'tours',          name: 'Tours',              industries: ['travel', 'hospitality'] },
+    { id: 'tour_bookings',  name: 'Tour Bookings',      industries: ['travel', 'hospitality'] },
+    { id: 'destinations',   name: 'Destinations',       industries: ['travel', 'hospitality'] },
 
-    // Operations
-    { id: 'production', name: 'Production', industries: ['manufacturing'] },
-    { id: 'work_orders', name: 'Work Orders', industries: ['manufacturing'] },
-    { id: 'suppliers', name: 'Suppliers', industries: ['manufacturing'] },
-    { id: 'material_movements', name: 'Material Movements', industries: ['manufacturing'] },
-    { id: 'vehicles', name: 'Vehicles', industries: ['logistics'] },
-    { id: 'tracking', name: 'Tracking', industries: ['logistics'] },
-    { id: 'shipments', name: 'Shipments', industries: ['logistics'] },
+    // ─── Fitness / Gym ───────────────────────────────────────────────────
+    { id: 'gym_members',    name: 'Members',            industries: ['fitness'] },
+    { id: 'gym_classes',    name: 'Classes',            industries: ['fitness'] },
+    { id: 'memberships',    name: 'Memberships',        industries: ['fitness'] },
 
-    // Restaurant
-    { id: 'menu', name: 'Menu', industries: ['restaurant'] },
-    { id: 'tables', name: 'Tables', industries: ['restaurant'] },
-    { id: 'kitchen', name: 'Kitchen Orders', industries: ['restaurant'] }
+    // ─── Legal / Law Firm ────────────────────────────────────────────────
+    { id: 'legal_cases',    name: 'Cases',              industries: ['legal'] },
+    { id: 'legal_clients',  name: 'Legal Clients',      industries: ['legal'] },
+    { id: 'case_documents', name: 'Case Documents',     industries: ['legal'] },
+
+    // ─── Manufacturing ───────────────────────────────────────────────────
+    { id: 'production',         name: 'Production',         industries: ['manufacturing'] },
+    { id: 'work_orders',        name: 'Work Orders',         industries: ['manufacturing'] },
+    { id: 'suppliers',          name: 'Suppliers',           industries: ['manufacturing', 'ecommerce'] },
+    { id: 'material_movements', name: 'Material Movements',  industries: ['manufacturing'] },
+
+    // ─── Logistics / Transport ───────────────────────────────────────────
+    { id: 'shipments',      name: 'Shipments',          industries: ['logistics', 'ecommerce'] },
+    { id: 'vehicles',       name: 'Vehicles',           industries: ['logistics'] },
+    { id: 'tracking',       name: 'Tracking',           industries: ['logistics'] },
+
+    // ─── Restaurant / Food ───────────────────────────────────────────────
+    { id: 'menu',           name: 'Menu',               industries: ['restaurant'] },
+    { id: 'tables',         name: 'Tables',             industries: ['restaurant'] },
+    { id: 'kitchen',        name: 'Kitchen Orders',     industries: ['restaurant'] },
 ];
 
 const defaultPermissions = {
-    admin: { dashboard: ['read'], employees: ['create', 'read', 'update', 'delete'], users: ['create', 'read', 'update', 'delete'], inquiries: ['create', 'read', 'update', 'delete'], leads: ['create', 'read', 'update', 'delete'], communications: ['create', 'read', 'update', 'delete'] },
-    manager: { dashboard: ['read'], employees: ['read', 'update'], users: [], inquiries: ['create', 'read', 'update'], leads: ['create', 'read', 'update'], communications: ['create', 'read', 'update'] },
-    sales_operator: { dashboard: ['read'], employees: [], users: [], inquiries: ['read', 'update'], leads: ['create', 'read', 'update'], communications: ['read'] },
-    user: { dashboard: ['read'], employees: [], users: [], inquiries: ['read'], leads: ['read'], communications: [] }
+    admin: {},
+    manager: {},
+    sales_operator: {},
+    user: {}
 };
 
 export default function Permissions() {
@@ -94,22 +110,21 @@ export default function Permissions() {
     const { permissions, updatePermissions } = usePermissions();
     const currentIndustry = getIndustry();
 
-    // Local state for editing before saving (optional, but let's sync directly for simplicity or keep local?)
-    // User expects to click "Save Changes". So we should keep local state and then commit.
-    // However, to make sure it loads correctly, we initialize from context.
     const [localPermissions, setLocalPermissions] = useState(permissions);
     const [selectedRole, setSelectedRole] = useState('admin');
+    const [isSaving, setIsSaving] = useState(false);
 
-    // Sync local state when permissions change externally (e.g. reload)
+    // Sync local state whenever permissions change externally (e.g. page reload)
     useEffect(() => {
         setLocalPermissions(permissions);
     }, [permissions]);
 
-    // Filter modules based on current industry
+    // Filter modules to only show those relevant to this tenant's industry
     const modules = allModules.filter(m =>
         m.industries.includes('all') ||
         m.industries.includes(currentIndustry) ||
-        (currentIndustry === 'general' && m.industries.includes('services')) // Fallback for general
+        currentIndustry === 'all' ||
+        (currentIndustry === 'general' && m.industries.includes('services'))
     );
 
     const actions = ['create', 'read', 'update', 'delete'];
@@ -133,13 +148,46 @@ export default function Permissions() {
         });
     };
 
+    // Toggle all actions for a module at once
+    const toggleAllForModule = (module) => {
+        setLocalPermissions(prev => {
+            const rolePerms = prev[selectedRole] || {};
+            const modulePerms = rolePerms[module] || [];
+            const allGranted = actions.every(a => modulePerms.includes(a));
+            return {
+                ...prev,
+                [selectedRole]: {
+                    ...rolePerms,
+                    [module]: allGranted ? [] : [...actions]
+                }
+            };
+        });
+    };
+
     const hasPermission = (module, action) => {
         return localPermissions[selectedRole]?.[module]?.includes(action) || false;
     };
 
-    const handleSave = () => {
-        updatePermissions(localPermissions);
-        toast.success('Permissions saved successfully');
+    const hasAllPermissions = (module) => {
+        return actions.every(a => hasPermission(module, a));
+    };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            await updatePermissions(localPermissions);
+            toast.success('Permissions saved successfully');
+        } catch (err) {
+            toast.error('Failed to save permissions. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleResetToDefault = () => {
+        // Re-fetch from context defaults
+        setLocalPermissions(permissions);
+        toast.success('Reset to current saved permissions');
     };
 
     return (
@@ -147,20 +195,27 @@ export default function Permissions() {
             {/* Header */}
             <div className="page-header">
                 <div className="flex items-center gap-4">
-
                     <div>
                         <h1 className="page-title">Role Permissions</h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                             Configure access permissions for each role
+                            {currentIndustry && currentIndustry !== 'all' && (
+                                <span className="ml-2 badge-primary capitalize">{currentIndustry}</span>
+                            )}
                         </p>
                     </div>
                 </div>
-                <button onClick={handleSave} className="btn-primary">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Save Changes
-                </button>
+                <div className="flex gap-3">
+                    <button onClick={handleResetToDefault} className="btn-secondary" disabled={isSaving}>
+                        Reset
+                    </button>
+                    <button onClick={handleSave} className="btn-primary" disabled={isSaving}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                </div>
             </div>
 
             {/* Role Selector */}
@@ -193,6 +248,7 @@ export default function Permissions() {
                             {actions.map(action => (
                                 <th key={action} className="text-center capitalize">{action}</th>
                             ))}
+                            <th className="text-center">All</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -203,7 +259,7 @@ export default function Permissions() {
                                     <td key={action} className="text-center">
                                         <button
                                             onClick={() => togglePermission(module.id, action)}
-                                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${hasPermission(module.id, action)
+                                            className={`w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-colors ${hasPermission(module.id, action)
                                                 ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400'
                                                 : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
                                                 }`}
@@ -220,6 +276,25 @@ export default function Permissions() {
                                         </button>
                                     </td>
                                 ))}
+                                <td className="text-center">
+                                    <button
+                                        onClick={() => toggleAllForModule(module.id)}
+                                        title={hasAllPermissions(module.id) ? 'Revoke all' : 'Grant all'}
+                                        className={`w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-colors ${hasAllPermissions(module.id)
+                                            ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400'
+                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
+                                            }`}
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                d={hasAllPermissions(module.id)
+                                                    ? 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
+                                                    : 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
+                                                }
+                                            />
+                                        </svg>
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
@@ -247,6 +322,9 @@ export default function Permissions() {
                         <span className="text-slate-500 dark:text-slate-400">Remove records</span>
                     </div>
                 </div>
+                <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
+                    Only modules enabled for your industry ({currentIndustry}) are shown. Permissions are enforced in both frontend navigation and backend API.
+                </p>
             </div>
         </div>
     );

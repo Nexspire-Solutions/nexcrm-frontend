@@ -219,7 +219,6 @@ export const usersAPI = {
         return response.data;
     },
 
-
     resetPassword: async (id) => {
         const response = await apiClient.post(`/users/${id}/reset-password`);
         return response.data;

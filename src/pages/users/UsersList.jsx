@@ -29,11 +29,12 @@ export default function UsersList() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+    const [newUserCredentials, setNewUserCredentials] = useState(null);
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
+        first_name: '',
+        last_name: '',
         email: '',
-        password: '',
         phone: '',
         role: 'user',
         status: 'active'
@@ -57,10 +58,9 @@ export default function UsersList() {
 
     const resetForm = () => {
         setFormData({
-            firstName: '',
-            lastName: '',
+            first_name: '',
+            last_name: '',
             email: '',
-            password: '',
             phone: '',
             role: 'user',
             status: 'active'
@@ -68,12 +68,8 @@ export default function UsersList() {
     };
 
     const handleSubmit = async () => {
-        if (!formData.firstName.trim() || !formData.email.trim()) {
+        if (!formData.first_name.trim() || !formData.email.trim()) {
             toast.error('First name and email are required');
-            return;
-        }
-        if (!editingUser && !formData.password.trim()) {
-            toast.error('Password is required for new users');
             return;
         }
         setSaving(true);
@@ -81,13 +77,26 @@ export default function UsersList() {
             if (editingUser) {
                 await usersAPI.update(editingUser.id, formData);
                 toast.success('User updated successfully');
+                setShowModal(false);
+                resetForm();
+                fetchUsers();
             } else {
-                await usersAPI.create(formData);
-                toast.success('User created successfully');
+                const response = await usersAPI.create(formData);
+                if (response.credentials) {
+                    setNewUserCredentials({
+                        name: `${formData.first_name} ${formData.last_name}`.trim(),
+                        email: response.credentials.email,
+                        password: response.credentials.password,
+                        emailSent: response.emailSent
+                    });
+                    setShowCredentialsModal(true);
+                } else {
+                    toast.success(response.message || 'User created successfully');
+                }
+                setShowModal(false);
+                resetForm();
+                fetchUsers();
             }
-            setShowModal(false);
-            resetForm();
-            fetchUsers();
         } catch (error) {
             toast.error(error.response?.data?.error || 'Failed to save user');
         } finally {
@@ -103,10 +112,9 @@ export default function UsersList() {
 
     const openEditModal = (user) => {
         setFormData({
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
+            first_name: user.first_name || '',
+            last_name: user.last_name || '',
             email: user.email || '',
-            password: '',
             phone: user.phone || '',
             role: user.role || 'user',
             status: user.status || 'active'
@@ -116,7 +124,7 @@ export default function UsersList() {
     };
 
     const filteredUsers = users.filter(user => {
-        const matchesSearch = `${user.firstName} ${user.lastName} ${user.email}`.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = `${user.first_name} ${user.last_name} ${user.email}`.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesRole = filterRole === 'all' || user.role === filterRole;
         return matchesSearch && matchesRole;
     });
@@ -240,11 +248,11 @@ export default function UsersList() {
                                 <td>
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold">
-                                            {user.firstName?.[0]}{user.lastName?.[0]}
+                                            {user.first_name?.[0]}{user.last_name?.[0]}
                                         </div>
                                         <div>
                                             <p className="font-medium text-slate-900 dark:text-white">
-                                                {user.firstName} {user.lastName}
+                                                {user.first_name} {user.last_name}
                                             </p>
                                             <p className="text-sm text-slate-500 dark:text-slate-400">
                                                 {user.email}
@@ -265,10 +273,7 @@ export default function UsersList() {
                                 </td>
                                 <td>
                                     <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => openEditModal(user)}
-                                            className="btn-ghost btn-sm"
-                                        >
+                                        <button onClick={() => openEditModal(user)} className="btn-ghost btn-sm">
                                             Edit
                                         </button>
                                         <button
@@ -295,7 +300,7 @@ export default function UsersList() {
                 )}
             </div>
 
-            {/* User Modal */}
+            {/* Create / Edit Modal */}
             <Modal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
@@ -316,8 +321,8 @@ export default function UsersList() {
                             <input
                                 type="text"
                                 className="input"
-                                value={formData.firstName}
-                                onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                                value={formData.first_name}
+                                onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
                                 placeholder="John"
                             />
                         </div>
@@ -326,8 +331,8 @@ export default function UsersList() {
                             <input
                                 type="text"
                                 className="input"
-                                value={formData.lastName}
-                                onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                                value={formData.last_name}
+                                onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
                                 placeholder="Doe"
                             />
                         </div>
@@ -340,18 +345,22 @@ export default function UsersList() {
                             value={formData.email}
                             onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                             placeholder="john@example.com"
+                            disabled={!!editingUser}
                         />
+                        {editingUser && (
+                            <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
+                        )}
                     </div>
                     {!editingUser && (
-                        <div>
-                            <label className="label">Password *</label>
-                            <input
-                                type="password"
-                                className="input"
-                                value={formData.password}
-                                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                                placeholder="Enter password"
-                            />
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <div className="flex items-start gap-2">
+                                <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p className="text-sm text-blue-700 dark:text-blue-300">
+                                    A secure password will be auto-generated and sent to the user's email. You can copy it after creation.
+                                </p>
+                            </div>
                         </div>
                     )}
                     <div>
@@ -372,10 +381,10 @@ export default function UsersList() {
                                 value={formData.role}
                                 onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
                             >
-                                <option value="admin">Admin</option>
-                                <option value="manager">Manager</option>
-                                <option value="sales_operator">Sales Operator</option>
                                 <option value="user">User</option>
+                                <option value="sales_operator">Sales Operator</option>
+                                <option value="manager">Manager</option>
+                                <option value="admin">Admin</option>
                             </select>
                         </div>
                         <div>
@@ -391,6 +400,87 @@ export default function UsersList() {
                         </div>
                     </div>
                 </div>
+            </Modal>
+
+            {/* Credentials Modal */}
+            <Modal
+                isOpen={showCredentialsModal}
+                onClose={() => { setShowCredentialsModal(false); setNewUserCredentials(null); }}
+                title="User Created Successfully"
+                footer={
+                    <button
+                        onClick={() => { setShowCredentialsModal(false); setNewUserCredentials(null); }}
+                        className="btn-primary"
+                    >
+                        Done
+                    </button>
+                }
+            >
+                {newUserCredentials && (
+                    <div className="space-y-4">
+                        {newUserCredentials.emailSent ? (
+                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                                <div className="flex items-start gap-2">
+                                    <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p className="text-sm text-green-700 dark:text-green-300">
+                                        Login credentials have been sent to <strong>{newUserCredentials.email}</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                                <div className="flex items-start gap-2">
+                                    <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                                        Email service unavailable. Please share these credentials manually.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg space-y-3">
+                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                {newUserCredentials.name}'s Login Credentials
+                            </h4>
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded border">
+                                    <div>
+                                        <p className="text-xs text-slate-500">Email</p>
+                                        <p className="text-sm font-medium text-slate-900 dark:text-white">{newUserCredentials.email}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => { navigator.clipboard.writeText(newUserCredentials.email); toast.success('Email copied!'); }}
+                                        className="btn-ghost text-sm px-2 py-1"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded border">
+                                    <div>
+                                        <p className="text-xs text-slate-500">Password</p>
+                                        <p className="text-sm font-mono font-medium text-slate-900 dark:text-white">{newUserCredentials.password}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => { navigator.clipboard.writeText(newUserCredentials.password); toast.success('Password copied!'); }}
+                                        className="btn-ghost text-sm px-2 py-1"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            The user should change their password after first login.
+                        </p>
+                    </div>
+                )}
             </Modal>
 
             {/* Delete Confirmation */}

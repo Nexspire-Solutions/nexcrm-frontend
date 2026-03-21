@@ -5,6 +5,20 @@ import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { usersAPI } from '../../api';
 
+const roleColors = {
+    admin: 'badge-danger',
+    manager: 'badge-primary',
+    sales_operator: 'badge-warning',
+    user: 'badge-gray'
+};
+
+const roleLabels = {
+    admin: 'Admin',
+    manager: 'Manager',
+    sales_operator: 'Sales Operator',
+    user: 'User'
+};
+
 export default function EmployeesList() {
     const [employees, setEmployees] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -18,14 +32,14 @@ export default function EmployeesList() {
     const [showCredentialsModal, setShowCredentialsModal] = useState(false);
     const [newEmployeeCredentials, setNewEmployeeCredentials] = useState(null);
 
-    // Form state
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
+        first_name: '',
+        last_name: '',
         email: '',
         phone: '',
         department: 'Sales',
         position: '',
+        role: 'user',
         status: 'active'
     });
 
@@ -33,26 +47,27 @@ export default function EmployeesList() {
         fetchEmployees();
     }, []);
 
-    // Reset form when modal opens/closes or editing employee changes
     useEffect(() => {
         if (editingEmployee) {
             setFormData({
-                firstName: editingEmployee.firstName || editingEmployee.name?.split(' ')[0] || '',
-                lastName: editingEmployee.lastName || editingEmployee.name?.split(' ')[1] || '',
+                first_name: editingEmployee.first_name || '',
+                last_name: editingEmployee.last_name || '',
                 email: editingEmployee.email || '',
                 phone: editingEmployee.phone || '',
                 department: editingEmployee.department || 'Sales',
-                position: editingEmployee.position || editingEmployee.role || '',
+                position: editingEmployee.position || '',
+                role: editingEmployee.role || 'user',
                 status: editingEmployee.status || 'active'
             });
         } else {
             setFormData({
-                firstName: '',
-                lastName: '',
+                first_name: '',
+                last_name: '',
                 email: '',
                 phone: '',
                 department: 'Sales',
                 position: '',
+                role: 'user',
                 status: 'active'
             });
         }
@@ -71,26 +86,16 @@ export default function EmployeesList() {
     };
 
     const filteredEmployees = employees.filter(emp => {
-        // Hide super admin account from listing
         if (emp.email === 'admin@nexspiresolutions.co.in') return false;
-
-        const name = emp.firstName ? `${emp.firstName} ${emp.lastName}` : emp.name || '';
+        const name = `${emp.first_name || ''} ${emp.last_name || ''}`;
         const matchesSearch = `${name} ${emp.email || ''}`.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || emp.status === filterStatus;
         return matchesSearch && matchesStatus;
     });
 
     const getStatusBadge = (status) => {
-        const styles = {
-            active: 'badge-success',
-            inactive: 'badge-gray',
-            on_leave: 'badge-warning'
-        };
-        const labels = {
-            active: 'Active',
-            inactive: 'Inactive',
-            on_leave: 'On Leave'
-        };
+        const styles = { active: 'badge-success', inactive: 'badge-gray', on_leave: 'badge-warning' };
+        const labels = { active: 'Active', inactive: 'Inactive', on_leave: 'On Leave' };
         return <span className={styles[status] || 'badge-gray'}>{labels[status] || status || 'Active'}</span>;
     };
 
@@ -118,47 +123,37 @@ export default function EmployeesList() {
     };
 
     const handleSubmit = async () => {
-        // Validation
-        if (!formData.email) {
-            toast.error('Email is required');
-            return;
-        }
-        if (!formData.firstName) {
-            toast.error('First name is required');
-            return;
-        }
+        if (!formData.email) { toast.error('Email is required'); return; }
+        if (!formData.first_name) { toast.error('First name is required'); return; }
 
         setIsSaving(true);
         try {
             if (editingEmployee) {
-                // Update existing employee
                 await usersAPI.update(editingEmployee.id, {
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
+                    first_name: formData.first_name,
+                    last_name: formData.last_name,
                     phone: formData.phone,
                     department: formData.department,
                     position: formData.position,
-                    status: formData.status,
-                    role: editingEmployee.role // Keep existing role
+                    role: formData.role,
+                    status: formData.status
                 });
                 toast.success('Employee updated successfully');
             } else {
-                // Create new employee - password is auto-generated by server
                 const response = await usersAPI.create({
                     email: formData.email,
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
+                    first_name: formData.first_name,
+                    last_name: formData.last_name,
                     phone: formData.phone,
                     department: formData.department,
                     position: formData.position,
-                    status: formData.status,
-                    role: 'user' // Default role for new employees
+                    role: formData.role,
+                    status: formData.status
                 });
 
-                // Show credentials modal with the generated password
                 if (response.credentials) {
                     setNewEmployeeCredentials({
-                        name: `${formData.firstName} ${formData.lastName}`.trim(),
+                        name: `${formData.first_name} ${formData.last_name}`.trim(),
                         email: response.credentials.email,
                         password: response.credentials.password,
                         emailSent: response.emailSent
@@ -249,6 +244,7 @@ export default function EmployeesList() {
                             <th>Employee</th>
                             <th>Department</th>
                             <th>Position</th>
+                            <th>Role</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -259,11 +255,11 @@ export default function EmployeesList() {
                                 <td>
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold">
-                                            {(employee.firstName || employee.name || 'U')[0]}{(employee.lastName || '')[0] || ''}
+                                            {(employee.first_name || 'U')[0]}{(employee.last_name || '')[0]}
                                         </div>
                                         <div>
                                             <p className="font-medium text-slate-900 dark:text-white">
-                                                {employee.firstName ? `${employee.firstName} ${employee.lastName}` : employee.name}
+                                                {employee.first_name} {employee.last_name}
                                             </p>
                                             <p className="text-sm text-slate-500 dark:text-slate-400">
                                                 {employee.email}
@@ -272,14 +268,16 @@ export default function EmployeesList() {
                                     </div>
                                 </td>
                                 <td>{employee.department || '-'}</td>
-                                <td>{employee.position || employee.role || '-'}</td>
+                                <td>{employee.position || '-'}</td>
+                                <td>
+                                    <span className={roleColors[employee.role] || 'badge-gray'}>
+                                        {roleLabels[employee.role] || employee.role || 'User'}
+                                    </span>
+                                </td>
                                 <td>{getStatusBadge(employee.status)}</td>
                                 <td>
                                     <div className="flex items-center gap-2">
-                                        <Link
-                                            to={`/employees/${employee.id}`}
-                                            className="btn-ghost btn-sm"
-                                        >
+                                        <Link to={`/employees/${employee.id}`} className="btn-ghost btn-sm">
                                             View
                                         </Link>
                                         <button
@@ -312,7 +310,7 @@ export default function EmployeesList() {
                 )}
             </div>
 
-            {/* Modal */}
+            {/* Create / Edit Modal */}
             <Modal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
@@ -334,9 +332,9 @@ export default function EmployeesList() {
                             <label className="label">First Name *</label>
                             <input
                                 type="text"
-                                name="firstName"
+                                name="first_name"
                                 className="input"
-                                value={formData.firstName}
+                                value={formData.first_name}
                                 onChange={handleInputChange}
                                 placeholder="John"
                             />
@@ -345,9 +343,9 @@ export default function EmployeesList() {
                             <label className="label">Last Name</label>
                             <input
                                 type="text"
-                                name="lastName"
+                                name="last_name"
                                 className="input"
-                                value={formData.lastName}
+                                value={formData.last_name}
                                 onChange={handleInputChange}
                                 placeholder="Doe"
                             />
@@ -420,18 +418,34 @@ export default function EmployeesList() {
                             />
                         </div>
                     </div>
-                    <div>
-                        <label className="label">Status</label>
-                        <select
-                            name="status"
-                            className="select"
-                            value={formData.status}
-                            onChange={handleInputChange}
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="on_leave">On Leave</option>
-                        </select>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">Role</label>
+                            <select
+                                name="role"
+                                className="select"
+                                value={formData.role}
+                                onChange={handleInputChange}
+                            >
+                                <option value="user">User</option>
+                                <option value="sales_operator">Sales Operator</option>
+                                <option value="manager">Manager</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="label">Status</label>
+                            <select
+                                name="status"
+                                className="select"
+                                value={formData.status}
+                                onChange={handleInputChange}
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="on_leave">On Leave</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </Modal>
@@ -448,20 +462,14 @@ export default function EmployeesList() {
                 variant="danger"
             />
 
-            {/* Credentials Modal - Shows after creating new employee */}
+            {/* Credentials Modal */}
             <Modal
                 isOpen={showCredentialsModal}
-                onClose={() => {
-                    setShowCredentialsModal(false);
-                    setNewEmployeeCredentials(null);
-                }}
+                onClose={() => { setShowCredentialsModal(false); setNewEmployeeCredentials(null); }}
                 title="Employee Created Successfully"
                 footer={
                     <button
-                        onClick={() => {
-                            setShowCredentialsModal(false);
-                            setNewEmployeeCredentials(null);
-                        }}
+                        onClick={() => { setShowCredentialsModal(false); setNewEmployeeCredentials(null); }}
                         className="btn-primary"
                     >
                         Done
@@ -493,12 +501,10 @@ export default function EmployeesList() {
                                 </div>
                             </div>
                         )}
-
                         <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg space-y-3">
                             <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                                 {newEmployeeCredentials.name}'s Login Credentials
                             </h4>
-
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded border">
                                     <div>
@@ -506,10 +512,7 @@ export default function EmployeesList() {
                                         <p className="text-sm font-medium text-slate-900 dark:text-white">{newEmployeeCredentials.email}</p>
                                     </div>
                                     <button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(newEmployeeCredentials.email);
-                                            toast.success('Email copied!');
-                                        }}
+                                        onClick={() => { navigator.clipboard.writeText(newEmployeeCredentials.email); toast.success('Email copied!'); }}
                                         className="btn-ghost text-sm px-2 py-1"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -517,17 +520,13 @@ export default function EmployeesList() {
                                         </svg>
                                     </button>
                                 </div>
-
                                 <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded border">
                                     <div>
                                         <p className="text-xs text-slate-500">Password</p>
                                         <p className="text-sm font-mono font-medium text-slate-900 dark:text-white">{newEmployeeCredentials.password}</p>
                                     </div>
                                     <button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(newEmployeeCredentials.password);
-                                            toast.success('Password copied!');
-                                        }}
+                                        onClick={() => { navigator.clipboard.writeText(newEmployeeCredentials.password); toast.success('Password copied!'); }}
                                         className="btn-ghost text-sm px-2 py-1"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -537,7 +536,6 @@ export default function EmployeesList() {
                                 </div>
                             </div>
                         </div>
-
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                             The employee should change their password after first login.
                         </p>
@@ -547,4 +545,3 @@ export default function EmployeesList() {
         </div>
     );
 }
-
