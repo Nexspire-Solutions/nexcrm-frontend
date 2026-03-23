@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import storageAPI from '../../api/storage';
 import { usersAPI } from '../../api';
 import { COMMON_TIMEZONES } from '../../utils/dateUtils';
+import apiClient from '../../api/axios';
 
 export default function Settings() {
     const { user, updateUser } = useAuth(); // Assuming updateUser updates the context
@@ -34,6 +35,18 @@ export default function Settings() {
     const [timezones, setTimezones] = useState(COMMON_TIMEZONES);
     const [savingTimezone, setSavingTimezone] = useState(false);
 
+    // Business Profile State
+    const [businessData, setBusinessData] = useState({
+        company_name: '',
+        company_email: '',
+        phone: '',
+        address: '',
+        gst_number: '',
+        currency: 'INR',
+        currency_symbol: '₹',
+    });
+    const [savingBusiness, setSavingBusiness] = useState(false);
+
     // Fetch storage info when storage tab is active
     useEffect(() => {
         if (activeTab === 'storage') {
@@ -46,7 +59,34 @@ export default function Settings() {
         if (activeTab === 'preferences') {
             loadTenantTimezone();
         }
+        if (activeTab === 'business') {
+            loadBusinessProfile();
+        }
     }, [activeTab]);
+
+    const loadBusinessProfile = async () => {
+        try {
+            const res = await apiClient.get('/config/business');
+            if (res.data?.data) {
+                setBusinessData(prev => ({ ...prev, ...res.data.data }));
+            }
+        } catch (err) {
+            console.error('Failed to load business profile:', err);
+        }
+    };
+
+    const handleBusinessSave = async (e) => {
+        e.preventDefault();
+        setSavingBusiness(true);
+        try {
+            await apiClient.put('/config/business', businessData);
+            toast.success('Business profile updated');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to update business profile');
+        } finally {
+            setSavingBusiness(false);
+        }
+    };
 
     const loadTenantTimezone = async () => {
         try {
@@ -117,10 +157,11 @@ export default function Settings() {
                     <nav className="space-y-1">
                         {[
                             { id: 'profile', label: 'My Profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+                            { id: 'business', label: 'Business Profile', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
                             { id: 'security', label: 'Security', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
                             { id: 'preferences', label: 'Preferences', icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4' },
                             { id: 'notifications', label: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
-                            { id: 'storage', label: 'Storage', icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4' },
+                            { id: 'storage', label: 'Storage', icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582 4 8-4s8 1.79 8 4' },
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -198,6 +239,98 @@ export default function Settings() {
                                         className="px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/25 disabled:opacity-70"
                                     >
                                         Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+
+                    {activeTab === 'business' && (
+                        <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-1">Business Profile</h2>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">This information appears on invoices and outgoing emails.</p>
+                            <form onSubmit={handleBusinessSave} className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Business / Store Name</label>
+                                    <input
+                                        type="text"
+                                        value={businessData.company_name}
+                                        onChange={e => setBusinessData({ ...businessData, company_name: e.target.value })}
+                                        placeholder="e.g. Acme Manufacturing Pvt. Ltd."
+                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Business Email</label>
+                                        <input
+                                            type="email"
+                                            value={businessData.company_email}
+                                            onChange={e => setBusinessData({ ...businessData, company_email: e.target.value })}
+                                            placeholder="billing@company.com"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Phone</label>
+                                        <input
+                                            type="tel"
+                                            value={businessData.phone}
+                                            onChange={e => setBusinessData({ ...businessData, phone: e.target.value })}
+                                            placeholder="+91 99999 99999"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Address</label>
+                                    <textarea
+                                        rows={3}
+                                        value={businessData.address}
+                                        onChange={e => setBusinessData({ ...businessData, address: e.target.value })}
+                                        placeholder="Street, City, State, PIN"
+                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all resize-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">GST / Tax Number</label>
+                                    <input
+                                        type="text"
+                                        value={businessData.gst_number}
+                                        onChange={e => setBusinessData({ ...businessData, gst_number: e.target.value })}
+                                        placeholder="e.g. 22AAAAA0000A1Z5"
+                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Currency Code</label>
+                                        <input
+                                            type="text"
+                                            value={businessData.currency}
+                                            onChange={e => setBusinessData({ ...businessData, currency: e.target.value })}
+                                            placeholder="INR"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Currency Symbol</label>
+                                        <input
+                                            type="text"
+                                            value={businessData.currency_symbol}
+                                            onChange={e => setBusinessData({ ...businessData, currency_symbol: e.target.value })}
+                                            placeholder="₹"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="pt-2">
+                                    <button
+                                        type="submit"
+                                        disabled={savingBusiness}
+                                        className="px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/25 disabled:opacity-70"
+                                    >
+                                        {savingBusiness ? 'Saving...' : 'Save Business Profile'}
                                     </button>
                                 </div>
                             </form>

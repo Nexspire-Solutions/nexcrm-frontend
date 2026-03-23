@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
+import Modal from '../../../components/common/Modal';
 
 export default function ManufacturingInventory() {
     const [inventory, setInventory] = useState([]);
@@ -12,6 +13,9 @@ export default function ManufacturingInventory() {
     const [typeFilter, setTypeFilter] = useState('all');
     const [lowStockOnly, setLowStockOnly] = useState(false);
     const [search, setSearch] = useState('');
+
+    // Adjust stock modal state
+    const [adjustModal, setAdjustModal] = useState({ open: false, type: null, id: null, name: '', amount: '', submitting: false });
 
     useEffect(() => {
         fetchInventory();
@@ -40,19 +44,32 @@ export default function ManufacturingInventory() {
         }
     };
 
-    const adjustStock = async (type, id, adjustment) => {
-        const amount = prompt('Enter adjustment amount (positive to add, negative to subtract):');
-        if (!amount || isNaN(Number(amount))) return;
+    const openAdjustModal = (type, id, name) => {
+        setAdjustModal({ open: true, type, id, name, amount: '', submitting: false });
+    };
 
+    const closeAdjustModal = () => {
+        setAdjustModal({ open: false, type: null, id: null, name: '', amount: '', submitting: false });
+    };
+
+    const handleAdjustSubmit = async () => {
+        const amount = Number(adjustModal.amount);
+        if (!adjustModal.amount || isNaN(amount) || amount === 0) {
+            toast.error('Please enter a valid non-zero adjustment amount.');
+            return;
+        }
+        setAdjustModal(prev => ({ ...prev, submitting: true }));
         try {
-            await apiClient.put(`/manufacturing/inventory/${type}/${id}/adjust`, {
-                adjustment: Number(amount)
+            await apiClient.put(`/manufacturing/inventory/${adjustModal.type}/${adjustModal.id}/adjust`, {
+                adjustment: amount
             });
             toast.success('Stock adjusted');
+            closeAdjustModal();
             fetchInventory();
             fetchStats();
         } catch (error) {
             toast.error('Failed to adjust stock');
+            setAdjustModal(prev => ({ ...prev, submitting: false }));
         }
     };
 
@@ -171,7 +188,7 @@ export default function ManufacturingInventory() {
                                     </td>
                                     <td className="px-4 py-3">
                                         <button
-                                            onClick={() => adjustStock(item.item_type, item.id)}
+                                            onClick={() => openAdjustModal(item.item_type, item.id, item.name)}
                                             className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-sm hover:bg-indigo-200"
                                         >
                                             Adjust
@@ -183,6 +200,54 @@ export default function ManufacturingInventory() {
                     </table>
                 )}
             </div>
+
+            {/* Adjust Stock Modal */}
+            <Modal
+                isOpen={adjustModal.open}
+                onClose={closeAdjustModal}
+                title="Adjust Stock"
+                footer={
+                    <>
+                        <button
+                            onClick={closeAdjustModal}
+                            disabled={adjustModal.submitting}
+                            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleAdjustSubmit}
+                            disabled={adjustModal.submitting}
+                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                        >
+                            {adjustModal.submitting ? 'Saving...' : 'Apply Adjustment'}
+                        </button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    {adjustModal.name && (
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Item: <span className="font-medium text-slate-900 dark:text-white">{adjustModal.name}</span>
+                        </p>
+                    )}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            Adjustment Amount
+                        </label>
+                        <input
+                            type="number"
+                            value={adjustModal.amount}
+                            onChange={(e) => setAdjustModal(prev => ({ ...prev, amount: e.target.value }))}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAdjustSubmit()}
+                            placeholder="e.g. 50 or -10"
+                            autoFocus
+                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <p className="text-xs text-slate-400 mt-1">Use a positive number to add stock, negative to subtract.</p>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

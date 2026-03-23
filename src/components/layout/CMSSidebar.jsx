@@ -9,7 +9,7 @@ import {
     FiShoppingBag, FiCalendar, FiBriefcase, // Business
     FiUsers, FiTarget, FiMail, // CRM & Marketing
     FiSettings, FiCreditCard, FiGlobe, // Settings
-    FiLogOut, FiChevronDown, FiChevronRight
+    FiLogOut, FiChevronDown, FiChevronRight, FiArrowLeft
 } from 'react-icons/fi';
 
 export default function CMSSidebar({ isOpen, setIsOpen }) {
@@ -75,7 +75,7 @@ export default function CMSSidebar({ isOpen, setIsOpen }) {
             </div>
 
             {/* Scrollable Menu */}
-            <div className="overflow-y-auto h-[calc(100vh-4rem-4rem)] p-4 space-y-6">
+            <div className="overflow-y-auto h-[calc(100vh-4rem-5.5rem)] p-4 space-y-6">
                 {menuGroups.map((group, idx) => (
                     <div key={idx}>
                         <h3 className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -104,6 +104,13 @@ export default function CMSSidebar({ isOpen, setIsOpen }) {
 
             {/* Footer / User Profile */}
             <div className="absolute bottom-0 w-full p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+                <button
+                    onClick={() => navigate('/')}
+                    className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors border border-indigo-200 dark:border-indigo-800 justify-center"
+                >
+                    <FiArrowLeft className="text-lg" />
+                    Back to CRM
+                </button>
                 <button
                     onClick={() => navigate('/cms/home')}
                     className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700 justify-center"

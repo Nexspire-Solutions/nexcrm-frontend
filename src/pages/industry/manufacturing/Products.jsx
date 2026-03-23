@@ -5,6 +5,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
+import ConfirmModal from '../../../components/common/ConfirmModal';
+
+const UNITS = ['pcs', 'kg', 'ltr', 'm', 'units', 'boxes', 'sets'];
 
 const initialFormData = {
     name: '',
@@ -16,25 +19,44 @@ const initialFormData = {
     cost_price: '',
     stock_quantity: '',
     min_stock_level: '',
-    bom: ''
 };
 
+// BOM spec row shape
+const emptySpecRow = () => ({ material_name: '', quantity: '', unit: 'kg' });
+
 function formatCurrency(value) {
-    return `Rs. ${(Number(value) || 0).toLocaleString('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    })}`;
+    const n = parseFloat(value);
+    if (value === null || value === undefined || value === '' || isNaN(n)) return '—';
+    return `Rs. ${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function formatBomValue(value) {
-    if (!value) return '';
-    if (typeof value === 'string') return value;
-
+// Convert a BOM value (JSON string or array) to an array of spec rows for the UI
+function parseBomToRows(bom) {
+    if (!bom) return [];
     try {
-        return JSON.stringify(value, null, 2);
-    } catch (error) {
-        return '';
+        const arr = typeof bom === 'string' ? JSON.parse(bom) : bom;
+        if (!Array.isArray(arr)) return [];
+        return arr.map(r => ({
+            material_name: r.material_name || r.name || '',
+            quantity: r.quantity !== undefined ? String(r.quantity) : '',
+            unit: r.unit || 'kg',
+        }));
+    } catch {
+        return [];
     }
+}
+
+// Serialise spec rows back to the JSON format the backend expects
+function serializeRows(rows) {
+    const filled = rows.filter(r => r.material_name.trim());
+    if (!filled.length) return null;
+    return JSON.stringify(
+        filled.map(r => ({
+            material_name: r.material_name.trim(),
+            quantity: parseFloat(r.quantity) || 0,
+            unit: r.unit,
+        }))
+    );
 }
 
 export default function Products() {
@@ -44,25 +66,25 @@ export default function Products() {
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState(initialFormData);
+    const [specRows, setSpecRows] = useState([emptySpecRow()]);
+
+    // Confirm-delete modal
+    const [confirmModal, setConfirmModal] = useState({ open: false, id: null });
 
     useEffect(() => {
         fetchProducts();
     }, [search]);
 
     const summary = useMemo(() => {
-        const lowStockCount = products.filter(product => Number(product.stock_quantity || 0) <= Number(product.min_stock_level || 0)).length;
-        const inventoryValue = products.reduce((sum, product) => sum + ((Number(product.stock_quantity) || 0) * (Number(product.cost_price) || 0)), 0);
-
-        return {
-            totalProducts: products.length,
-            lowStockCount,
-            inventoryValue
-        };
+        const lowStockCount = products.filter(p => Number(p.stock_quantity || 0) <= Number(p.min_stock_level || 0)).length;
+        const inventoryValue = products.reduce((sum, p) => sum + ((Number(p.stock_quantity) || 0) * (Number(p.cost_price) || 0)), 0);
+        return { totalProducts: products.length, lowStockCount, inventoryValue };
     }, [products]);
 
     const resetForm = () => {
         setEditingId(null);
         setFormData(initialFormData);
+        setSpecRows([emptySpecRow()]);
         setShowForm(false);
     };
 
@@ -82,21 +104,17 @@ export default function Products() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (formData.bom) {
-            try {
-                JSON.parse(formData.bom);
-            } catch (error) {
-                toast.error('BOM must be valid JSON');
-                return;
-            }
-        }
+        const payload = {
+            ...formData,
+            bom: serializeRows(specRows),
+        };
 
         try {
             if (editingId) {
-                await apiClient.put(`/production/products/${editingId}`, formData);
+                await apiClient.put(`/production/products/${editingId}`, payload);
                 toast.success('Product updated');
             } else {
-                await apiClient.post('/production/products', formData);
+                await apiClient.post('/production/products', payload);
                 toast.success('Product created');
             }
             resetForm();
@@ -118,17 +136,18 @@ export default function Products() {
             cost_price: product.cost_price ?? '',
             stock_quantity: product.stock_quantity ?? '',
             min_stock_level: product.min_stock_level ?? '',
-            bom: formatBomValue(product.bom)
         });
+        const rows = parseBomToRows(product.bom);
+        setSpecRows(rows.length ? rows : [emptySpecRow()]);
         setEditingId(product.id);
         setShowForm(true);
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Delete this product?')) return;
+    const handleDelete = async () => {
         try {
-            await apiClient.delete(`/production/products/${id}`);
+            await apiClient.delete(`/production/products/${confirmModal.id}`);
             toast.success('Product deleted');
+            setConfirmModal({ open: false, id: null });
             fetchProducts();
         } catch (error) {
             console.error('Failed to delete product:', error);
@@ -136,21 +155,18 @@ export default function Products() {
         }
     };
 
+    // ── Spec row helpers ────────────────────────────────────────────────
+    const updateSpecRow = (index, field, value) => {
+        setSpecRows(prev => prev.map((r, i) => i === index ? { ...r, [field]: value } : r));
+    };
+    const addSpecRow = () => setSpecRows(prev => [...prev, emptySpecRow()]);
+    const removeSpecRow = (index) => setSpecRows(prev => prev.length === 1 ? [emptySpecRow()] : prev.filter((_, i) => i !== index));
+
+    // ── Export / Import ─────────────────────────────────────────────────
     const handleExport = () => {
         const csv = [
-            ['Name', 'SKU', 'Description', 'Category', 'Unit', 'Selling Price', 'Cost Price', 'Stock Quantity', 'Min Stock Level', 'BOM'],
-            ...products.map(product => [
-                product.name,
-                product.sku || '',
-                product.description || '',
-                product.category || '',
-                product.unit || '',
-                product.selling_price ?? '',
-                product.cost_price ?? '',
-                product.stock_quantity ?? '',
-                product.min_stock_level ?? '',
-                JSON.stringify(product.bom || '')
-            ])
+            ['Name', 'SKU', 'Description', 'Category', 'Unit', 'Selling Price', 'Cost Price', 'Stock Quantity', 'Min Stock Level'],
+            ...products.map(p => [p.name, p.sku || '', p.description || '', p.category || '', p.unit || '', p.selling_price ?? '', p.cost_price ?? '', p.stock_quantity ?? '', p.min_stock_level ?? ''])
         ].map(row => row.join(',')).join('\n');
 
         const blob = new Blob([csv], { type: 'text/csv' });
@@ -164,32 +180,18 @@ export default function Products() {
     const handleImport = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = async (event) => {
             const text = String(event.target?.result || '');
             const rows = text.split('\n').slice(1);
             let imported = 0;
             for (const row of rows) {
-                const [name, sku, description, category, unit, selling_price, cost_price, stock_quantity, min_stock_level, bom] = row.split(',');
+                const [name, sku, description, category, unit, selling_price, cost_price, stock_quantity, min_stock_level] = row.split(',');
                 if (name?.trim()) {
                     try {
-                        await apiClient.post('/production/products', {
-                            name: name.trim(),
-                            sku: sku?.trim() || '',
-                            description: description?.trim() || '',
-                            category: category?.trim() || '',
-                            unit: unit?.trim() || 'pcs',
-                            selling_price: selling_price?.trim() || '',
-                            cost_price: cost_price?.trim() || '',
-                            stock_quantity: stock_quantity?.trim() || '',
-                            min_stock_level: min_stock_level?.trim() || '',
-                            bom: bom?.trim() || ''
-                        });
+                        await apiClient.post('/production/products', { name: name.trim(), sku: sku?.trim() || '', description: description?.trim() || '', category: category?.trim() || '', unit: unit?.trim() || 'pcs', selling_price: selling_price?.trim() || null, cost_price: cost_price?.trim() || null, stock_quantity: stock_quantity?.trim() || 0, min_stock_level: min_stock_level?.trim() || 0 });
                         imported++;
-                    } catch (err) {
-                        console.error('Import row failed:', err);
-                    }
+                    } catch (err) { console.error('Import row failed:', err); }
                 }
             }
             toast.success(`Imported ${imported} products`);
@@ -199,8 +201,27 @@ export default function Products() {
         e.target.value = '';
     };
 
+    const field = (label, key, type = 'text', required = false, placeholder = '') => (
+        <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+            </label>
+            <input
+                type={type}
+                step={type === 'number' ? '0.01' : undefined}
+                min={type === 'number' ? '0' : undefined}
+                value={formData[key]}
+                onChange={e => setFormData(prev => ({ ...prev, [key]: e.target.value }))}
+                required={required}
+                placeholder={placeholder}
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+        </div>
+    );
+
     return (
         <div className="space-y-6">
+            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <nav className="text-sm text-slate-500 dark:text-slate-400 mb-1">
@@ -211,34 +232,29 @@ export default function Products() {
                         <span className="text-slate-900 dark:text-white">Products</span>
                     </nav>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manufactured Products</h1>
-                    <p className="text-slate-500 text-sm">Maintain pricing, stock and BOM details for production-ready products.</p>
+                    <p className="text-slate-500 text-sm">Maintain pricing, stock and BOM specs for production-ready products.</p>
                 </div>
                 <div className="flex gap-2">
                     <label className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                         Import
                         <input type="file" accept=".csv" onChange={handleImport} className="hidden" />
                     </label>
                     <button onClick={handleExport} className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                         Export
                     </button>
                     <button
-                        onClick={() => { setShowForm(true); setEditingId(null); setFormData(initialFormData); }}
+                        onClick={() => { resetForm(); setShowForm(true); }}
                         className="btn-primary flex items-center gap-2 shadow-sm"
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                         Add Product
                     </button>
                 </div>
             </div>
 
+            {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                     <p className="text-sm text-slate-500">Products</p>
@@ -255,32 +271,28 @@ export default function Products() {
             </div>
 
             {/* Search */}
-            <div>
-                <input
-                    type="text"
-                    placeholder="Search by name or SKU..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full md:w-80 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                />
-            </div>
+            <input
+                type="text"
+                placeholder="Search by name or SKU..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full md:w-80 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+            />
 
             {/* Table */}
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                 {loading ? (
                     <div className="p-8 text-center">
-                        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
                     </div>
                 ) : products.length === 0 ? (
                     <div className="p-12 text-center">
                         <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
+                            <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                         </div>
                         <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">No products</h3>
                         <p className="text-slate-500 dark:text-slate-400 mb-4">Add products to start creating production orders.</p>
-                        <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        <button onClick={() => { resetForm(); setShowForm(true); }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
                             Add First Product
                         </button>
                     </div>
@@ -294,21 +306,22 @@ export default function Products() {
                                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Sell Price</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Cost Price</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Stock</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">BOM</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">BOM Specs</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                                 {products.map((product) => {
                                     const lowStock = Number(product.stock_quantity || 0) <= Number(product.min_stock_level || 0);
+                                    const bomRows = parseBomToRows(product.bom);
                                     return (
                                         <tr key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                             <td className="px-4 py-3">
                                                 <div className="font-medium text-slate-900 dark:text-white">{product.name}</div>
                                                 <div className="text-xs text-slate-500">{product.sku || 'Auto SKU'} • {product.unit || 'pcs'}</div>
                                             </td>
-                                            <td className="px-4 py-3 text-slate-500">{product.category || '-'}</td>
-                                            <td className="px-4 py-3 text-slate-500">{formatCurrency(product.selling_price)}</td>
+                                            <td className="px-4 py-3 text-slate-500">{product.category || '—'}</td>
+                                            <td className="px-4 py-3 text-slate-900 dark:text-white font-medium">{formatCurrency(product.selling_price)}</td>
                                             <td className="px-4 py-3 text-slate-500">{formatCurrency(product.cost_price)}</td>
                                             <td className="px-4 py-3">
                                                 <div className="font-medium text-slate-900 dark:text-white">{Number(product.stock_quantity || 0).toLocaleString('en-IN')}</div>
@@ -316,18 +329,19 @@ export default function Products() {
                                                     Min {Number(product.min_stock_level || 0).toLocaleString('en-IN')}
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-slate-500 text-sm">{product.bom ? 'Configured' : 'Not set'}</td>
+                                            <td className="px-4 py-3 text-slate-500 text-sm">
+                                                {bomRows.length > 0
+                                                    ? <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full text-xs">{bomRows.length} material{bomRows.length > 1 ? 's' : ''}</span>
+                                                    : <span className="text-slate-400">Not set</span>
+                                                }
+                                            </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => handleEdit(product)} className="p-1.5 text-slate-400 hover:text-indigo-600">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                                        </svg>
+                                                    <button onClick={() => handleEdit(product)} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors" title="Edit">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                                     </button>
-                                                    <button onClick={() => handleDelete(product.id)} className="p-1.5 text-slate-400 hover:text-red-600">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
+                                                    <button onClick={() => setConfirmModal({ open: true, id: product.id })} className="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="Delete">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                     </button>
                                                 </div>
                                             </td>
@@ -340,133 +354,164 @@ export default function Products() {
                 )}
             </div>
 
-            {/* Form Modal */}
+            {/* ── Add / Edit Product Modal ─────────────────────────────────────── */}
             {showForm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-3xl p-6">
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-                            {editingId ? 'Edit Product' : 'Add Product'}
-                        </h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto p-4 pt-10">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-3xl p-6 mb-10">
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                                {editingId ? 'Edit Product' : 'Add Product'}
+                            </h2>
+                            <button onClick={resetForm} className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            {/* ── Basic Info ── */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Name *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        required
-                                        placeholder="e.g., Widget Pro 3000"
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SKU</label>
-                                    <input
-                                        type="text"
-                                        value={formData.sku}
-                                        onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                                        placeholder="Auto-generated if blank"
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category</label>
-                                    <input
-                                        type="text"
-                                        value={formData.category}
-                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        placeholder="e.g., Electronics"
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                                    />
-                                </div>
+                                {field('Product Name', 'name', 'text', true, 'e.g., Widget Pro 3000')}
+                                {field('SKU', 'sku', 'text', false, 'Auto-generated if blank')}
+                                {field('Category', 'category', 'text', false, 'e.g., Electronics')}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit</label>
                                     <select
                                         value={formData.unit}
-                                        onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                                        onChange={e => setFormData(prev => ({ ...prev, unit: e.target.value }))}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     >
-                                        <option value="pcs">Pieces</option>
-                                        <option value="kg">Kilograms</option>
-                                        <option value="ltr">Liters</option>
-                                        <option value="m">Meters</option>
-                                        <option value="units">Units</option>
-                                        <option value="boxes">Boxes</option>
-                                        <option value="sets">Sets</option>
+                                        {UNITS.map(u => <option key={u} value={u}>{u.charAt(0).toUpperCase() + u.slice(1)}</option>)}
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Selling Price</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={formData.selling_price}
-                                        onChange={(e) => setFormData({ ...formData, selling_price: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cost Price</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={formData.cost_price}
-                                        onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Stock Quantity</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={formData.stock_quantity}
-                                        onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Min Stock Level</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={formData.min_stock_level}
-                                        onChange={(e) => setFormData({ ...formData, min_stock_level: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                                    />
+                            </div>
+
+                            {/* ── Pricing ── */}
+                            <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700">
+                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Pricing</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {field('Selling Price', 'selling_price', 'number', true, '0.00')}
+                                    {field('Cost Price', 'cost_price', 'number', true, '0.00')}
                                 </div>
                             </div>
+
+                            {/* ── Stock ── */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {field('Opening Stock Quantity', 'stock_quantity', 'number', false, '0')}
+                                {field('Min Stock Level', 'min_stock_level', 'number', false, '0')}
+                            </div>
+
+                            {/* ── Description ── */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
                                 <textarea
                                     value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    rows={3}
+                                    onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                                    rows={2}
                                     placeholder="Optional product description..."
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                                ></textarea>
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                                />
                             </div>
+
+                            {/* ── BOM / Specs ── */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">BOM JSON</label>
-                                <textarea
-                                    value={formData.bom}
-                                    onChange={(e) => setFormData({ ...formData, bom: e.target.value })}
-                                    rows={6}
-                                    placeholder='[{"material_id":1,"quantity":2.5,"unit":"kg"}]'
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-sm"
-                                ></textarea>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Bill of Materials (Specs)</p>
+                                        <p className="text-xs text-slate-400">Materials required to produce one unit of this product.</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={addSpecRow}
+                                        className="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                        Add Row
+                                    </button>
+                                </div>
+
+                                <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-slate-50 dark:bg-slate-900/50">
+                                            <tr>
+                                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Material / Component</th>
+                                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase w-28">Qty</th>
+                                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase w-28">Unit</th>
+                                                <th className="px-3 py-2 w-10" />
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                            {specRows.map((row, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="px-3 py-2">
+                                                        <input
+                                                            type="text"
+                                                            value={row.material_name}
+                                                            onChange={e => updateSpecRow(idx, 'material_name', e.target.value)}
+                                                            placeholder="e.g., Steel Sheet"
+                                                            className="w-full px-2 py-1.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                                        />
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={row.quantity}
+                                                            onChange={e => updateSpecRow(idx, 'quantity', e.target.value)}
+                                                            placeholder="0"
+                                                            className="w-full px-2 py-1.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                                        />
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        <select
+                                                            value={row.unit}
+                                                            onChange={e => updateSpecRow(idx, 'unit', e.target.value)}
+                                                            className="w-full px-2 py-1.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                                        >
+                                                            {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                                                        </select>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-center">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeSpecRow(idx)}
+                                                            className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                                                            title="Remove row"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <div className="flex justify-end gap-3 pt-4">
-                                <button type="button" onClick={resetForm} className="px-4 py-2 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                                    {editingId ? 'Update' : 'Create'}
+
+                            {/* ── Actions ── */}
+                            <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+                                <button type="button" onClick={resetForm} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="submit" className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+                                    {editingId ? 'Update Product' : 'Create Product'}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
+
+            {/* ── Confirm Delete ───────────────────────────────────────────────── */}
+            <ConfirmModal
+                isOpen={confirmModal.open}
+                onClose={() => setConfirmModal({ open: false, id: null })}
+                onConfirm={handleDelete}
+                title="Delete Product"
+                message="Delete this product? This cannot be undone."
+                confirmText="Delete"
+                variant="danger"
+            />
         </div>
     );
 }
